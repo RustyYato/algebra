@@ -31,6 +31,16 @@ def nat.mul_succ (a b: nat) : a * b.succ = a + (a * b) := by
 
 #print axioms nat.mul_succ
 
+def nat.one_mul (a: nat) : 1 * a = a := by
+  rw [←one_eq, succ_mul, zero_eq, zero_mul, add_zero]
+
+#print axioms nat.one_mul
+
+def nat.mul_one (a: nat) : a * 1 = a := by
+  rw [←one_eq, mul_succ, zero_eq, mul_zero, add_zero]
+
+#print axioms nat.mul_one
+
 def nat.mul_comm (a b: nat) : a * b = b * a := by
   induction a generalizing b with
   | zero => rw [zero_eq, zero_mul, mul_zero]
@@ -64,4 +74,27 @@ def nat.mul_assoc (a b c: nat) : (a * b) * c = a * (b * c) := by
     apply ih
 
 #print axioms nat.mul_assoc
+
+def nat.mul_ge (a b: nat) (b_nz: 0 < b) : a ≤ a * b := by
+  match b with
+  | .zero => contradiction
+  | .succ b =>
+    rw [mul_succ]
+    apply le_add_right
+
+#print axioms nat.mul_ge
+
+def nat.mul_gt (a b: nat) (a_nz: 0 < a) (b_nz: 1 < b) : a < a * b := by
+  match b with
+  | .zero | .succ .zero => contradiction
+  | .succ (.succ b) =>
+    rw [mul_succ, mul_succ]
+    match a with
+    | .succ a =>
+    rw [nat.succ_add, add_left_comm, succ_add]
+    apply succ_lt_succ
+    apply lt_of_le_and_lt _ (lt_succ_self _)
+    apply le_add_right
+
+#print axioms nat.mul_gt
 
