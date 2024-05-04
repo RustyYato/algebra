@@ -19,7 +19,7 @@ def nat.sub_zero (a: nat) : a - 0 = a := by
 
 #print axioms nat.sub_zero
 
-def nat.sub_succ (a b: nat) : a - b.succ = a.dec.sub b := rfl 
+def nat.sub_succ (a b: nat) : a - b.succ = a.dec - b := rfl 
 
 #print axioms nat.sub_succ
 
@@ -122,4 +122,47 @@ def nat.sub_add_inv (a b: nat) : b ≤ a -> a - b + b = a := by
   assumption
 
 #print axioms nat.sub_add_inv
+
+def nat.sub_le_left (a b c: nat) : a ≤ b -> a - c ≤ b - c := by
+  intro a_le_b
+  induction c generalizing a b with
+  | zero => rw [zero_eq, sub_zero, sub_zero]; assumption
+  | succ c ih =>
+  cases a with
+  | zero =>
+    rw [zero_eq, zero_sub]
+    apply zero_le
+  | succ a =>
+    match b with
+    | succ b => 
+    rw [succ_sub_succ, succ_sub_succ]
+    exact ih a b a_le_b
+
+#print axioms nat.sub_le_left
+
+def nat.sub_le (a b: nat) : a - b ≤ a := by
+  induction b with
+  | zero =>
+    apply le_of_eq
+    rw [zero_eq, sub_zero]
+  | succ x ih =>
+    rw [sub_succ]
+    apply le_trans _ ih
+    apply sub_le_left
+    apply dec_le
+
+#print axioms nat.sub_le
+
+def nat.sub_nz_lt (a b: nat) : 0 < b -> b ≤ a -> a - b < a := by
+  intro b_nz b_le_a
+  match b with
+  | .succ b =>
+  match a with
+  | .succ a =>
+  rw [succ_sub_succ]
+  apply lt_of_le_and_lt
+  apply sub_le
+  apply lt_succ_self
+
+#print axioms nat.sub_nz_lt
 
