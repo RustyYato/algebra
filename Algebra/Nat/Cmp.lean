@@ -193,6 +193,21 @@ def nat.succ_le_succ { a b: nat } : a ≤ b -> a.succ ≤ b.succ := id
 
 #print axioms nat.succ_le_succ
 
+def nat.le_of_lt_succ { a b: nat } : a < b.succ -> a ≤ b := by
+  intro a_lt_b_succ
+  induction a generalizing b with
+  | zero => apply nat.zero_le
+  | succ a ih =>
+    cases b with
+    | zero =>
+      have := nat.not_lt_zero a_lt_b_succ
+      contradiction
+    | succ b => 
+      apply ih
+      assumption
+
+#print axioms nat.le_of_lt_succ
+
 def nat.le_antisymm { a b: nat } : a ≤ b -> b ≤ a -> a = b := by
   intro a_le_b b_le_a
   induction a generalizing b with
