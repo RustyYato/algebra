@@ -220,3 +220,78 @@ def nat.not_lt_and_ge { a b: nat } : a < b -> a ≥ b -> False := by
     | succ a => exact ih a_lt_b a_ge_b
 
 #print axioms nat.not_lt_and_ge
+
+def nat.cmp_trans { a b c: nat } { o : Ordering } :
+  a.cmp b = o -> 
+  b.cmp c = o ->
+  a.cmp c = o := by
+    intro cmp_ab cmp_bc
+    induction a generalizing b c with
+    | zero =>
+      cases b with
+      | zero => exact cmp_bc
+      | succ b =>
+        unfold cmp at cmp_ab
+        rw [←cmp_ab] at cmp_bc
+        rw [←cmp_ab]
+        clear cmp_ab o
+        cases c <;> trivial
+    | succ a iha =>
+      cases b with
+      | zero =>
+        unfold cmp at cmp_ab
+        rw [←cmp_ab] at cmp_bc
+        rw [←cmp_ab]
+        cases c <;> contradiction
+      | succ b =>
+        cases c with
+        | zero =>
+          unfold cmp at cmp_bc
+          rw [←cmp_bc]
+          rfl
+        | succ c => exact iha cmp_ab cmp_bc
+
+#print axioms nat.cmp_trans
+
+def nat.cmp_or_eq_trans { a b c: nat } { o : Ordering } :
+  a.cmp b = o ∨ a.cmp b = Ordering.eq -> 
+  b.cmp c = o ∨ b.cmp c = Ordering.eq ->
+  a.cmp c = o ∨ a.cmp c = Ordering.eq:= by
+  intro cmp_ab cmp_bc
+  cases cmp_ab with
+  | inr a_eq_b =>
+    rw [nat.eq_of_cmp a_eq_b]
+    assumption
+  | inl cmp_ab =>
+    cases cmp_bc with
+    | inr b_eq_c =>
+      rw [←nat.eq_of_cmp b_eq_c]
+      apply Or.inl
+      assumption
+    | inl cmp_bc =>
+      apply Or.inl
+      apply nat.cmp_trans <;> assumption
+
+#print axioms nat.cmp_or_eq_trans
+
+def nat.lt_trans { a b c: nat } : a < b -> b < c -> a < c := nat.cmp_trans
+def nat.le_trans { a b c: nat } : a ≤ b -> b ≤ c -> a ≤ c := nat.cmp_or_eq_trans
+
+def nat.gt_trans { a b c: nat } : a > b -> b > c -> a > c := fun x y => nat.cmp_trans y x
+def nat.ge_trans { a b c: nat } : a ≥ b -> b ≥ c -> a ≥ c := fun x y => nat.cmp_or_eq_trans y x
+
+def nat.lt_of_lt_and_le { a b c: nat } : a < b -> b ≤ c -> a < c := by
+  intro a_lt_b b_le_c
+  cases nat.lt_or_eq_of_le b_le_c with
+  | inl b_lt_c => apply nat.lt_trans <;> assumption
+  | inr b_eq_c => rw [←b_eq_c]; assumption
+
+#print axioms nat.lt_of_lt_and_le
+
+def nat.lt_of_le_and_lt { a b c: nat } : a ≤ b -> b < c -> a < c := by
+  intro a_le_b b_lt_c
+  cases nat.lt_or_eq_of_le a_le_b with
+  | inl a_lt_b => apply nat.lt_trans <;> assumption
+  | inr a_eq_b => rw [a_eq_b]; assumption
+
+#print axioms nat.lt_of_le_and_lt
