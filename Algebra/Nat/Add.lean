@@ -163,3 +163,12 @@ def nat.add_eq_zero { a b: nat } : a + b = 0 -> a = 0 := by
 
 #print axioms nat.add_eq_zero
 
+def nat.add_left_comm (a b c: nat) : a + (b + c) = b + (a + c) := by
+  rw [←add_assoc, add_comm a b, add_assoc]
+
+#print axioms nat.add_left_comm
+
+def nat.add_right_comm (a b c: nat) : (a + b) + c = (a + c) + b := by
+  rw [add_assoc, add_comm b c, ←add_assoc]
+
+#print axioms nat.add_right_comm
