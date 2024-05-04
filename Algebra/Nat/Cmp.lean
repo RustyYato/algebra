@@ -149,7 +149,17 @@ def nat.lt_or_ge (a b: nat) : a < b ∨ a ≥ b := by
   exact Or.inr <| nat.ge_of_eq (nat.eq_of_cmp h)
   exact Or.inr <| nat.ge_of_gt (nat.gt_of_cmp h)
 
-#print axioms nat.lt_or_ge
+inductive LtOrGe (a b: nat) where
+  | Lt : a < b -> LtOrGe a b
+  | Ge : a ≥ b -> LtOrGe a b
+
+def nat.lt_or_ge_dec (a b: nat) : LtOrGe a b := 
+  match  h:nat.cmp a b with
+  | .lt =>.Lt h
+  | .eq => .Ge <| nat.ge_of_eq (nat.eq_of_cmp h)
+  | .gt => .Ge <| nat.ge_of_gt (nat.gt_of_cmp h)
+
+#print axioms nat.lt_or_ge_dec
 
 def nat.zero_le (a: nat) : 0 ≤ a := by
   cases a
