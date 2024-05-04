@@ -149,7 +149,7 @@ def nat.lt_or_ge (a b: nat) : a < b ∨ a ≥ b := by
   exact Or.inr <| nat.ge_of_eq (nat.eq_of_cmp h)
   exact Or.inr <| nat.ge_of_gt (nat.gt_of_cmp h)
 
-inductive LtOrGe (a b: nat) where
+inductive LtOrGe (a b: nat): Type where
   | Lt : a < b -> LtOrGe a b
   | Ge : a ≥ b -> LtOrGe a b
 
@@ -320,3 +320,23 @@ def nat.lt_of_le_and_lt { a b c: nat } : a ≤ b -> b < c -> a < c := by
   | inr a_eq_b => rw [a_eq_b]; assumption
 
 #print axioms nat.lt_of_le_and_lt
+
+def nat.lt_or_ge_dec.pick_lt {a b: nat} : (a_lt_b: a < b) -> nat.lt_or_ge_dec a b = LtOrGe.Lt a_lt_b := by
+  intro a_lt_b
+  match a.lt_or_ge_dec b with
+  | .Lt a_lt_b => rfl
+  | .Ge a_ge_b =>
+    have := nat.not_lt_and_ge a_lt_b a_ge_b
+    contradiction
+
+#print axioms nat.lt_or_ge_dec.pick_lt
+
+def nat.lt_or_ge_dec.pick_ge {a b: nat} : (a_ge_b: a ≥ b) -> nat.lt_or_ge_dec a b = LtOrGe.Ge a_ge_b := by
+  intro a_ge_b
+  match a.lt_or_ge_dec b with
+  | .Lt a_lt_b =>
+    have := nat.not_lt_and_ge a_lt_b a_ge_b
+    contradiction
+  | .Ge a_ge_b => rfl
+
+#print axioms nat.lt_or_ge_dec.pick_ge
