@@ -489,9 +489,10 @@ def sorted_induction.if_lt
   [LE α] [tle: TrustedLE α]
   (ctx: SortedIndCtx α):
   ∀(x y:α) (xs ys: List α),
-    (dec_ord: ∃a b, tle.decide_ord x y = .Lt a b) ->
-    sorted_induction ctx (x::xs) (y::ys) = ctx.if_lt x y xs ys dec_ord.fst_val dec_ord.snd_val (sorted_induction ctx xs (y::ys)) := by
-    intro x y xs ys dec_ord
+  (x_le_y: x ≤ y) ->
+  (x_ne_y: x ≠ y) ->
+  sorted_induction ctx (x::xs) (y::ys) = ctx.if_lt x y xs ys x_le_y x_ne_y (sorted_induction ctx xs (y::ys)) := by
+    intro x y xs ys x_le_y x_ne_y
     conv => {
       lhs
       unfold sorted_induction
@@ -501,10 +502,22 @@ def sorted_induction.if_lt
     rename_i h
     exact my_option.some.inj h.symm
     apply nat.lt_succ_self
-    assumption
+    {
+      exists x_le_y
+      exists x_ne_y
+      cases h:tle.decide_ord x y with
+      | Lt _ _ => rfl
+      | Gt x_ge_y _ =>
+        have := tle.le_antisymm _ _ x_le_y x_ge_y
+        contradiction
+      | Eq _ => 
+        contradiction
+    }
     rename_i h
     apply False.elim
     exact sorted_induction.fueled.termination ctx _ _ _ (nat.lt_succ_self _) h
+
+
 
 #print axioms sorted_induction.if_lt
 
@@ -513,9 +526,10 @@ def sorted_induction.if_gt
   [LE α] [tle: TrustedLE α]
   (ctx: SortedIndCtx α):
   ∀(x y:α) (xs ys: List α),
-    (foo: ∃a b, tle.decide_ord x y = .Gt a b) ->
-    sorted_induction ctx (x::xs) (y::ys) = ctx.if_gt x y xs ys foo.fst_val foo.snd_val (sorted_induction ctx (x::xs) ys) := by
-    intro x y xs ys dec_ord
+    (x_ge_y: x ≥ y) ->
+    (x_ne_y: x ≠ y) ->
+    sorted_induction ctx (x::xs) (y::ys) = ctx.if_gt x y xs ys x_ge_y x_ne_y (sorted_induction ctx (x::xs) ys) := by
+    intro x y xs ys x_ge_y x_ne_y
     conv => {
       lhs
       unfold sorted_induction
@@ -525,7 +539,19 @@ def sorted_induction.if_gt
     rename_i h
     exact my_option.some.inj h.symm
     apply nat.lt_succ_self
-    assumption
+    {
+      exists x_ge_y
+      exists x_ne_y
+      cases h:tle.decide_ord x y with
+      | Lt x_le_y _ => 
+        have := tle.le_antisymm _ _ x_le_y x_ge_y
+        contradiction
+      | Gt _ _ =>
+        rfl
+      | Eq _ => 
+        have := x_ne_y.symm
+        contradiction
+    }
     rename_i h
     apply False.elim
     exact sorted_induction.fueled.termination ctx _ _ _ (nat.lt_succ_self _) h
@@ -537,9 +563,9 @@ def sorted_induction.if_eq
   [LE α] [tle: TrustedLE α]
   (ctx: SortedIndCtx α):
   ∀(x y:α) (xs ys: List α),
-    (foo: ∃a, tle.decide_ord x y = .Eq a) ->
-    sorted_induction ctx (x::xs) (y::ys) = ctx.if_eq x y xs ys foo.val (sorted_induction ctx xs ys) := by
-    intro x y xs ys dec_ord
+    (x_eq_y: x = y) ->
+    sorted_induction ctx (x::xs) (y::ys) = ctx.if_eq x y xs ys x_eq_y (sorted_induction ctx xs ys) := by
+    intro x y xs ys x_eq_y
     conv => {
       lhs
       unfold sorted_induction
@@ -549,10 +575,31 @@ def sorted_induction.if_eq
     rename_i h
     exact my_option.some.inj h.symm
     apply nat.lt_succ_self
-    assumption
+    {
+      exists x_eq_y
+      cases h:tle.decide_ord x y with
+      | Lt _ _ => 
+        contradiction
+      | Gt x_le_y _ =>
+        contradiction
+      | Eq _ => 
+        rfl
+    }
     rename_i h
     apply False.elim
     exact sorted_induction.fueled.termination ctx _ _ _ (nat.lt_succ_self _) h
 
 #print axioms sorted_induction.if_eq
 
+def sorted_induction'
+  { α: Sort _ }
+  [LE α] [TrustedLE α]
+  (motive: List α -> List α -> Sort _)
+  {left_empty: ∀list, motive [] list}
+  {right_empty: ∀x xs, motive (x::xs) []}
+  {if_lt: ∀x y xs ys, x ≤ y -> x ≠ y -> motive xs (y::ys) -> motive (x::xs) (y::ys)}
+  {if_gt: ∀x y xs ys, x ≥ y -> x ≠ y -> motive (x::xs) ys -> motive (x::xs) (y::ys)}
+  {if_eq: ∀x y xs ys, x = y -> motive xs ys -> motive (x::xs) (y::ys)}
+  :
+  ∀(xs ys: List α), motive xs ys :=
+  fun xs ys =>sorted_induction (SortedIndCtx.mk motive left_empty right_empty if_lt if_gt if_eq) xs ys
