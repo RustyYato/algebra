@@ -6,13 +6,11 @@ inductive OrderingLe (α: Sort _) [LE α] (x y: α) where
   | Eq : x = y -> OrderingLe α x y
   | Gt : x ≥ y -> x ≠ y -> OrderingLe α x y
 
-
 class TrustedLE (α: Sort _) [LE α] where
   le_trans (a b c: α) : a ≤ b -> b ≤ c -> a ≤ c
   le_refl (a: α) : a ≤ a
   le_antisymm (a b: α) : a ≤ b -> b ≤ a -> a = b
   decide_ord (a b: α): OrderingLe α a b
-  
 
 def is_sorted [LE α] [TrustedLE α] (list: List α) : Prop := match list with
   | [] => True
@@ -35,6 +33,8 @@ structure SortedIndCtx (α: Sort _) [LE α] [TrustedLE α] where
 def List.len (list: List α) : nat := match list with
   | .nil => .zero
   | .cons _ xs => xs.len.succ
+
+def List.len_empty : ([]: List α).len = 0 := rfl
 
 def sorted_induction.fueled
   { α: Sort _ }
@@ -107,14 +107,13 @@ def enough_fuel_for_gt
   rw [this]
   rw [nat.add_succ]
   apply nat.lt_succ_self
-    
 
 def sorted_induction.fueled.termination
   { α: Sort _ }
   [LE α] [tle: TrustedLE α]
   (ctx: SortedIndCtx α):
   ∀(fuel: nat) xs ys,  xs.len + ys.len < fuel ->
-    (sorted_induction.fueled ctx fuel xs ys).is_some := by
+    (sorted_induction.fueled ctx fuel xs ys) ≠ .none := by
     intro fuel xs ys enough_fuel
     induction fuel generalizing xs ys with
     | zero => 
@@ -125,10 +124,12 @@ def sorted_induction.fueled.termination
       match xs, ys with
       | [], _ =>
         unfold fueled
-        trivial
+        intro
+        contradiction
       | _::_, [] =>
         unfold fueled
-        trivial
+        intro
+        contradiction
       | x::xs, y::ys =>
         unfold fueled
         match h:tle.decide_ord x y with
@@ -142,6 +143,7 @@ def sorted_induction.fueled.termination
           have := ih xs (y::ys) (enough_fuel_for_lt enough_fuel)
           rw [heq] at this
           contradiction
+          intro
           trivial
         | .Gt x_ge_y x_ne_y =>
           simp only
@@ -153,6 +155,7 @@ def sorted_induction.fueled.termination
           have := ih (x::xs) ys (enough_fuel_for_gt enough_fuel)
           rw [heq] at this
           contradiction
+          intro
           trivial  
         | .Eq x_eq_y =>
           simp only
@@ -164,11 +167,10 @@ def sorted_induction.fueled.termination
           have := ih xs ys (enough_fuel_for_eq enough_fuel)
           rw [heq] at this
           contradiction
+          intro
           trivial
 
 #print axioms sorted_induction.fueled.termination
-
-axiom Test { α } : α
 
 def sorted_induction.fueled.fuel_irr
   { α: Sort _ }
@@ -311,15 +313,13 @@ def sorted_induction.fueled.if_lt
   ∀fuel (x y:α) (xs ys: List α),
     (x::xs).len + (y::ys).len < fuel ->
     (foo: ∃a b, tle.decide_ord x y = .Lt a b) ->
-    ∃prev,
-    sorted_induction.fueled ctx fuel (x::xs) (y::ys) = .some (ctx.if_lt x y xs ys foo.fst_val foo.snd_val prev) := by
+    sorted_induction.fueled ctx fuel (x::xs) (y::ys) = .some (ctx.if_lt x y xs ys foo.fst_val foo.snd_val (sorted_induction ctx xs (y::ys))) := by
     intro fuel x y xs ys enough_fuel dec_ord
     match fuel with
     | .zero =>
       have := nat.not_lt_zero enough_fuel
       contradiction
     | .succ fuel =>
-    exists (sorted_induction ctx xs (y::ys))
     unfold fueled
     have ⟨ a, b, dec_ord ⟩ := dec_ord
     simp only
@@ -341,15 +341,13 @@ def sorted_induction.fueled.if_gt
   ∀fuel (x y:α) (xs ys: List α),
     (x::xs).len + (y::ys).len < fuel ->
     (foo: ∃a b, tle.decide_ord x y = .Gt a b) ->
-    ∃prev,
-    sorted_induction.fueled ctx fuel (x::xs) (y::ys) = .some (ctx.if_gt x y xs ys foo.fst_val foo.snd_val prev) := by
+    sorted_induction.fueled ctx fuel (x::xs) (y::ys) = .some (ctx.if_gt x y xs ys foo.fst_val foo.snd_val (sorted_induction ctx (x::xs) ys) ) := by
     intro fuel x y xs ys enough_fuel dec_ord
     match fuel with
     | .zero =>
       have := nat.not_lt_zero enough_fuel
       contradiction
     | .succ fuel =>
-    exists (sorted_induction ctx (x::xs) ys)
     unfold fueled
     have ⟨ a, b, dec_ord ⟩ := dec_ord
     simp only
@@ -371,15 +369,13 @@ def sorted_induction.fueled.if_eq
   ∀fuel (x y:α) (xs ys: List α),
     (x::xs).len + (y::ys).len < fuel ->
     (foo: ∃a, tle.decide_ord x y = .Eq a) ->
-    ∃prev,
-    sorted_induction.fueled ctx fuel (x::xs) (y::ys) = .some (ctx.if_eq x y xs ys foo.val prev) := by
+    sorted_induction.fueled ctx fuel (x::xs) (y::ys) = .some (ctx.if_eq x y xs ys foo.val (sorted_induction ctx xs ys)) := by
     intro fuel x y xs ys enough_fuel dec_ord
     match fuel with
     | .zero =>
       have := nat.not_lt_zero enough_fuel
       contradiction
     | .succ fuel =>
-    exists (sorted_induction ctx xs ys)
     unfold fueled
     have ⟨ a, dec_ord ⟩ := dec_ord
     simp only
@@ -393,4 +389,112 @@ def sorted_induction.fueled.if_eq
     exact enough_fuel_for_eq enough_fuel
 
 #print axioms sorted_induction.fueled.if_eq
+
+def sorted_induction.left_empty
+  { α: Sort _ }
+  [LE α] [TrustedLE α]
+  (ctx: SortedIndCtx α):
+  ∀(ys: List α), sorted_induction ctx [] ys = ctx.left_empty ys := by
+    intro ys
+    unfold sorted_induction
+    split
+    rw [sorted_induction.fueled.left_empty] at *
+    rename_i h
+    exact my_option.some.inj h.symm
+    apply nat.lt_succ_self
+    rename_i h
+
+
+#print axioms sorted_induction.left_empty
+
+def sorted_induction.right_empty
+  { α: Sort _ }
+  [LE α] [TrustedLE α]
+  (ctx: SortedIndCtx α):
+  ∀(x:α) (xs: List α), sorted_induction ctx (x::xs) [] = ctx.right_empty x xs := by
+    intro x xs
+    unfold sorted_induction
+    split
+    rw [sorted_induction.fueled.right_empty] at *
+    rename_i h
+    exact my_option.some.inj h.symm
+    rw [List.len_empty, nat.add_zero]
+    apply nat.lt_succ_self
+    rename_i h
+    apply False.elim
+    exact sorted_induction.fueled.termination ctx _ _ _ (nat.lt_succ_self _) h
+
+#print axioms sorted_induction.right_empty
+
+def sorted_induction.if_lt
+  { α: Sort _ }
+  [LE α] [tle: TrustedLE α]
+  (ctx: SortedIndCtx α):
+  ∀(x y:α) (xs ys: List α),
+    (dec_ord: ∃a b, tle.decide_ord x y = .Lt a b) ->
+    sorted_induction ctx (x::xs) (y::ys) = ctx.if_lt x y xs ys dec_ord.fst_val dec_ord.snd_val (sorted_induction ctx xs (y::ys)) := by
+    intro x y xs ys dec_ord
+    conv => {
+      lhs
+      unfold sorted_induction
+    }
+    split
+    rw [sorted_induction.fueled.if_lt] at *
+    rename_i h
+    exact my_option.some.inj h.symm
+    apply nat.lt_succ_self
+    assumption
+    rename_i h
+    apply False.elim
+    exact sorted_induction.fueled.termination ctx _ _ _ (nat.lt_succ_self _) h
+
+#print axioms sorted_induction.if_lt
+
+def sorted_induction.if_gt
+  { α: Sort _ }
+  [LE α] [tle: TrustedLE α]
+  (ctx: SortedIndCtx α):
+  ∀(x y:α) (xs ys: List α),
+    (foo: ∃a b, tle.decide_ord x y = .Gt a b) ->
+    sorted_induction ctx (x::xs) (y::ys) = ctx.if_gt x y xs ys foo.fst_val foo.snd_val (sorted_induction ctx (x::xs) ys) := by
+    intro x y xs ys dec_ord
+    conv => {
+      lhs
+      unfold sorted_induction
+    }
+    split
+    rw [sorted_induction.fueled.if_gt] at *
+    rename_i h
+    exact my_option.some.inj h.symm
+    apply nat.lt_succ_self
+    assumption
+    rename_i h
+    apply False.elim
+    exact sorted_induction.fueled.termination ctx _ _ _ (nat.lt_succ_self _) h
+
+#print axioms sorted_induction.if_gt
+
+def sorted_induction.if_eq
+  { α: Sort _ }
+  [LE α] [tle: TrustedLE α]
+  (ctx: SortedIndCtx α):
+  ∀(x y:α) (xs ys: List α),
+    (foo: ∃a, tle.decide_ord x y = .Eq a) ->
+    sorted_induction ctx (x::xs) (y::ys) = ctx.if_eq x y xs ys foo.val (sorted_induction ctx xs ys) := by
+    intro x y xs ys dec_ord
+    conv => {
+      lhs
+      unfold sorted_induction
+    }
+    split
+    rw [sorted_induction.fueled.if_eq] at *
+    rename_i h
+    exact my_option.some.inj h.symm
+    apply nat.lt_succ_self
+    assumption
+    rename_i h
+    apply False.elim
+    exact sorted_induction.fueled.termination ctx _ _ _ (nat.lt_succ_self _) h
+
+#print axioms sorted_induction.if_eq
 
