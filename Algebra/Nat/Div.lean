@@ -1,14 +1,7 @@
 import Algebra.Nat.Mul
 import Algebra.Nat.Sub
 import Algebra.Nat.WellFounded
-
-inductive my_option (t: Sort α) where
-  | none
-  | some (value: t)
-
-def my_option.is_some (o: my_option α) : Prop := match o with
-  | .none => False
-  | .some _ => True
+import Algebra.MyOption
 
 def nat.div_mod_induction.fueled
   ( motive: nat -> nat -> Sort α )
