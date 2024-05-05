@@ -25,6 +25,13 @@ def nat.cmp.swap_eq {a b: nat} {o: Ordering} : a.cmp b = o -> b.cmp a = o.swap :
 
 #print axioms nat.cmp.swap_eq
 
+def nat.cmp_refl (a: nat) : a.cmp a = .eq := by
+  induction a with
+  | zero => rfl
+  | succ _ ih => exact ih
+
+#print axioms nat.cmp_refl
+
 instance nat.le : LE nat where
   le a b := nat.cmp a b = Ordering.lt ∨ nat.cmp a b = Ordering.eq
 

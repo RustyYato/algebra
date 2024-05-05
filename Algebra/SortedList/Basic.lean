@@ -12,11 +12,68 @@ class TrustedLE (α: Sort _) [LE α] where
   le_antisymm (a b: α) : a ≤ b -> b ≤ a -> a = b
   decide_ord (a b: α): OrderingLe α a b
 
+instance : TrustedLE nat where
+  le_trans _ _ _ := nat.le_trans
+  le_refl := nat.le_refl
+  le_antisymm _ _ := nat.le_antisymm
+  decide_ord a b := match h:a.cmp b with
+    | .lt => by
+      apply OrderingLe.Lt
+      apply nat.le_of_lt
+      assumption
+      intro a_eq_b
+      rw [a_eq_b] at h
+      rw [nat.cmp_refl b] at h
+      contradiction
+    | .gt => by
+      apply OrderingLe.Gt
+      apply nat.ge_of_gt
+      apply nat.gt_of_cmp
+      assumption
+      intro a_eq_b
+      rw [a_eq_b] at h
+      rw [nat.cmp_refl b] at h
+      contradiction
+    | .eq => by
+      apply OrderingLe.Eq
+      apply nat.eq_of_cmp
+      assumption
+
 def is_sorted [LE α] [TrustedLE α] (list: List α) : Prop := match list with
   | [] => True
   | x :: xs => match xs with
     | [] => True
     | y :: _ => x ≤ y ∧ is_sorted xs
+
+def dec_and (_: Decidable P) (_: Decidable Q): Decidable (P ∧ Q) := inferInstance
+def dec_or (_: Decidable P) (_: Decidable Q): Decidable (P ∨ Q) := inferInstance
+
+instance TrustedLE.dec_le [LE α] [tle: TrustedLE α] (x y: α) : Decidable (x ≤ y) := 
+  match tle.decide_ord x y with
+  | .Lt x_le_y _ => Decidable.isTrue x_le_y
+  | .Eq x_eq_y => Decidable.isTrue (by
+    rw [x_eq_y]
+    apply tle.le_refl)
+  | .Gt x_ge_y x_ne_y => Decidable.isFalse (by
+    intro x_le_y
+    have := tle.le_antisymm _ _ x_le_y x_ge_y
+    contradiction)
+
+#print axioms TrustedLE.dec_le
+
+instance is_sorted.dec [LE α] [TrustedLE α] (xs: List α) : Decidable (is_sorted xs) := 
+  match xs with
+  | [] => Decidable.isTrue True.intro
+  | x::xs => match xs with
+    | [] => Decidable.isTrue True.intro
+    | y::ys => by
+      unfold is_sorted
+      apply dec_and
+      exact inferInstance
+        
+      apply is_sorted.dec
+
+#print axioms is_sorted.dec
 
 structure SortedList (α: Sort _) [LE α] [TrustedLE α] where
   items: List α
