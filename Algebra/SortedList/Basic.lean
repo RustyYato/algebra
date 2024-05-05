@@ -460,7 +460,8 @@ def sorted_induction.left_empty
     exact my_option.some.inj h.symm
     apply nat.lt_succ_self
     rename_i h
-
+    apply False.elim
+    exact sorted_induction.fueled.termination ctx _ _ _ (nat.lt_succ_self _) h
 
 #print axioms sorted_induction.left_empty
 
