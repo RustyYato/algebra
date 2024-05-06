@@ -112,6 +112,16 @@ def is_sorted.pop [LE α] [TrustedLE α] (x: α) (xs: List α) :
   | .nil => trivial
   | .cons x' xs => exact is_sorted_xs.right
 
+def is_sorted.push [LE α] [TrustedLE α] (x: α) (xs: List α) :
+  is_sorted xs -> (∀y, y ∈ xs -> x ≤ y) -> is_sorted (x::xs) := by
+  intro is_sorted_xs x_lower_bound
+  match xs with
+  | .nil => trivial
+  | .cons x' xs =>
+    apply And.intro
+    exact x_lower_bound x' (.head _)
+    assumption
+
 def is_sorted.first [LE α] [tle: TrustedLE α] (x: α) (xs: List α) :
   is_sorted (x::xs) -> ∀y, y ∈ xs -> x ≤ y := by
   intro sorted_xs y y_in_xs
@@ -126,6 +136,18 @@ def is_sorted.first [LE α] [tle: TrustedLE α] (x: α) (xs: List α) :
     assumption
 
 #print axioms is_sorted.first
+
+def is_sorted.pop_snd [LE α] [tle: TrustedLE α] (x x': α) (xs: List α) :
+  is_sorted (x :: x' :: xs) -> is_sorted (x :: xs) := by
+  intro sorted_xs
+  have lower_x' := (sorted_xs.pop).first
+  apply is_sorted.push
+  exact (sorted_xs.pop).pop
+  intro y y_in_xs
+  have x'_le_y := lower_x' y y_in_xs
+  apply tle.le_trans _ _ _ sorted_xs.left x'_le_y
+
+#print axioms is_sorted.pop_snd
 
 instance TrustedLE.dec_le [LE α] [tle: TrustedLE α] (x y: α) : Decidable (x ≤ y) := 
   match tle.decide_ord x y with
