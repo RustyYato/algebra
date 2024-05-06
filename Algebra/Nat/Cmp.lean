@@ -88,6 +88,15 @@ def nat.le_refl (a: nat) : a ≤ a := by
 
 #print axioms nat.le_refl
 
+def nat.lt_irrefl (a: nat) : ¬a < a := by 
+  induction a with
+  | zero => intro; contradiction
+  | succ a_lt_a ih =>
+    intro h
+    exact ih h
+
+#print axioms nat.lt_irrefl
+
 def nat.le_of_beq { a b: nat } : a == b -> a ≤ b := by
   intro a_eq_b
   rw [nat.lawful_beq.eq_of_beq a_eq_b]

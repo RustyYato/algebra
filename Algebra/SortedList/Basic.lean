@@ -8,12 +8,69 @@ inductive OrderingLe (α: Sort _) [LE α] (x y: α) where
 
 class TrustedLE (α: Sort _) [LE α] where
   le_trans (a b c: α) : a ≤ b -> b ≤ c -> a ≤ c
+  lt_trans (a b c: α) : a ≤ b ∧ a ≠ b -> b ≤ c ∧ b ≠ c -> a ≤ c ∧ a ≠ c
+  lt_of_lt_and_le (a b c: α) : a ≤ b ∧ a ≠ b -> b ≤ c -> a ≤ c ∧ a ≠ c
+  lt_of_le_and_lt (a b c: α) : a ≤ b -> b ≤ c ∧ b ≠ c -> a ≤ c ∧ a ≠ c
   le_refl (a: α) : a ≤ a
   le_antisymm (a b: α) : a ≤ b -> b ≤ a -> a = b
   decide_ord (a b: α): OrderingLe α a b
 
+instance dec_eq_of_trusted_le [LE α] [tle: TrustedLE α] : DecidableEq α := by
+  intro a b
+  match tle.decide_ord a b with
+  | .Lt _ _ | .Gt _ _ => apply Decidable.isFalse; assumption
+  | .Eq _ =>  apply Decidable.isTrue; assumption
+
 instance : TrustedLE nat where
   le_trans _ _ _ := nat.le_trans
+  lt_trans a b c := by
+    intro a_lt_b b_lt_c
+    have a_lt_b : a < b := by
+      cases nat.lt_or_eq_of_le a_lt_b.left
+      assumption
+      have := a_lt_b.right
+      contradiction
+    have b_lt_c : b < c := by
+      cases nat.lt_or_eq_of_le b_lt_c.left
+      assumption
+      have := b_lt_c.right
+      contradiction
+    have a_lt_c := nat.lt_trans a_lt_b b_lt_c
+    apply And.intro
+    exact nat.le_of_lt a_lt_c
+    intro a_eq_c
+    rw [a_eq_c] at a_lt_c
+    have := nat.lt_irrefl _ a_lt_c
+    contradiction
+  lt_of_le_and_lt a b c := by
+    intro a_lt_b b_lt_c
+    have b_lt_c : b < c := by
+      cases nat.lt_or_eq_of_le b_lt_c.left
+      assumption
+      have := b_lt_c.right
+      contradiction
+    have a_lt_c := nat.lt_of_le_and_lt a_lt_b b_lt_c
+    apply And.intro
+    exact nat.le_of_lt a_lt_c
+    intro a_eq_c
+    rw [a_eq_c] at a_lt_c
+    have := nat.lt_irrefl _ a_lt_c
+    contradiction
+  lt_of_lt_and_le a b c := by
+    intro a_lt_b b_lt_c
+    have a_lt_b : a < b := by
+      cases nat.lt_or_eq_of_le a_lt_b.left
+      assumption
+      have := a_lt_b.right
+      contradiction
+    have a_lt_c := nat.lt_of_lt_and_le a_lt_b b_lt_c
+    apply And.intro
+    exact nat.le_of_lt a_lt_c
+    intro a_eq_c
+    rw [a_eq_c] at a_lt_c
+    have := nat.lt_irrefl _ a_lt_c
+    contradiction
+
   le_refl := nat.le_refl
   le_antisymm _ _ := nat.le_antisymm
   decide_ord a b := match h:a.cmp b with
@@ -47,6 +104,28 @@ def is_sorted [LE α] [TrustedLE α] (list: List α) : Prop := match list with
 
 def dec_and (_: Decidable P) (_: Decidable Q): Decidable (P ∧ Q) := inferInstance
 def dec_or (_: Decidable P) (_: Decidable Q): Decidable (P ∨ Q) := inferInstance
+
+def is_sorted.pop [LE α] [TrustedLE α] (x: α) (xs: List α) :
+  is_sorted (x::xs) -> is_sorted xs := by
+  intro is_sorted_xs
+  match xs with
+  | .nil => trivial
+  | .cons x' xs => exact is_sorted_xs.right
+
+def is_sorted.first [LE α] [tle: TrustedLE α] (x: α) (xs: List α) :
+  is_sorted (x::xs) -> ∀y, y ∈ xs -> x ≤ y := by
+  intro sorted_xs y y_in_xs
+  match xs with
+  | .cons x' xs' =>
+    cases y_in_xs
+    exact sorted_xs.left
+    apply tle.le_trans
+    exact sorted_xs.left
+    apply is_sorted.first
+    exact sorted_xs.right
+    assumption
+
+#print axioms is_sorted.first
 
 instance TrustedLE.dec_le [LE α] [tle: TrustedLE α] (x y: α) : Decidable (x ≤ y) := 
   match tle.decide_ord x y with
