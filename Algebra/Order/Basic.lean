@@ -1,0 +1,163 @@
+class TotalOrder (α: Sort _) [Ord α] where
+  compare_transitive:
+    ∀{a b c: α} (o: Ordering), compare a b = o -> compare b c = o -> compare a c = o
+  eq_of_compare_eq:
+    ∀{a b: α}, compare a b = Ordering.eq -> a = b
+  compare_eq_refl:
+    ∀(a: α), compare a a = Ordering.eq
+  compare_antisymm:
+    ∀{a b: α}, compare a b = (compare b a).swap
+
+instance TotalOrder.instLT [Ord α] [TotalOrder α] : LT α where
+  lt a b := compare a b = Ordering.lt
+
+instance TotalOrder.instLE [Ord α] [TotalOrder α] : LE α where
+  le a b := compare a b = Ordering.lt ∨ compare a b = Ordering.eq
+
+def TotalOrder.unfold_lt [Ord α] [TotalOrder α] : ∀(a b: α), (a < b) = (compare a b = Ordering.lt) := fun _ _ => rfl
+def TotalOrder.unfold_le [Ord α] [TotalOrder α] : ∀(a b: α), (a ≤ b) = (compare a b = Ordering.lt ∨ compare a b = Ordering.eq) := fun _ _ => rfl
+def TotalOrder.unfold_ge [Ord α] [TotalOrder α] : ∀(a b: α), (a ≥ b) = (b ≤ a) := fun _ _ => rfl
+  
+instance TotalOrder.instLTDec [Ord α] [TotalOrder α] (a b: α) : Decidable (a < b) := 
+  match h:compare a b with
+  | .lt => Decidable.isTrue h
+  | .eq | .gt => Decidable.isFalse (by
+    intro a_lt_b
+    rw [a_lt_b] at h
+    contradiction)
+instance TotalOrder.instLEDec [Ord α] [TotalOrder α] (a b: α) : Decidable (a ≤ b) := 
+  match h:compare a b with
+  | .lt => Decidable.isTrue (Or.inl h)
+  | .eq => Decidable.isTrue (Or.inr h)
+  | .gt => Decidable.isFalse (by
+    intro a_le_b
+    cases a_le_b <;> (rename_i a_cmp_b; rw [a_cmp_b] at h; contradiction))
+
+def TotalOrder.compare_or_eq_transitive
+  [Ord α] [TotalOrder α]:
+  ∀(a b c: α) (o: Ordering), 
+    (compare a b = o ∨ compare a b = Ordering.eq) ->
+    (compare b c = o ∨ compare b c = Ordering.eq) ->
+    (compare a c = o ∨ compare a c = Ordering.eq) := by
+    intro a b c o
+    intro a_cmp_b b_cmp_c
+    cases a_cmp_b with
+    | inr a_eq_b =>
+      cases eq_of_compare_eq a_eq_b with
+      | refl =>
+      assumption
+    | inl a_cmp_b =>
+      cases b_cmp_c with
+      | inr b_eq_c =>
+        cases eq_of_compare_eq b_eq_c with
+        | refl =>
+        apply Or.inl
+        assumption
+      | inl b_cmp_c =>
+        apply Or.inl
+        apply compare_transitive <;> assumption
+
+#print axioms TotalOrder.compare_or_eq_transitive
+
+def TotalOrder.swap_compare
+  [Ord α] [TotalOrder α]:
+  ∀{ a b: α } { o: Ordering }, compare a b = o -> compare b a = o.swap := by
+  intro a b o a_cmp_b
+  rw [←a_cmp_b]
+  apply compare_antisymm
+
+#print axioms TotalOrder.swap_compare
+
+def TotalOrder.lt_irrefl
+  [Ord α] [TotalOrder α]:
+  ∀a: α, ¬(a < a) := by
+  intro a a_lt_a
+  have := swap_compare a_lt_a
+  rw [a_lt_a] at this
+  contradiction
+
+#print axioms TotalOrder.lt_irrefl
+
+def TotalOrder.lt_trans
+  [Ord α] [TotalOrder α]:
+  ∀{a b c: α}, a < b -> b < c -> a < c := by
+  intros; apply compare_transitive <;> assumption
+
+#print axioms TotalOrder.lt_trans
+
+def TotalOrder.le_trans
+  [Ord α] [TotalOrder α]:
+  ∀{a b c: α}, a ≤ b -> b ≤ c -> a ≤ c := by
+  intros; apply compare_or_eq_transitive <;> assumption
+
+#print axioms TotalOrder.le_trans
+
+def TotalOrder.gt_of_compare
+  [Ord α] [TotalOrder α]:
+  ∀{a b: α}, compare a b = Ordering.gt -> a > b := swap_compare
+
+#print axioms TotalOrder.gt_of_compare
+
+def TotalOrder.not_lt_implies_ge
+  [Ord α] [TotalOrder α] :
+  ∀{ a b: α }, ¬(a < b) -> a ≥ b := by
+  intro a b not_a_lt_b
+  match h:compare a b with
+  | .lt => contradiction
+  | .eq => exact Or.inr (swap_compare h)
+  | .gt => exact Or.inl (swap_compare h)
+
+#print axioms TotalOrder.not_lt_implies_ge
+
+def TotalOrder.not_ge_implies_lt
+  [Ord α] [TotalOrder α] :
+  ∀{ a b: α }, ¬(a ≥ b) -> a < b := by
+  intro a b not_a_ge_b
+  match h:compare a b with
+  | .lt => exact h
+  | .eq => exact False.elim <| not_a_ge_b <| Or.inr (swap_compare h)
+  | .gt => exact False.elim <| not_a_ge_b <| Or.inl (swap_compare h)
+
+#print axioms TotalOrder.not_ge_implies_lt
+
+def TotalOrder.lt_or_ge
+  [Ord α] [TotalOrder α]:
+  ∀(a b: α), a < b ∨ a ≥ b := 
+  fun a b =>
+  match h:compare a b with
+  | .lt =>  Or.inl h
+  | .eq =>  Or.inr <| Or.inr <| swap_compare h
+  | .gt =>  Or.inr <| Or.inl <| swap_compare h
+
+#print axioms TotalOrder.lt_or_ge
+
+def TotalOrder.not_lt_and_ge
+  [Ord α] [TotalOrder α]:
+  ∀{ a b: α }, a < b -> a ≥ b -> False := by
+  intro a b a_lt_b a_ge_b
+  rw [unfold_ge, unfold_le] at a_ge_b
+  rw [swap_compare a_lt_b] at a_ge_b
+  cases a_ge_b <;> contradiction
+
+#print axioms TotalOrder.not_lt_and_ge
+
+def TotalOrder.lt_of_lt_and_le
+  [Ord α] [TotalOrder α]:
+  ∀{ a b c: α }, a < b -> b ≤ c -> a < c := by
+  intro a b c a_lt_b b_le_c
+  cases b_le_c with
+  | inl h => apply lt_trans <;> assumption
+  | inr h => rw [←eq_of_compare_eq h]; assumption
+
+#print axioms TotalOrder.lt_of_lt_and_le
+
+def TotalOrder.lt_of_le_and_lt
+  [Ord α] [TotalOrder α]:
+  ∀{ a b c: α }, a ≤ b -> b < c -> a < c := by
+  intro a b c a_le_b b_lt_c
+  cases a_le_b with
+  | inl h => apply lt_trans <;> assumption
+  | inr h => rw [eq_of_compare_eq h]; assumption
+
+#print axioms TotalOrder.lt_of_lt_and_le
+
