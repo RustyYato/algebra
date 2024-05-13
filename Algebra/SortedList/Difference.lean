@@ -2,8 +2,7 @@ import Algebra.SortedList.Basic
 
 def List.sorted_difference
   { α: Sort _ }
-  [LE α] [TrustedLE α]
-  [LE α] [tle: TrustedLE α]:
+  [Ord α] [TotalOrder α]:
   (xs ys: List α) -> List α := by
   apply @sorted_induction α _ _ (SortedIndCtx.mk (fun _ _ => List α) _ _ _ _ _)
   {
@@ -15,11 +14,11 @@ def List.sorted_difference
     exact x::xs
   }
   {
-    intro x y xs ys x_le_y x_ne_y prev
+    intro x y xs ys x_lt_y prev
     exact x::prev
   }
   {
-    intro x y xs ys x_ge_y x_ne_y prev
+    intro x y xs ys x_gt_y prev
     exact prev
   }
   {

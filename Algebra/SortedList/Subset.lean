@@ -161,7 +161,7 @@ def List.sorted_subset.pop_left
 #print axioms List.sorted_subset.pop_left
 
 def List.sorted_subset.proof
-  [LE α] [TrustedLE α]:
+  [Ord α] [TotalOrder α]:
   ∀(as bs: List α),
   is_sorted bs ->
   as.sorted_subset bs ->
@@ -206,17 +206,19 @@ def List.sorted_subset.proof
 #print axioms List.sorted_subset.proof
 
 def List.sorted_subset.first_not_picked
-  [LE α] [tle: TrustedLE α]
+  [Ord α] [tle: TotalOrder α]
   : ∀(a b: α) (as bs: List α),
      a ≠ b
   -> (a::as).sorted_subset (b::bs)
   -> is_sorted (b::bs)
   -> b ≤ a := by
     intro a b as bs a_ne_b as_sub_bs sorted_bs
-    match tle.decide_ord a b with
-    | .Gt a_ge_b _ => assumption
+    match tle.decide a b with
+    | .Gt a_ge_b =>
+      apply tle.le_of_lt
+      assumption
     | .Eq a_eq_b => contradiction
-    | .Lt a_le_b _ =>
+    | .Lt a_le_b =>
       apply False.elim
       unfold sorted_subset at as_sub_bs
       cases as_sub_bs with
@@ -225,17 +227,12 @@ def List.sorted_subset.first_not_picked
         contradiction
       | inr h =>
         have ⟨ _, aas_sub_bs ⟩ := h
-        have : ∀y, y ∈ bs -> a ≤ y ∧ a ≠ y := by
+        have : ∀y, y ∈ bs -> a ≠ y := by
           intro y y_in_bs
           have := sorted_bs.first
           have := this y y_in_bs
-          apply tle.lt_of_lt_and_le
-          apply And.intro <;> assumption
-          assumption
-        have : ∀y, y ∈ bs -> a ≠ y := by
-          intro y y_in_bs
-          have ⟨ _, _ ⟩ := this y y_in_bs
-          assumption
+          apply tle.ne_of_lt
+          apply tle.lt_of_lt_and_le <;> assumption
         have a_in_bs := List.sorted_subset.proof (a::as) bs sorted_bs.pop aas_sub_bs a (.head _)
         have := this a a_in_bs
         contradiction
@@ -243,7 +240,7 @@ def List.sorted_subset.first_not_picked
 #print axioms List.sorted_subset.first_not_picked
 
 def List.sorted_subset.trans 
-  [LE α] [tle: TrustedLE α]
+  [Ord α] [tle: TotalOrder α]
   (as bs cs: List α) :
   is_sorted as ->
   is_sorted bs ->
@@ -314,15 +311,17 @@ def List.sorted_subset.trans
           have ⟨ a_ne_b, as_sub_bs ⟩ := h
           have b_le_a := List.sorted_subset.first_not_picked a b as bs a_ne_b (by apply as_sub_bs.push_right) sorted_bs
           have c_le_b := List.sorted_subset.first_not_picked b c bs cs b_ne_c (by apply bbs_sub_cs.push_right) sorted_cs
-          have ⟨ _, c_ne_a ⟩  := tle.lt_trans c b a ⟨ c_le_b, b_ne_c.symm ⟩ ⟨ b_le_a, a_ne_b.symm ⟩
+          have c_lt_b := tle.lt_of_le_and_ne c_le_b b_ne_c.symm
+          have b_lt_a := tle.lt_of_le_and_ne b_le_a a_ne_b.symm
           apply And.intro
-          exact c_ne_a.symm
+          apply tle.ne_of_gt
+          apply tle.lt_trans <;> assumption
           exact ih (a::as) bs sorted_as sorted_bs.pop sorted_cs.pop as_sub_bs bbs_sub_cs.pop_left
 
 #print axioms List.sorted_subset.trans
 
 def List.sorted_subset.antisymm
-  [LE α] [TrustedLE α]
+  [Ord α] [TotalOrder α]
   (as bs: List α) :
   is_sorted as ->
   is_sorted bs ->

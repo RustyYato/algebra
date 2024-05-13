@@ -20,6 +20,11 @@ instance TotalOrder.instBEq [Ord α] [TotalOrder α]: BEq α where
 def TotalOrder.unfold_lt [Ord α] [TotalOrder α] : ∀(a b: α), (a < b) = (compare a b = Ordering.lt) := fun _ _ => rfl
 def TotalOrder.unfold_le [Ord α] [TotalOrder α] : ∀(a b: α), (a ≤ b) = (compare a b = Ordering.lt ∨ compare a b = Ordering.eq) := fun _ _ => rfl
 def TotalOrder.unfold_ge [Ord α] [TotalOrder α] : ∀(a b: α), (a ≥ b) = (b ≤ a) := fun _ _ => rfl
+
+inductive DecidableOrder {α: Sort _} [Ord α] [TotalOrder α] (a b: α) where
+  | Lt : a < b -> DecidableOrder a b
+  | Eq : a = b -> DecidableOrder a b
+  | Gt : a > b -> DecidableOrder a b
   
 instance TotalOrder.instLTDec [Ord α] [TotalOrder α] (a b: α) : Decidable (a < b) := 
   match h:compare a b with
@@ -191,6 +196,14 @@ def TotalOrder.le_antisymm
 
 #print axioms TotalOrder.le_antisymm
 
+def TotalOrder.lt_antisymm
+  [Ord α] [TotalOrder α]:
+  ∀{ a b: α }, a < b -> b < a -> False := by
+  intro a b a_lt_b b_lt_a
+  exact lt_irrefl <| lt_trans a_lt_b b_lt_a
+
+#print axioms TotalOrder.lt_antisymm
+
 instance TotalOrder.instLawfulBEq [Ord α] [TotalOrder α]: LawfulBEq α where
   eq_of_beq := by
     intro a b a_beq_b
@@ -232,6 +245,32 @@ def TotalOrder.le_of_eq [Ord α] [TotalOrder α] { a b: α } : a = b -> a ≤ b 
 
 #print axioms TotalOrder.le_of_eq
 
+def TotalOrder.ne_of_lt [Ord α] [TotalOrder α] { a b: α } : a < b -> a ≠ b := by
+  intro a_lt_b a_eq_b
+  rw [a_eq_b] at a_lt_b
+  exact lt_irrefl a_lt_b
+
+def TotalOrder.ne_of_gt [Ord α] [TotalOrder α] { a b: α } : a > b -> a ≠ b := by
+  intro a_gt_b a_eq_b
+  rw [a_eq_b] at a_gt_b
+  exact lt_irrefl a_gt_b
+
+def TotalOrder.lt_of_le_and_ne [Ord α] [TotalOrder α] { a b: α } : a ≤ b -> a ≠ b -> a < b := by
+  intro a_le_b a_ne_b
+  cases a_le_b with
+  | inl h => exact h
+  | inr a_eq_b =>
+    have := eq_of_compare_eq a_eq_b
+    contradiction
+
+def TotalOrder.gt_of_ge_and_ne [Ord α] [TotalOrder α] { a b: α } : a ≥ b -> a ≠ b -> a > b := by
+  intro a_le_b a_ne_b
+  cases a_le_b with
+  | inl h => exact h
+  | inr a_eq_b =>
+    have := (eq_of_compare_eq a_eq_b).symm
+    contradiction
+
 def TotalOrder.lt_or_eq_of_le [Ord α] [TotalOrder α] { a b: α } : a ≤ b -> a < b ∨ a = b := by
   intro a_le_b
   cases a_le_b with
@@ -240,3 +279,7 @@ def TotalOrder.lt_or_eq_of_le [Ord α] [TotalOrder α] { a b: α } : a ≤ b -> 
 
 #print axioms TotalOrder.lt_or_eq_of_le
 
+def TotalOrder.decide [Ord α] [TotalOrder α] (a b: α) : DecidableOrder a b := match h:compare a b with
+  | .lt => .Lt h
+  | .eq => .Eq <| eq_of_compare_eq h
+  | .gt => .Gt <| gt_of_compare h

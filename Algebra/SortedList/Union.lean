@@ -2,7 +2,7 @@ import Algebra.SortedList.Basic
 
 def sorted_union
   { α: Sort _ }
-  [LE α] [tle: TrustedLE α]:
+  [Ord α] [tle: TotalOrder α]:
   (xs ys: List α) -> List α := by
   apply @sorted_induction α _ _ (SortedIndCtx.mk (fun _ _ => List α) _ _ _ _ _)
   {
@@ -14,21 +14,21 @@ def sorted_union
     exact x::xs
   }
   {
-    intro x y _ _ _ _ prev
+    intro x y _ _ _ prev
     exact x::prev
   }
   {
-    intro _ y _ _ _ _ prev
+    intro x y _ _ _ prev
     exact y::prev
   }
   {
-    intro x y _ _ _ prev
+    intro x _ _ _ _ prev
     exact x::prev
   }
 
 def sorted_union.left_empty
   { α: Sort _ }
-  [LE α] [tle: TrustedLE α]:
+  [Ord α] [tle: TotalOrder α]:
   (ys: List α) -> sorted_union [] ys = ys := by
   intro ys
   unfold sorted_union
@@ -38,7 +38,7 @@ def sorted_union.left_empty
 
 def sorted_union.right_empty
   { α: Sort _ }
-  [LE α] [tle: TrustedLE α]:
+  [Ord α] [tle: TotalOrder α]:
   (xs: List α) -> sorted_union xs [] = xs := by
   intro xs
   match xs with
@@ -51,13 +51,12 @@ def sorted_union.right_empty
 
 def sorted_union.if_lt
   { α: Sort _ }
-  [LE α] [tle: TrustedLE α]:
+  [Ord α] [tle: TotalOrder α]:
   (x y: α) ->
   (xs ys: List α) ->
-  (x_le_y: x ≤ y) ->
-  (x_ne_y: x ≠ y) ->
+  (x_le_y: x < y) ->
   sorted_union (x::xs) (y::ys) = x::sorted_union xs (y::ys) := by
-  intro x y xs ys x_le_y x_ne_y
+  intro x y xs ys x_le_y
   unfold sorted_union
   rw [sorted_induction.if_lt]
   repeat assumption
@@ -66,23 +65,21 @@ def sorted_union.if_lt
 
 def sorted_union.if_gt
   { α: Sort _ }
-  [LE α] [tle: TrustedLE α]:
+  [Ord α] [tle: TotalOrder α]:
   (x y: α) ->
   (xs ys: List α) ->
-  (x_ge_y: x ≥ y) ->
-  (x_ne_y: x ≠ y) ->
+  (x_gt_y: x > y) ->
   sorted_union (x::xs) (y::ys) = y::sorted_union (x::xs) ys := by
-  intro x y xs ys x_ge_y x_ne_y
+  intro x y xs ys x_gt_y
   unfold sorted_union
   rw [sorted_induction.if_gt]
   repeat assumption
-  
 
 #print axioms sorted_union.if_gt
 
 def sorted_union.if_eq
   { α: Sort _ }
-  [LE α] [tle: TrustedLE α]:
+  [Ord α] [tle: TotalOrder α]:
   (x y: α) ->
   (xs ys: List α) ->
   (x_eq_y: x = y) ->
@@ -96,7 +93,7 @@ def sorted_union.if_eq
 
 def sorted_union.comm
   { α: Sort _ }
-  [LE α] [tle: TrustedLE α]:
+  [Ord α] [tle: TotalOrder α]:
   (xs ys: List α) ->
   sorted_union xs ys = sorted_union ys xs := by
   apply sorted_induction'
@@ -109,18 +106,16 @@ def sorted_union.comm
     rw [left_empty, right_empty]
   }
   {
-    intro x y xs ys x_le_y x_ne_y ih
+    intro x y xs ys x_lt_y ih
     rw [if_lt, if_gt]
     congr
     any_goals assumption
-    exact x_ne_y.symm
   }
   {
-    intro x y xs ys x_ge_y x_ne_y ih
+    intro x y xs ys x_gt_y ih
     rw [if_gt, if_lt]
     congr
     any_goals assumption
-    exact x_ne_y.symm
   }
   {
     intro x y xs ys x_eq_y ih
@@ -134,7 +129,7 @@ def sorted_union.comm
 
 def sorted_union.refl
   { α: Sort _ }
-  [LE α] [tle: TrustedLE α]:
+  [Ord α] [tle: TotalOrder α]:
   (xs: List α) -> sorted_union xs xs = xs := by
   intro xs
   induction xs with
@@ -148,7 +143,7 @@ def sorted_union.refl
 
 def sorted_union.idempotent_left
   { α: Sort _ }
-  [LE α] [tle: TrustedLE α]:
+  [Ord α] [tle: TotalOrder α]:
   (xs ys: List α) ->
   sorted_union (sorted_union xs ys) ys = sorted_union xs ys := by
   apply sorted_induction'
@@ -161,13 +156,13 @@ def sorted_union.idempotent_left
     rw [right_empty]
   }
   {
-    intro x y xs ys x_le_y x_ne_y ih
+    intro x y xs ys x_le_y ih
     rw [if_lt, if_lt]
     congr
     repeat assumption
   }
   {
-    intro x y xs ys x_ge_y x_ne_y ih
+    intro x y xs ys x_ge_y ih
     rw [if_gt, if_eq]
     congr
     rfl
@@ -184,7 +179,7 @@ def sorted_union.idempotent_left
 
 def sorted_union.idempotent_right
   { α: Sort _ }
-  [LE α] [tle: TrustedLE α]:
+  [Ord α] [tle: TotalOrder α]:
   (xs ys: List α) ->
   sorted_union xs (sorted_union xs ys) = sorted_union xs ys := by
   intro xs ys
@@ -194,7 +189,7 @@ def sorted_union.idempotent_right
 
 def sorted_union.contains
   { α: Sort _ }
-  [LE α] [tle: TrustedLE α]:
+  [Ord α] [tle: TotalOrder α]:
   ∀{xs ys: List α},
   ∀{z}, z ∈ sorted_union xs ys -> z ∈ xs ∨ z ∈ ys := by
     apply sorted_induction'
@@ -209,7 +204,7 @@ def sorted_union.contains
       assumption
     }
     {
-      intro x y xs ys x_le_y x_ne_y ih z z_in_sorted_union
+      intro x y xs ys x_lt_y ih z z_in_sorted_union
       rw [if_lt] at z_in_sorted_union
       any_goals assumption
       cases z_in_sorted_union with
@@ -227,7 +222,7 @@ def sorted_union.contains
           assumption
     }
     {
-      intro x y xs ys x_ge_y x_ne_y ih z z_in_sorted_union
+      intro x y xs ys x_gt_y ih z z_in_sorted_union
       rw [if_gt] at z_in_sorted_union
       any_goals assumption
       cases z_in_sorted_union with
@@ -268,7 +263,7 @@ def sorted_union.contains
 
 def sorted_union.of_contains
   { α: Sort _ }
-  [LE α] [tle: TrustedLE α]:
+  [Ord α] [tle: TotalOrder α]:
   ∀{xs ys: List α},
   ∀{z}, z ∈ xs ∨ z ∈ ys -> z ∈ sorted_union xs ys := by
     apply sorted_induction'
@@ -285,7 +280,7 @@ def sorted_union.of_contains
       contradiction
     }
     {
-      intro x y xs s x_le_y x_ne_y ih z z_in_source
+      intro x y xs s x_lt_y ih z z_in_source
       rw [if_lt]
       any_goals assumption
       cases z_in_source with
@@ -304,7 +299,7 @@ def sorted_union.of_contains
         assumption
     }
     {
-      intro x y xs ys x_ge_y x_ne_y ih z z_in_source
+      intro x y xs ys x_gt_y ih z z_in_source
       rw [if_gt]
       any_goals assumption
       cases z_in_source with
@@ -351,7 +346,7 @@ def sorted_union.of_contains
 
 def sorted_union.lower_bound
   { α: Sort _ }
-  [LE α] [TrustedLE α]
+  [Ord α] [TotalOrder α]
   (x z: α) (xs: List α)
   (z_in_xs: z ∈ xs)
   (sorted_xs: is_sorted (x::xs)) :
@@ -368,7 +363,7 @@ def sorted_union.lower_bound
 
  def sorted_union.sorted
   { α: Sort _ }
-  [LE α] [tle:TrustedLE α]:
+  [Ord α] [tle:TotalOrder α]:
   ∀(xs ys: List α),
   is_sorted xs ->
   is_sorted ys ->
@@ -385,7 +380,7 @@ def sorted_union.lower_bound
       trivial
     }
     {
-      intro x y xs ys x_le_y x_ne_y ih sorted_xs sorted_ys
+      intro x y xs ys x_lt_y ih sorted_xs sorted_ys
       rw [if_lt]
       any_goals assumption
       apply is_sorted.push
@@ -401,7 +396,9 @@ def sorted_union.lower_bound
         assumption
       | inr z_in_ys =>
         clear ih
-        apply tle.le_trans _ _ _ x_le_y
+        apply tle.le_trans
+        apply tle.le_of_lt
+        assumption
         apply lower_bound
         exact z_in_ys
         apply And.intro
@@ -409,7 +406,7 @@ def sorted_union.lower_bound
         assumption
     }
     {
-      intro x y xs ys x_ge_y x_ne_y ih sorted_xs sorted_ys
+      intro x y xs ys x_gt_y ih sorted_xs sorted_ys
       rw [if_gt]
       any_goals assumption
       apply is_sorted.push
@@ -420,7 +417,9 @@ def sorted_union.lower_bound
       cases sorted_union.contains z_in_sorted_union with
       | inl z_in_xs =>
         clear ih
-        apply tle.le_trans _ _ _ x_ge_y
+        apply tle.le_trans
+        apply tle.le_of_lt
+        assumption
         apply lower_bound
         exact z_in_xs
         apply And.intro
