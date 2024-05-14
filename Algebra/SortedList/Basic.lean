@@ -43,6 +43,22 @@ def is_sorted.first [Ord α] [tle: TotalOrder α] (x: α) (xs: List α) :
 
 #print axioms is_sorted.first
 
+def is_sorted.contains [Ord α] [tle: TotalOrder α] (z x: α) (xs: List α) :
+  is_sorted (x::xs) ->
+  z ∈ (x::xs) -> x ≤ z:= by
+  intro sorted_xs z_in_xs
+  cases z_in_xs with
+  | head _ => apply TotalOrder.le_refl
+  | tail _ tail_mem => match xs with
+    | .cons x' xs' =>
+      apply TotalOrder.le_trans
+      exact sorted_xs.left
+      apply is_sorted.contains
+      exact sorted_xs.pop
+      assumption
+
+#print axioms is_sorted.contains
+
 def is_sorted.pop_snd [Ord α] [tle: TotalOrder α] (x x': α) (xs: List α) :
   is_sorted (x :: x' :: xs) -> is_sorted (x :: xs) := by
   intro sorted_xs

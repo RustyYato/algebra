@@ -171,50 +171,195 @@ def sorted_intersection.contains
   [Ord α] [tle: TotalOrder α]:
   ∀{xs ys: List α},
   ∀{z}, z ∈ sorted_intersection xs ys -> z ∈ xs ∧ z ∈ ys := by
-  sorry
-  
-def sorted_union.of_contains
+  apply sorted_induction'
+  {
+    intro ys z z_in_intersection
+    contradiction
+  }
+  {
+    intro x xs z z_in_intersection
+    contradiction
+  }
+  {
+    intro x y xs ys x_lt_y ih z z_in_intersection
+    rw [if_lt] at z_in_intersection
+    have ⟨ z_in_xs, z_in_ys ⟩ := ih z_in_intersection
+    apply And.intro
+    apply List.Mem.tail
+    repeat assumption
+  }
+  {
+    intro x y xs ys x_gt_y ih z z_in_intersection
+    rw [if_gt] at z_in_intersection
+    have ⟨ z_in_xs, z_in_ys ⟩ := ih z_in_intersection
+    apply And.intro
+    assumption
+    apply List.Mem.tail
+    repeat assumption
+  }
+  {
+    intro x y xs ys x_eq_y ih z z_in_intersection
+    rw [if_eq] at z_in_intersection
+    any_goals assumption
+    cases z_in_intersection with
+    | head _ =>
+      apply And.intro
+      apply List.Mem.head
+      rw [x_eq_y]
+      apply List.Mem.head
+    | tail _ z_in_intersection =>
+      have ⟨ z_in_xs, z_in_ys ⟩ := ih z_in_intersection
+      apply And.intro <;> (apply List.Mem.tail; assumption)
+  }
+
+#print axioms sorted_intersection.contains
+
+def sorted_intersection.of_contains
   { α: Sort _ }
   [Ord α] [tle: TotalOrder α]:
   ∀{xs ys: List α},
+  is_sorted xs ->
+  is_sorted ys ->
   ∀{z}, z ∈ xs -> z ∈ ys -> z ∈ sorted_intersection xs ys := by
-  sorry
+  apply sorted_induction'
+  {
+    intros; contradiction
+  }
+  {
+    intros; contradiction
+  }
+  {
+    intros x y xs ys x_lt_y ih sorted_xs sorted_ys z z_in_xs z_in_ys
+    rw [if_lt]
+    any_goals assumption
+    cases z_in_ys with
+    | head _ =>
+      cases z_in_xs with
+      | head _ =>
+        have := TotalOrder.lt_irrefl  x_lt_y
+        contradiction
+      | tail _ z_in_xs => 
+        apply ih
+        exact sorted_xs.pop
+        assumption
+        assumption
+        apply List.Mem.head
+    | tail _ z_in_ys =>
+      cases z_in_xs with
+      | tail _ z_in_xs =>
+        apply ih
+        exact sorted_xs.pop
+        assumption
+        assumption
+        apply List.Mem.tail
+        assumption
+      | head _ => 
+        have x_ge_y := (sorted_ys.first) x z_in_ys
+        have := TotalOrder.not_lt_and_ge x_lt_y x_ge_y
+        contradiction
+  }
+  {
+    intros x y xs ys x_gt_y ih sorted_xs sorted_ys z z_in_xs z_in_ys
+    rw [if_gt]
+    any_goals assumption
+    cases z_in_xs with
+    | head _ =>
+      cases z_in_ys with
+      | head _ => 
+          have := TotalOrder.lt_irrefl x_gt_y
+          contradiction
+      | tail _ z_in_ys => 
+        apply ih
+        assumption
+        exact sorted_ys.pop
+        apply List.Mem.head
+        assumption
+    | tail _ z_in_xs =>
+      cases z_in_ys with
+      | tail _ z_in_ys => 
+        apply ih
+        assumption
+        exact sorted_ys.pop
+        apply List.Mem.tail
+        assumption
+        assumption
+      | head _ =>
+        have y_ge_x := (sorted_xs.first) y z_in_xs
+        have := TotalOrder.not_lt_and_ge x_gt_y y_ge_x
+        contradiction
+  }
+  {
+    intro x y xs ys x_eq_y ih sorted_xs sorted_ys z z_in_xs z_in_ys
+    rw [if_eq]
+    any_goals assumption
+    cases z_in_xs with
+    | head _ => apply List.Mem.head
+    | tail _ z_in_xs =>
+      cases z_in_ys with
+      | head _ =>
+        rw [x_eq_y]
+        apply List.Mem.head
+      | tail _ z_in_ys =>
+        apply List.Mem.tail
+        apply ih
+        exact sorted_xs.pop
+        exact sorted_ys.pop
+        repeat assumption
+  }
+
+#print axioms sorted_intersection.of_contains
 
 def sorted_intersection.idempotent_left
   { α: Sort _ }
   [Ord α] [tle: TotalOrder α]:
   (xs ys: List α) ->
+  is_sorted xs ->
   sorted_intersection (sorted_intersection xs ys) ys = sorted_intersection xs ys := by
   apply sorted_induction'
   {
-    intro ys
+    intro ys _
     rw [left_empty, left_empty]
   }
   {
-    intro x xs
+    intro x xs _
     rw [right_empty, right_empty]
   }
   {
-    intro x y xs ys x_lt_y ih
+    intro x y xs ys x_lt_y ih sorted_xs
     rw [if_lt]
-    exact ih
+    exact ih sorted_xs.pop
     repeat assumption
   }
   {
-    intro x y xs ys x_gt_y ih
+    intro x y xs ys x_gt_y ih sorted_xs
     rw [if_gt, if_gt']
-    exact ih
+    apply ih
+    exact sorted_xs
     any_goals assumption
-    intro x' x_in_intersection
-    have ⟨ x'_in_xs, x'_in_ys ⟩  := contains x_in_intersection
-
-    admit
+    intro x' x_in_sorted_intersection
+    have ⟨ x'_in_xs, _ ⟩  := contains x_in_sorted_intersection
+    have := sorted_xs.contains x' x xs x'_in_xs
+    apply TotalOrder.lt_of_lt_and_le <;> assumption
   }
   {
-    intro x y xs ys x_eq_y ih
+    intro x y xs ys x_eq_y ih sorted_xs
     rw [if_eq, if_eq]
-    congr
+    rw [ih]
+    exact sorted_xs.pop
     repeat assumption
   }
 
 #print axioms sorted_intersection.idempotent_left
+
+def sorted_intersection.idempotent_right
+  { α: Sort _ }
+  [Ord α] [tle: TotalOrder α]:
+  (xs ys: List α) ->
+  is_sorted ys ->
+  sorted_intersection xs (sorted_intersection xs ys) = sorted_intersection xs ys := by
+  intro xs ys sorte_ys
+  rw [comm, comm xs ys]
+  apply idempotent_left <;> assumption
+
+#print axioms sorted_intersection.idempotent_right
+
