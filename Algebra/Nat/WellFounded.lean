@@ -1,6 +1,8 @@
 import Algebra.Nat.Cmp
 
-instance nat.wf : WellFounded nat.lt.lt := WellFounded.intro (by
+def nat.lt : nat -> nat -> Prop := TotalOrder.instLT.lt
+
+instance nat.wf : WellFounded nat.lt := WellFounded.intro (by
   intro a
   induction a with
   | zero => 
@@ -21,7 +23,7 @@ instance nat.wf : WellFounded nat.lt.lt := WellFounded.intro (by
 #print axioms nat.wf
 
 instance nat.wf_rel : WellFoundedRelation nat where
-  rel := nat.lt.lt
+  rel := nat.lt
   wf := nat.wf
 
 #print axioms nat.wf_rel
