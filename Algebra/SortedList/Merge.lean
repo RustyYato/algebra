@@ -239,3 +239,12 @@ def sorted_merge.contains
     }
 
 #print axioms sorted_merge.sorted
+
+def SortedList.merge
+  [Ord α] [TotalOrder α]
+  (xs ys: SortedList α) : SortedList α := SortedList.mk (sorted_merge xs.items ys.items) <| by
+  apply sorted_merge.sorted
+  exact xs.is_sorted
+  exact ys.is_sorted
+
+#print axioms SortedList.merge

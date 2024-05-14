@@ -412,3 +412,14 @@ def sorted_intersection.sorted
     }
     assumption
   }
+
+def SortedList.intersection
+  [Ord α] [TotalOrder α]
+  (xs ys: SortedList α) : SortedList α := SortedList.mk (sorted_intersection xs.items ys.items) <| by
+  apply sorted_intersection.sorted
+  assumption
+  exact xs.is_sorted
+  exact ys.is_sorted
+
+#print axioms SortedList.intersection
+

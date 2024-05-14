@@ -248,3 +248,12 @@ def sorted_symm_difference.sorted
 
 #print axioms sorted_symm_difference.sorted
 
+def SortedList.symm_difference
+  [Ord α] [TotalOrder α]
+  (xs ys: SortedList α) : SortedList α := SortedList.mk (sorted_symm_difference xs.items ys.items) <| by
+  apply sorted_symm_difference.sorted
+  assumption
+  exact xs.is_sorted
+  exact ys.is_sorted
+
+#print axioms SortedList.symm_difference

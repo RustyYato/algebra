@@ -450,3 +450,12 @@ def sorted_union.lower_bound
     }
 
 #print axioms sorted_union.sorted
+
+def SortedList.union
+  [Ord α] [TotalOrder α]
+  (xs ys: SortedList α) : SortedList α := SortedList.mk (sorted_union xs.items ys.items) <| by
+  apply sorted_union.sorted
+  exact xs.is_sorted
+  exact ys.is_sorted
+
+#print axioms SortedList.union
