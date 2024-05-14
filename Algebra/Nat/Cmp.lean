@@ -163,6 +163,10 @@ def nat.le_zero {a: nat} : a ≤ 0 -> a = 0 := by
 
 #print axioms nat.le_zero
 
+def nat.zero_lt_succ { a: nat } : 0 < a.succ := rfl
+
+#print axioms nat.zero_lt_succ
+
 def nat.not_lt_zero {a: nat} : a < 0 -> False := by
   intro a_lt_zero
   cases a <;> contradiction

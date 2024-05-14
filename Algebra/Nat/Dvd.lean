@@ -211,3 +211,19 @@ def nat.dvd_def { a b: nat } : b ∣ a -> a = (a / b) * b := by
 
 #print axioms nat.dvd_def
 
+def nat.mod_of_dvd { a b: nat } : b ∣ a -> a % b = 0 := by
+  intros a_dvd_b
+  cases b with
+  | zero => rfl
+  | succ b =>
+  have := nat.div_def a b.succ nat.zero_lt_succ
+  rw [←nat.dvd_def] at this
+  conv at this => {
+    lhs
+    rw [←nat.add_zero a]
+  }
+  exact (nat.add_cancel_left this).symm
+  assumption
+
+#print axioms nat.mod_of_dvd
+
