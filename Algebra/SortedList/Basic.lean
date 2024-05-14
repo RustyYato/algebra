@@ -603,7 +603,7 @@ def sorted_induction'
   { α: Sort _ }
   [Ord α] [TotalOrder α]
   (motive: List α -> List α -> Sort _)
-  {left_empty: ∀list, motive [] list}
+  {left_empty: ∀ys, motive [] ys}
   {right_empty: ∀x xs, motive (x::xs) []}
   {if_lt: ∀x y xs ys, x < y -> motive xs (y::ys) -> motive (x::xs) (y::ys)}
   {if_gt: ∀x y xs ys, x > y -> motive (x::xs) ys -> motive (x::xs) (y::ys)}

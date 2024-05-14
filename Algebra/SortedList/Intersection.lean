@@ -357,9 +357,58 @@ def sorted_intersection.idempotent_right
   (xs ys: List α) ->
   is_sorted ys ->
   sorted_intersection xs (sorted_intersection xs ys) = sorted_intersection xs ys := by
-  intro xs ys sorte_ys
+  intro xs ys sorted_ys
   rw [comm, comm xs ys]
   apply idempotent_left <;> assumption
 
 #print axioms sorted_intersection.idempotent_right
 
+def sorted_intersection.sorted
+  { a: Sort _ }
+  [Ord α] [TotalOrder α]:
+  (xs ys: List α) -> 
+  is_sorted xs ->
+  is_sorted ys ->
+  is_sorted (sorted_intersection xs ys) := by
+  apply sorted_induction'
+  {
+    intros
+    trivial
+  }
+  {
+    intros
+    trivial
+  }
+  {
+    intros x y xs ys x_lt_y ih sorted_xs sorted_ys
+    rw [if_lt]
+    apply ih
+    exact sorted_xs.pop
+    assumption
+    assumption
+  }
+  {
+    intros x y xs ys x_gt_y ih sorted_xs sorted_ys
+    rw [if_gt]
+    apply ih
+    assumption
+    exact sorted_ys.pop
+    assumption
+  }
+  {
+    intros x y xs ys x_eq_y ih sorted_xs sorted_ys
+    rw [if_eq]
+    apply is_sorted.push
+    apply ih
+    exact sorted_xs.pop
+    exact sorted_ys.pop
+    {
+      intro z z_in_interesction
+      have ⟨ z_in_xsk, _ ⟩  := contains z_in_interesction
+      apply is_sorted.contains
+      exact sorted_xs
+      apply List.Mem.tail
+      assumption
+    }
+    assumption
+  }

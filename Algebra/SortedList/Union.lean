@@ -352,12 +352,10 @@ def sorted_union.lower_bound
   (sorted_xs: is_sorted (x::xs)) :
   x ≤ z
 := by
-  induction z_in_xs with
-  | head zs => exact sorted_xs.left
-  | tail z' _ ih =>
-    rename_i zs
-    apply ih
-    exact sorted_xs.pop_snd
+  apply is_sorted.contains
+  assumption
+  apply List.Mem.tail
+  assumption
 
 #print axioms sorted_union.lower_bound
 
