@@ -610,4 +610,3 @@ def sorted_induction'
   {if_eq: ∀x y xs ys, x = y -> motive xs ys -> motive (x::xs) (y::ys)}:
   ∀(xs ys: List α), motive xs ys :=
   fun xs ys =>sorted_induction (SortedIndCtx.mk motive left_empty right_empty if_lt if_gt if_eq) xs ys
-

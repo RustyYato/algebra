@@ -49,3 +49,25 @@ def List.anyP.dec (list : List α) (f: α -> Prop) [decf: ∀x, Decidable (f x)]
 instance List.anyP.instDec (list : List α) (f: α -> Prop) [∀x, Decidable (f x)] : Decidable (list.anyP f) := List.anyP.dec list f
 
 #print axioms List.anyP.dec
+
+def List.allP.of_contains (list: List α) (f: α -> Prop) (h: ∀x, x ∈ list -> f x) : list.allP f := match list with
+  | [] => trivial
+  | x::xs => by
+    apply And.intro
+    exact h x (.head _)
+    apply List.allP.of_contains
+    intro x elem
+    apply h
+    apply List.Mem.tail _ elem
+
+#print axioms List.allP.of_contains
+
+def List.allP.contains (list: List α) (f: α -> Prop) : list.allP f -> ∀x, x ∈ list -> f x := by
+  intro list_all x x_in_list
+  induction x_in_list with
+  | head _ => exact list_all.left
+  | tail _ _ ih =>
+    apply ih
+    exact list_all.right
+
+#print axioms List.allP.of_contains
