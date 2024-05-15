@@ -209,6 +209,23 @@ def nat.le_of_lt_succ { a b: nat } : a < b.succ -> a ≤ b := by
 
 #print axioms nat.le_of_lt_succ
 
+def nat.succ_le_of_lt { a b: nat } : a < b -> a.succ ≤ b := by
+  intro a_lt_b_succ
+  induction a generalizing b with
+  | zero =>
+    match b with
+    | .succ b => apply nat.zero_le
+  | succ a ih =>
+    cases b with
+    | zero =>
+      have := nat.not_lt_zero a_lt_b_succ
+      contradiction
+    | succ b => 
+      apply ih
+      assumption
+
+#print axioms nat.succ_le_of_lt
+
 def nat.le_antisymm { a b: nat } : a ≤ b -> b ≤ a -> a = b := by intros; apply TotalOrder.le_antisymm <;> assumption
 
 #print axioms nat.le_antisymm
@@ -230,6 +247,7 @@ def nat.lt_of_lt_and_le { a b c: nat } : a < b -> b ≤ c -> a < c := TotalOrder
 def nat.lt_of_le_and_lt { a b c: nat } : a ≤ b -> b < c -> a < c := TotalOrder.lt_of_le_and_lt
 
 #print axioms nat.lt_of_le_and_lt
+
 
 def nat.lt_or_ge_dec.pick_lt {a b: nat} : (a_lt_b: a < b) -> nat.lt_or_ge_dec a b = LtOrGe.Lt a_lt_b := by
   intro a_lt_b

@@ -178,10 +178,6 @@ def nat.gcd.right_zero { a: nat } : gcd a 0 = a := rfl
 def nat.gcd.right_nz { a b: nat } : 0 < b -> gcd a b = gcd b (a % b) := by
   apply nat.gcd.induction.right_nz
 
-def nat.gcd_eq_zero : gcd 0 0 = 0 := rfl
-
-#print axioms nat.gcd_eq_zero
-
 def nat.gcd_ne_zero : ∀a b, gcd a b ≠ 0 -> a ≠ 0 ∨ b ≠ 0 := by
   apply nat.gcd.induction
   {
@@ -198,8 +194,7 @@ def nat.gcd_ne_zero : ∀a b, gcd a b ≠ 0 -> a ≠ 0 ∨ b ≠ 0 := by
     assumption
   }
 
-
-#print axioms nat.gcd_eq_zero
+#print axioms nat.gcd_ne_zero
 
 def nat.gcd.to_dvd : ∀{a b c: nat}, c ∣ gcd a b -> c ∣ a ∧ c ∣ b := by
   apply induction
@@ -216,6 +211,7 @@ def nat.gcd.to_dvd : ∀{a b c: nat}, c ∣ gcd a b -> c ∣ a ∧ c ∣ b := by
     apply And.intro
     apply of_dvd_mod 
     repeat assumption
+  }
 
 #print axioms nat.gcd.to_dvd
 
@@ -295,4 +291,16 @@ def nat.gcd.assoc : ∀{a b c: nat}, gcd (gcd a b) c = gcd a (gcd b c) := by
   apply nat.gcd.dvd_right
 
 #print axioms nat.gcd.idempot_right
+
+def nat.gcd_eq_zero : ∀{a b}, gcd a b = 0 -> a = 0 ∧ b = 0 := by
+  intro a b  gcd_eq_zero
+  have : 0 ∣ gcd a b := by
+    rw [gcd_eq_zero]
+    apply nat.dvd_refl
+  have ⟨ zero_dvd_a, zero_dvd_b ⟩  := nat.gcd.to_dvd this
+  apply And.intro
+  exact nat.eq_zero_of_zero_dvd zero_dvd_a
+  exact nat.eq_zero_of_zero_dvd zero_dvd_b
+
+#print axioms nat.gcd_eq_zero
 

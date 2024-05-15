@@ -286,3 +286,16 @@ def nat.of_dvd_mod { a b c: nat } : 0 < b -> c ∣ b -> c ∣ (a % b) -> c ∣ a
   assumption
 
 #print axioms nat.of_dvd_mod
+
+def nat.dvd_product : ∀(a b k: nat), (k * a) ∣ b -> k ∣ b ∧ a ∣ b := by
+  intro a b k ka_dvd_b
+  have ⟨ x, xprf ⟩ := ka_dvd_b
+  apply And.intro
+  exists a * x
+  rw [←nat.mul_assoc]
+  assumption
+  exists k * x
+  rw [←nat.mul_assoc,  nat.mul_comm a]
+  assumption
+
+#print axioms nat.dvd_product
