@@ -45,6 +45,13 @@ def nat.eq_zero_of_zero_dvd {b: nat} : 0 ∣ b -> b = 0 := by
 
 #print axioms nat.one_dvd
 
+def nat.dvd.trans { a b c: nat } : a ∣ b -> b ∣ c -> a ∣ c := by
+  intros a_dvd_b b_dvd_c
+  have ⟨ x, xdef ⟩ := a_dvd_b
+  have ⟨ y, ydef ⟩ := b_dvd_c
+  exists x * y
+  rw [←mul_assoc, xdef, ydef]
+
 inductive FindDivisor (a b: nat) where
   | Found : a ∣ b -> FindDivisor a b
   | NotFound : (∀k, a * k ≠ b) -> FindDivisor a b

@@ -236,7 +236,63 @@ def nat.gcd.of_dvd : ∀{a b c: nat}, c ∣ a -> c ∣ b -> c ∣ gcd a b := by
 
 #print axioms nat.gcd.of_dvd
 
-def nat.gcd.dvd : ∀{a b: nat}, gcd a b ∣ a ∧ gcd a b ∣ b := nat.gcd.to_dvd (nat.dvd_refl _)
+def nat.gcd.dvd (a b: nat): gcd a b ∣ a ∧ gcd a b ∣ b := nat.gcd.to_dvd (nat.dvd_refl _)
 
 #print axioms nat.gcd.dvd
+
+def nat.gcd.dvd_left (a b: nat): gcd a b ∣ a := (nat.gcd.dvd a b).left
+def nat.gcd.dvd_right (a b: nat): gcd a b ∣ b := (nat.gcd.dvd a b).right
+
+#print axioms nat.gcd.dvd
+
+def nat.gcd.comm : ∀(a b: nat), gcd a b = gcd b a := by
+  intro a b
+  apply dvd_antisymm
+  have ⟨ _, _ ⟩ := nat.gcd.dvd a b
+  apply of_dvd <;> assumption
+  have ⟨ _, _ ⟩ := nat.gcd.dvd b a
+  apply of_dvd <;> assumption
+
+#print axioms nat.gcd.comm
+
+def nat.gcd.idempot_left : ∀{a b: nat}, gcd (gcd a b) b = gcd a b := by
+  intro a b
+  apply dvd_antisymm
+  exact (nat.gcd.dvd _ _).left
+  apply of_dvd
+  apply dvd_refl
+  exact (nat.gcd.dvd _ _).right
+
+#print axioms nat.gcd.idempot_left
+
+def nat.gcd.idempot_right : ∀{a b: nat}, gcd a (gcd a b) = gcd a b := by
+  intro a b
+  rw [comm _ (gcd _ _), comm a]
+  apply idempot_left
+
+#print axioms nat.gcd.idempot_right
+
+def nat.gcd.assoc : ∀{a b c: nat}, gcd (gcd a b) c = gcd a (gcd b c) := by
+  intro a b c
+  apply dvd_antisymm
+  apply of_dvd
+  apply nat.dvd.trans
+  apply nat.gcd.dvd_left
+  apply nat.gcd.dvd_left
+  apply of_dvd
+  apply nat.dvd.trans
+  apply nat.gcd.dvd_left
+  apply nat.gcd.dvd_right
+  apply nat.gcd.dvd_right
+  apply of_dvd
+  apply of_dvd
+  apply nat.gcd.dvd_left
+  apply nat.dvd.trans
+  apply nat.gcd.dvd_right
+  apply nat.gcd.dvd_left
+  apply nat.dvd.trans
+  apply nat.gcd.dvd_right
+  apply nat.gcd.dvd_right
+
+#print axioms nat.gcd.idempot_right
 
