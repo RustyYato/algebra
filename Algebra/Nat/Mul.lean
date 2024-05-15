@@ -1,4 +1,4 @@
-import Algebra.Nat.Add
+import Algebra.Nat.Sub
 
 def nat.mul (a b: nat) : nat := match a with
   | .zero => .zero
@@ -98,3 +98,35 @@ def nat.mul_gt (a b: nat) (a_nz: 0 < a) (b_nz: 1 < b) : a < a * b := by
 
 #print axioms nat.mul_gt
 
+def nat.mul_lt_mul (a b c: nat) (a_nz: 0 < a) : a * b < a * c -> b < c := by
+  induction c generalizing a b with
+  | zero =>
+    intro h
+    rw [zero_eq, mul_zero] at h
+    have := nat.not_lt_zero h
+    contradiction
+  | succ c ih =>
+    intro h
+    rw [mul_succ] at h
+    cases b with
+    | zero => trivial
+    | succ b =>
+      rw [mul_succ] at h
+      apply ih a b a_nz
+      apply nat.add_lt_cancel_left
+      exact h
+
+#print axioms nat.mul_lt_mul
+
+def nat.mul_sub (a b c: nat) : a * (b - c) = a * b - a * c := by
+  induction b generalizing a c with
+  | zero => rw [zero_eq, zero_sub, mul_zero, zero_sub]
+  | succ b ih =>
+    cases c with
+    | zero => rw [zero_eq, sub_zero, mul_zero, sub_zero]
+    | succ c =>
+      rw [succ_sub_succ, mul_succ, mul_succ, sub_add, add_comm, ←add_sub, sub_refl, add_zero]
+      apply ih
+      apply TotalOrder.le_refl
+
+#print axioms nat.mul_sub

@@ -166,3 +166,18 @@ def nat.sub_nz_lt (a b: nat) : 0 < b -> b ≤ a -> a - b < a := by
 
 #print axioms nat.sub_nz_lt
 
+def nat.sub_lt { a b: nat }: a < b -> a - b = 0 := by
+  induction b generalizing a with
+  | zero => 
+    intro  h
+    have := nat.not_lt_zero h
+    contradiction
+  | succ b ih =>
+    intro a_le_b
+    cases a with
+    | zero => rw [zero_eq, zero_sub]
+    | succ a =>
+      rw [succ_sub_succ]
+      apply ih
+      assumption
+

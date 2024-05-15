@@ -155,6 +155,25 @@ def nat.add_cancel_right {a b k: nat} : a + k = b + k -> a = b := by
 
 #print axioms nat.add_cancel_right
 
+def nat.add_lt_cancel_left {a b k: nat} : k + a < k + b -> a < b := by
+  intro k_add
+  induction k with
+  | zero => 
+    rw [zero_eq, zero_add, zero_add] at k_add
+    exact k_add
+  | succ k ih =>
+    rw [succ_add, succ_add] at k_add
+    apply ih
+    exact k_add
+
+#print axioms nat.add_lt_cancel_left
+
+def nat.add_lt_cancel_right {a b k: nat} : a + k < b + k -> a < b := by
+  rw [add_comm _ k, add_comm _ k]
+  exact nat.add_lt_cancel_left
+
+#print axioms nat.add_lt_cancel_right
+
 def nat.add_eq_zero { a b: nat } : a + b = 0 -> a = 0 := by
   intro add_eq_zero
   cases a with
