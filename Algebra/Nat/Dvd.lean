@@ -34,6 +34,14 @@ def nat.dvd_mul_right (a b: nat) : a ∣ b * a := by
 
 #print axioms nat.dvd_mul_right
 
+def nat.dvd_one (a: nat) : a ∣ 1 -> a = 1 := by
+  intro a_dvd_one
+  have ⟨ x, xprf ⟩ := a_dvd_one
+  have ⟨ _, _ ⟩ := nat.mul_eq_one _ _ xprf
+  assumption
+
+#print axioms nat.dvd_one
+
 def nat.eq_zero_of_zero_dvd {b: nat} : 0 ∣ b -> b = 0 := by
   match b with
   | .zero => intro; rfl
@@ -299,3 +307,14 @@ def nat.dvd_product : ∀(a b k: nat), (k * a) ∣ b -> k ∣ b ∧ a ∣ b := b
   assumption
 
 #print axioms nat.dvd_product
+
+def nat.mul_div (a b: nat) : 0 < a -> (a * b) / a = b := by
+  intro a_nz
+  have := nat.div_def (a * b) a a_nz
+  rw [nat.mod_of_dvd, nat.add_zero, mul_comm _ a] at this
+  apply eq_of_mul_eq
+  assumption
+  exact this.symm
+  apply nat.dvd_mul_left
+
+#print axioms nat.mul_div

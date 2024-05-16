@@ -186,3 +186,70 @@ def nat.mul_eq_zero (a b: nat) : a * b = 0 -> a = 0 ∨ b = 0 := by
   contradiction
 
 #print axioms nat.mul_eq_zero
+
+def nat.mul_eq_one (a b: nat) : a * b = 1 -> a = 1 ∧ b = 1 := by
+  intro mul_eq_one
+  match a with
+  | 0 => rw [zero_mul] at mul_eq_one; contradiction
+  | .succ (.succ a) => 
+    have : ∀(a b: nat), a.succ.succ * b = 0 ∨ a.succ.succ * b > 1 := by
+      clear mul_eq_one a b
+      clear a
+      intro a b
+      induction b with
+      | zero =>
+        rw [zero_eq, mul_zero]
+        exact Or.inl rfl
+      | succ b ih =>
+        cases ih with
+        | inl ih =>
+          rw [mul_succ, ih]
+          apply Or.inr
+          rw [add_zero]
+          apply nat.zero_lt_succ
+          assumption
+        | inr ih => 
+          apply Or.inr
+          rw [mul_succ]
+          apply TotalOrder.lt_of_lt_and_le
+          assumption
+          apply nat.le_add_left
+    have := this a b
+    rw [mul_eq_one] at this
+    cases this <;> contradiction
+  | 1 =>
+    apply And.intro rfl
+    rw [one_mul] at mul_eq_one
+    assumption
+
+#print axioms nat.mul_eq_one
+
+def nat.eq_of_mul_eq { a b k: nat } : 0 < k -> k * a = k * b -> a = b := by
+  intro k_nz k_mul
+  induction a generalizing b k with
+  | zero => 
+    rw [zero_eq, mul_zero] at k_mul
+    cases mul_eq_zero _ _ k_mul.symm with
+    | inl h =>
+      rw [h] at k_nz
+      contradiction
+    | inr h => exact h.symm
+  | succ a ih =>
+    cases b with
+    | zero => 
+      rw [zero_eq, mul_zero] at k_mul
+      cases mul_eq_zero _ _ k_mul with
+      | inl h =>
+        rw [h] at k_nz
+        contradiction
+      | inr h => contradiction
+    | succ b =>
+      congr
+      apply ih
+      assumption
+      rw [mul_succ, mul_succ] at k_mul
+      apply nat.add_cancel_left
+      assumption
+
+#print axioms nat.eq_of_mul_eq
+

@@ -285,3 +285,16 @@ def nat.first_factor.is_prime (a: nat) : 1 < a -> a.first_factor.prime := by
 
 #print axioms nat.first_factor.is_prime
 
+def nat.coprime.cancel_left { a b c: nat }: coprime a b -> a ∣ (b * c) -> a ∣ c := by
+  intro a_coprime_b a_dvd_bc
+  have g := gcd.of_dvd (dvd_mul_left a c) a_dvd_bc
+  rw [gcd.common_right, a_coprime_b, one_mul] at g
+  assumption
+
+#print axioms nat.coprime.cancel_left
+
+def nat.coprime.cancel_right { a b c: nat }: coprime a b -> a ∣ (c * b) -> a ∣ c := by
+  rw [mul_comm]
+  apply nat.coprime.cancel_left
+
+#print axioms nat.coprime.cancel_right

@@ -125,6 +125,19 @@ def product.eq_zero : product list = 0 -> 0 ∈ list := by
 
 #print axioms product.eq_zero
 
+def product.eq_one : product list = 1 -> ∀x, x ∈ list -> x = 1 := by
+  intro eq_one y elem
+  induction elem with
+  | head _ => 
+    have ⟨ _, _ ⟩ := nat.mul_eq_one _ _ eq_one
+    assumption
+  | tail _ _ ih =>
+    apply ih
+    have ⟨ _, _ ⟩ := nat.mul_eq_one _ _ eq_one
+    assumption
+
+#print axioms product.eq_one
+
 def PrimeFactorization.never_zero : PrimeFactorization 0 -> False := by
   intro factorization
   have := product.eq_zero factorization.product_eq
@@ -133,3 +146,133 @@ def PrimeFactorization.never_zero : PrimeFactorization 0 -> False := by
 
 #print axioms PrimeFactorization.never_zero
 
+def PrimeFactorization.is_factor (n p: nat) (f: PrimeFactorization n) : p ∈ f.factors.items -> p ∣ n := by
+  cases f with 
+  | mk factors is_prime product_eq =>
+  cases factors with
+  | mk factors sorted =>
+  intro elem
+  simp only at elem
+  induction elem generalizing n with
+  | head factors => exists product factors
+  | tail head elem ih => 
+    rename_i factors
+    have ⟨ x, xprf ⟩ := ih (n / head) sorted.pop is_prime.right (by
+      simp only
+      rw [←product_eq]
+      simp only
+      rw [product.cons]
+      rw [nat.mul_div]
+      have := is_prime.left.left
+      apply TotalOrder.lt_trans
+      apply nat.lt_succ_self
+      assumption)
+    exists x * head
+    rw [←nat.mul_assoc, xprf, ←nat.dvd_def]
+    exists product factors
+
+#print axioms PrimeFactorization.is_factor
+
+def PrimeFactorization.is_complete (n p: nat) (f: PrimeFactorization n) : p.prime -> p ∣ n -> p ∈ f.factors.items := by
+  intro prime_p p_dvd_n
+  
+  cases f with 
+  | mk factors is_prime product_eq =>
+  cases factors with
+  | mk factors sorted =>
+
+  simp only at is_prime product_eq
+  simp
+  clear sorted
+
+  induction factors generalizing n with
+  | nil =>
+    unfold product at product_eq
+    cases product_eq
+    cases nat.dvd_one p p_dvd_n
+    contradiction
+  | cons f factors ih =>
+    cases decEq p f with
+    | isTrue h =>
+       cases h
+       exact List.Mem.head _
+    | isFalse h =>
+      apply List.Mem.tail
+      apply ih (n / f)
+      {
+        rw [product.cons] at product_eq
+        cases product_eq
+        rw [nat.mul_div]
+        apply nat.coprime.cancel_left
+        {
+          cases nat.prime_dvd_or_coprime p f prime_p with
+          | inl p_dvd_f =>
+            cases is_prime.left.right p p_dvd_f with
+            | inl h => cases h <;> contradiction
+            | inr h => contradiction
+          | inr p_coprime_f => assumption
+        }
+        assumption
+        apply TotalOrder.lt_trans
+        apply nat.lt_succ_self
+        exact is_prime.left.left
+      }
+      exact is_prime.right
+      rw [←product_eq, product.cons, nat.mul_div]
+      apply TotalOrder.lt_trans
+      apply nat.lt_succ_self
+      exact is_prime.left.left
+
+#print axioms PrimeFactorization.is_complete
+
+def PrimeFactorization.unique (a b: PrimeFactorization n) : a = b := by
+  have a_is_factor := a.is_factor
+  have b_is_factor := b.is_factor
+
+  cases a with 
+  | mk a_factors a_is_prime a_product_eq =>
+  cases a_factors with
+  | mk a_factors a_sorted =>
+  
+  cases b with 
+  | mk b_factors b_is_prime b_product_eq =>
+  cases b_factors with
+  | mk b_factors b_sorted =>
+
+  congr
+
+  induction a_factors generalizing b_factors with
+  | nil =>
+    simp only at a_product_eq
+    unfold product at a_product_eq
+    cases a_product_eq
+    have b_all_ones := product.eq_one b_product_eq
+    cases b_factors with
+    | nil => rfl
+    | cons b b_factors =>
+      have b_eq_one := b_all_ones b (.head _)
+      have := b_is_prime.contains b
+      simp only at this
+      have b_prime := this (.head _)
+      rw [b_eq_one] at b_prime
+      contradiction
+  | cons a a_factors ih => 
+    cases b_factors with
+    | nil =>
+      unfold product at b_product_eq
+      cases b_product_eq
+
+      have a_all_ones := product.eq_one a_product_eq
+      have a_eq_one := a_all_ones a (.head _)
+      have := a_is_prime.contains a
+      simp only at this
+      have a_prime := this (.head _)
+      rw [a_eq_one] at a_prime
+      contradiction
+    | cons b b_factors =>
+      let first_factor := n.first_factor
+      have := a_is_factor first_factor
+      sorry
+
+#print axioms PrimeFactorization.unique
+ 
