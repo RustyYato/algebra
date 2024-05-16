@@ -225,9 +225,41 @@ def PrimeFactorization.is_complete (n p: nat) (f: PrimeFactorization n) : p.prim
 
 #print axioms PrimeFactorization.is_complete
 
+def is_sorted.pick_first
+  [Ord α] [TotalOrder α]:
+  ∀{a x: α} {xs: List α},
+  is_sorted (x::xs) ->
+  a ∈ (x::xs) -> 
+  (∀y, y ∈ (x::xs) -> a ≤ y) ->
+  a = x := by
+    intro a x xs sorted_xs elem all_less
+    cases elem with
+    | head _ => rfl
+    | tail _ elem =>
+      induction elem with
+      | head _ => 
+        apply TotalOrder.le_antisymm
+        exact all_less x (.head _)
+        exact sorted_xs.left
+      | tail head _ ih =>
+        rename_i tail
+        apply ih
+        exact sorted_xs.pop_snd
+        intro y elem
+        apply all_less
+        cases elem with
+        | head => exact .head _
+        | tail _ _ =>
+          apply List.Mem.tail
+          apply List.Mem.tail
+          assumption
+
 def PrimeFactorization.unique (a b: PrimeFactorization n) : a = b := by
   have a_is_factor := a.is_factor
   have b_is_factor := b.is_factor
+  
+  have a_is_complete := a.is_complete
+  have b_is_complete := b.is_complete
 
   cases a with 
   | mk a_factors a_is_prime a_product_eq =>
@@ -241,7 +273,7 @@ def PrimeFactorization.unique (a b: PrimeFactorization n) : a = b := by
 
   congr
 
-  induction a_factors generalizing b_factors with
+  induction a_factors generalizing n b_factors with
   | nil =>
     simp only at a_product_eq
     unfold product at a_product_eq
@@ -257,6 +289,20 @@ def PrimeFactorization.unique (a b: PrimeFactorization n) : a = b := by
       rw [b_eq_one] at b_prime
       contradiction
   | cons a a_factors ih => 
+    have n_gt_1 : 1 < n := by
+      cases (inferInstance: Decidable (1 < n)) with
+      | isTrue => assumption
+      | isFalse =>
+        match n with
+        | 0 =>
+          have := product.eq_zero a_product_eq
+          have := (a_is_prime.contains) 0 this
+          contradiction
+        | 1 => 
+          cases product.eq_one a_product_eq a (.head _)
+          have := (a_is_prime.contains) 1 (.head _)
+          contradiction
+          
     cases b_factors with
     | nil =>
       unfold product at b_product_eq
@@ -271,8 +317,64 @@ def PrimeFactorization.unique (a b: PrimeFactorization n) : a = b := by
       contradiction
     | cons b b_factors =>
       let first_factor := n.first_factor
-      have := a_is_factor first_factor
-      sorry
+      have first_factor_in_a := a_is_complete first_factor (nat.first_factor.is_prime n n_gt_1) (by
+        apply nat.first_factor.is_factor
+        assumption
+      )
+      have first_factor_in_b := b_is_complete first_factor (nat.first_factor.is_prime n n_gt_1) (by
+        apply nat.first_factor.is_factor
+        assumption
+      )
+      simp only at first_factor_in_a first_factor_in_b
+      have ff_eq_a := (a_sorted.pick_first) first_factor_in_a (by
+        intro y y_in_factors
+        have prime_y := (a_is_prime.contains) _ y_in_factors
+        have y_dvd_n := a_is_factor _ y_in_factors
+        exact nat.first_factor.is_smallest_factor n n_gt_1 y prime_y.left y_dvd_n)
+      have ff_eq_b := (b_sorted.pick_first) first_factor_in_b (by
+        intro y y_in_factors
+        have prime_y := (b_is_prime.contains) _ y_in_factors
+        have y_dvd_n := b_is_factor _ y_in_factors
+        exact nat.first_factor.is_smallest_factor n n_gt_1 y prime_y.left y_dvd_n)
+      rw [←ff_eq_b, ←ff_eq_a]
+      congr
+
+      let nfa: PrimeFactorization (n / first_factor) := PrimeFactorization.mk (SortedList.mk a_factors a_sorted.pop) a_is_prime.right (by
+        simp only at a_product_eq
+        simp only at *
+        rw [←a_product_eq, product.cons, ff_eq_a, nat.mul_div]
+        apply TotalOrder.lt_trans
+        apply nat.lt_succ_self
+        exact a_is_prime.left.left)
+      
+      let nfb: PrimeFactorization (n / first_factor) := PrimeFactorization.mk (SortedList.mk b_factors b_sorted.pop) b_is_prime.right (by
+        simp only at b_product_eq
+        simp only at *
+        rw [←b_product_eq, product.cons, ff_eq_b, nat.mul_div]
+        apply TotalOrder.lt_trans
+        apply nat.lt_succ_self
+        exact b_is_prime.left.left)
+
+      apply @ih (n / first_factor)
+      any_goals (simp only at *)
+      any_goals (clear ih)
+      exact nfa.is_factor
+      exact nfa.is_complete
+      exact nfb.is_factor
+      exact nfb.is_complete
+      exact nfa.factors.is_sorted
+      exact nfa.all_primes
+      exact nfa.product_eq
+      exact nfb.factors.is_sorted
+      exact nfb.all_primes
+      exact nfb.product_eq
 
 #print axioms PrimeFactorization.unique
- 
+
+instance PrimeFactorization.instSubSingleton : Subsingleton (PrimeFactorization n) := ⟨ PrimeFactorization.unique ⟩
+
+#print axioms PrimeFactorization.instSubSingleton
+
+instance PrimeFactorization.instInhabitted (n_nz: 0 < n) : Inhabited (PrimeFactorization n) := ⟨ PrimeFactorization.new n n_nz ⟩
+
+#print axioms PrimeFactorization.instInhabitted
