@@ -124,7 +124,7 @@ def nat.first_factor.find (a: nat) (current: nat) (fuel: nat) : nat :=
   | .zero => current
   | .succ fuel => 
     match (inferInstance : Decidable (current ∣ a)) with
-    | .isTrue h => current
+    | .isTrue _ => current
     | .isFalse _ => find a current.succ fuel
 
 def nat.first_factor (a: nat) : nat := first_factor.find a 2 (a - 2)
@@ -246,7 +246,7 @@ def nat.first_factor.is_smallest_factor (a: nat) : 1 < a -> ∀k, 1 < k -> k ∣
   }
   repeat assumption
 
-def nat.prime.first_factor.is_prime (a: nat) : 1 < a -> a.first_factor.prime := by
+def nat.first_factor.is_prime (a: nat) : 1 < a -> a.first_factor.prime := by
   intro one_lt_a
   have is_factor := nat.first_factor.is_factor a one_lt_a
   have smallest := nat.first_factor.is_smallest_factor a one_lt_a
@@ -283,5 +283,5 @@ def nat.prime.first_factor.is_prime (a: nat) : 1 < a -> a.first_factor.prime := 
   }
   assumption
 
-#print axioms nat.prime.first_factor.is_prime
+#print axioms nat.first_factor.is_prime
 

@@ -163,8 +163,6 @@ def nat.mul_le_cancel_left (a b c: nat) : b ≤ c -> a * b ≤ a * c := by
 
 #print axioms nat.mul_lt_mul
 
-
-
 def nat.mul_sub (a b c: nat) : a * (b - c) = a * b - a * c := by
   induction b generalizing a c with
   | zero => rw [zero_eq, zero_sub, mul_zero, zero_sub]
@@ -177,3 +175,14 @@ def nat.mul_sub (a b c: nat) : a * (b - c) = a * b - a * c := by
       apply TotalOrder.le_refl
 
 #print axioms nat.mul_sub
+
+def nat.mul_eq_zero (a b: nat) : a * b = 0 -> a = 0 ∨ b = 0 := by
+  intro mul_eq_zero
+  cases a
+  exact Or.inl rfl
+  cases b
+  exact Or.inr rfl
+  rw [succ_mul, succ_add] at mul_eq_zero
+  contradiction
+
+#print axioms nat.mul_eq_zero

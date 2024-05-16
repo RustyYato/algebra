@@ -398,3 +398,71 @@ def nat.mul_mod :∀(a b k: nat), (a * k) % (b * k) = (a % b) * k := by
     assumption
   }
 
+def nat.div_gt_zero (a b: nat) : 0 < b -> b ≤ a -> a / b > 0 := by
+  intro b_nz b_le_a
+  rw [div.is_ge']
+  any_goals assumption
+  apply nat.zero_lt_succ
+
+#print axioms nat.div_gt_zero
+
+def nat.div.lt (a b: nat) : 1 < b -> 0 < a -> a / b < a := by
+  intro b_gt_one a_nz
+  conv => {
+    rhs
+    rw [nat.div_def a b (by
+      apply TotalOrder.lt_trans
+      apply nat.lt_succ_self
+      exact b_gt_one)]
+  }
+  match b with
+  | .succ (.succ b) =>
+  clear b_gt_one
+  rw [mul_succ]
+  conv => {
+    lhs
+    rw [←add_zero (a / _)]
+  }
+  rw [add_assoc]
+  apply nat.add_of_lt_cancel_left
+  apply div_mod_induction (fun (a b: nat) => 0 < a -> 1 < b -> 0 < a / b * b.dec + a % b)
+  {
+    clear b a_nz a
+    clear b
+    intro a b a_lt_b a_nz b_gt_one
+    match a with
+    | .succ a =>
+    match b with
+    | .succ (.succ b) =>
+    clear a_nz b_gt_one
+    unfold dec
+    simp only
+    rw [div.is_lt', zero_mul, zero_add, mod.is_lt']
+    any_goals apply nat.zero_lt_succ
+    assumption
+    assumption
+  }
+  {
+    clear b a_nz a
+    clear b
+    intro a b a_ge_b ih a_nz b_gt_one
+    match a with
+    | .succ a =>
+    match b with
+    | .succ (.succ b) =>
+    clear a_nz b_gt_one
+    unfold dec
+    simp only
+    rw [div.is_ge']
+    rw [nat.mul_succ]
+    repeat rw [succ_add]
+    apply nat.zero_lt_succ
+    apply nat.zero_lt_succ
+    assumption
+  }
+  apply nat.zero_lt_succ
+  assumption
+  apply nat.zero_lt_succ
+  assumption
+ 
+#print axioms nat.div.lt

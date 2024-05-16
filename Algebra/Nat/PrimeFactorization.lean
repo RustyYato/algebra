@@ -76,3 +76,60 @@ def PrimeFactorization.mul { a b: nat } : PrimeFactorization a -> PrimeFactoriza
 
 #print axioms PrimeFactorization.mul
 
+def PrimeFactorization.new (n: nat) : 0 < n -> PrimeFactorization n := by
+  intro n_nz
+  cases (inferInstance: Decidable (1 < n)) with
+  | isFalse h => 
+    have := TotalOrder.not_lt_implies_ge h
+    match n with 
+    | 1 => 
+    apply PrimeFactorization.mk (SortedList.mk [] True.intro)
+    decide
+    decide
+  | isTrue h => 
+  have is_prime := nat.first_factor.is_prime n h
+  have is_factor := nat.first_factor.is_factor n h
+  have := nat.dvd_def is_factor
+  rw [this]
+  apply PrimeFactorization.mul
+  apply PrimeFactorization.new
+  {
+    apply nat.div_gt_zero
+    apply TotalOrder.lt_trans
+    apply nat.lt_succ_self
+    exact is_prime.left
+    apply nat.dvd.le _ is_factor
+    assumption
+  }
+  apply PrimeFactorization.of_prime
+  assumption
+termination_by n
+decreasing_by
+  apply nat.div.lt
+  exact is_prime.left
+  assumption
+
+#print axioms PrimeFactorization.new
+
+def product.eq_zero : product list = 0 -> 0 ∈ list := by
+  induction list with
+  | nil => intro; contradiction
+  | cons x xs ih => 
+    unfold product
+    intro eq_zero
+    cases nat.mul_eq_zero _ _ eq_zero with
+    | inl h => rw [h]; apply List.Mem.head
+    | inr h =>
+      apply List.Mem.tail
+      apply ih h
+
+#print axioms product.eq_zero
+
+def PrimeFactorization.never_zero : PrimeFactorization 0 -> False := by
+  intro factorization
+  have := product.eq_zero factorization.product_eq
+  have := (factorization.all_primes.contains) 0 this
+  contradiction
+
+#print axioms PrimeFactorization.never_zero
+
