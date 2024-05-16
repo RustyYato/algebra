@@ -98,6 +98,31 @@ def nat.mul_gt (a b: nat) (a_nz: 0 < a) (b_nz: 1 < b) : a < a * b := by
 
 #print axioms nat.mul_gt
 
+def nat.to_mul_lt_mul (a b c: nat) (a_nz: 0 < a) : b < c -> a * b < a * c := by
+  induction b generalizing a c with
+  | zero =>
+    intro h
+    match c with
+    | .succ c =>
+    match a with
+    | .succ a =>
+    rw [zero_eq, mul_zero, succ_mul, succ_add]
+    apply nat.zero_lt_succ
+  | succ b ih =>
+    intro h
+    match a with
+    | .succ a =>
+    match c with
+    | .succ c =>
+    rw [mul_succ, mul_succ]
+    apply nat.add_of_lt_cancel_left
+    apply ih
+    apply nat.zero_lt_succ
+    exact h
+
+#print axioms nat.to_mul_lt_mul
+
+
 def nat.mul_lt_mul (a b c: nat) (a_nz: 0 < a) : a * b < a * c -> b < c := by
   induction c generalizing a b with
   | zero =>
@@ -117,6 +142,28 @@ def nat.mul_lt_mul (a b c: nat) (a_nz: 0 < a) : a * b < a * c -> b < c := by
       exact h
 
 #print axioms nat.mul_lt_mul
+
+def nat.mul_le_cancel_left (a b c: nat) : b ≤ c -> a * b ≤ a * c := by
+  induction c generalizing a b with
+  | zero =>
+    intro h
+    rw [le_zero h]
+    apply le_refl
+  | succ c ih =>
+    intro h
+    cases b with
+    | zero =>
+      rw [zero_eq, mul_zero]
+      apply zero_le
+    | succ b =>
+    have := ih a b h
+    rw [mul_succ, mul_succ]
+    apply nat.add_le_cancel_left
+    assumption
+
+#print axioms nat.mul_lt_mul
+
+
 
 def nat.mul_sub (a b c: nat) : a * (b - c) = a * b - a * c := by
   induction b generalizing a c with

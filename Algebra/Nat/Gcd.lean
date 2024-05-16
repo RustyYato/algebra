@@ -304,3 +304,36 @@ def nat.gcd_eq_zero : ∀{a b}, gcd a b = 0 -> a = 0 ∧ b = 0 := by
 
 #print axioms nat.gcd_eq_zero
 
+def nat.gcd.common_right : ∀a b k, gcd (a * k) (b * k) = gcd a b * k := by
+  apply nat.gcd.induction
+  {
+    intro a c
+    rw [right_zero, zero_mul, right_zero]
+  }
+  {
+    intro a b b_nz ih k
+    cases k with
+    | zero => 
+      rw [zero_eq, mul_zero, mul_zero, mul_zero]
+      rfl
+    | succ c =>
+    rw [right_nz, @right_nz a b]
+    rw [nat.mul_mod, ih c.succ]
+    assumption
+    rw [mul_succ]
+    apply TotalOrder.lt_of_lt_and_le
+    assumption
+    apply nat.le_add_right
+  }
+
+#print axioms nat.gcd.common_right
+
+def nat.gcd.common_left : ∀a b k, gcd (k * a) (k * b) = k * gcd a b := by
+  intros a b k
+  rw [nat.mul_comm k]
+  rw [nat.mul_comm k]
+  rw [nat.mul_comm k]
+  apply nat.gcd.common_right
+
+#print axioms nat.gcd.common_left
+

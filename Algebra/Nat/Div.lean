@@ -341,3 +341,60 @@ def nat.div_def (a b: nat) (b_nz: 0 < b) : a = (a / b) * b + a % b := by
 
 #print axioms nat.div_def
 
+def nat.mod_zero : ∀{a: nat}, a % 0 = 0 := by intros; rfl
+  
+
+def nat.mul_mod :∀(a b k: nat), (a * k) % (b * k) = (a % b) * k := by
+  intro a b
+  cases b with
+  | zero =>
+    intros
+    rw [zero_eq, zero_mul, mod_zero, mod_zero, zero_mul]
+  | succ b =>
+  apply div_mod_induction (fun a b => ∀k, (a * k) % (b * k) = (a % b) * k)
+  any_goals apply nat.zero_lt_succ
+  {
+    intro a b a_lt_b k
+    cases k with
+    | zero =>
+      rw [zero_eq, mul_zero, mul_zero, mul_zero]
+      rfl
+    | succ k => 
+    have : 0 < b := by 
+      apply TotalOrder.lt_of_le_and_lt
+      apply nat.zero_le
+      any_goals assumption
+    rw [mod.is_lt', mod.is_lt']
+    assumption
+    assumption
+    apply TotalOrder.lt_of_lt_and_le
+    exact  this
+    apply nat.mul_ge
+    apply nat.zero_lt_succ
+    rw [mul_comm a, mul_comm b]
+    apply nat.to_mul_lt_mul
+    apply nat.zero_lt_succ
+    assumption
+  }
+  {
+    intro a b a_ge_b ih k
+    cases k with  
+    | zero =>
+      rw [zero_eq, mul_zero, mul_zero, mul_zero]; rfl
+    | succ k => 
+    cases b with  
+    | zero => rw [zero_eq, zero_mul, mod_zero, mod_zero, zero_mul]
+    | succ b => 
+    rw [mod.is_ge', @mod.is_ge' a b.succ]
+    rw [←ih]
+    congr
+    rw [mul_comm _ k.succ, mul_comm _ k.succ, mul_comm _ k.succ, mul_sub]
+    apply nat.zero_lt_succ
+    assumption
+    rw [mul_succ, succ_add]
+    apply nat.zero_lt_succ
+    rw [mul_comm a, mul_comm b.succ]
+    apply nat.mul_le_cancel_left
+    assumption
+  }
+
