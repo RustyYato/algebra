@@ -5,44 +5,36 @@ def nat.dvd (a b: nat) := ∃k: nat, a * k = b
 instance nat.dvd_inst : Dvd nat where
   dvd := nat.dvd
 
-def nat.dvd_zero (a: nat) : a ∣ 0 := by
+def nat.dvd.zero (a: nat) : a ∣ 0 := by
   exists 0
   rw [mul_zero]
 
-#print axioms nat.dvd_zero
+#print axioms nat.dvd.zero
 
-def nat.one_dvd (b: nat) : 1 ∣ b := by
+def nat.dvd.by_one (b: nat) : 1 ∣ b := by
   exists b
   rw [one_mul]
 
-#print axioms nat.one_dvd
+#print axioms nat.dvd.by_one
 
-def nat.dvd_refl (a: nat) : a ∣ a := by
+def nat.dvd.refl (a: nat) : a ∣ a := by
   exists 1
   rw [mul_one]
 
-#print axioms nat.dvd_refl
+#print axioms nat.dvd.refl
 
-def nat.dvd_mul_left (a b: nat) : a ∣ a * b := by
+def nat.dvd.mul_left (a b: nat) : a ∣ a * b := by
   exists b
 
-#print axioms nat.dvd_mul_left
+#print axioms nat.dvd.mul_left
 
-def nat.dvd_mul_right (a b: nat) : a ∣ b * a := by
+def nat.dvd.mul_right (a b: nat) : a ∣ b * a := by
   exists b
-  rw [mul_comm]
+  rw [mul.comm]
 
-#print axioms nat.dvd_mul_right
+#print axioms nat.dvd.mul_right
 
-def nat.dvd_one (a: nat) : a ∣ 1 -> a = 1 := by
-  intro a_dvd_one
-  have ⟨ x, xprf ⟩ := a_dvd_one
-  have ⟨ _, _ ⟩ := nat.mul_eq_one _ _ xprf
-  assumption
-
-#print axioms nat.dvd_one
-
-def nat.eq_zero_of_zero_dvd {b: nat} : 0 ∣ b -> b = 0 := by
+def nat.dvd.eq_zero_of_by_zero {b: nat} : 0 ∣ b -> b = 0 := by
   match b with
   | .zero => intro; rfl
   | .succ _ =>
@@ -51,14 +43,24 @@ def nat.eq_zero_of_zero_dvd {b: nat} : 0 ∣ b -> b = 0 := by
     rw [zero_mul] at prf
     contradiction
 
-#print axioms nat.one_dvd
+#print axioms nat.dvd.eq_zero_of_by_zero
+
+def nat.dvd.eq_one_of_by_one (a: nat) : a ∣ 1 -> a = 1 := by
+  intro a_dvd_one
+  have ⟨ x, xprf ⟩ := a_dvd_one
+  have ⟨ _, _ ⟩ := nat.mul.eq_one xprf
+  assumption
+
+#print axioms nat.dvd.eq_one_of_by_one
 
 def nat.dvd.trans { a b c: nat } : a ∣ b -> b ∣ c -> a ∣ c := by
   intros a_dvd_b b_dvd_c
   have ⟨ x, xdef ⟩ := a_dvd_b
   have ⟨ y, ydef ⟩ := b_dvd_c
   exists x * y
-  rw [←mul_assoc, xdef, ydef]
+  rw [←mul.assoc, xdef, ydef]
+
+#print axioms nat.dvd.trans
 
 inductive FindDivisor (a b: nat) where
   | Found : a ∣ b -> FindDivisor a b
@@ -96,11 +98,11 @@ def nat.find_divisor (a b: nat) (n: nat) (prev: ∀k, n < k -> a * k ≠ b) : Fi
 
 #print axioms nat.find_divisor
 
-instance nat.dvd_dec (a b: nat) : Decidable (a ∣ b) := by
+instance nat.dvd.dec (a b: nat) : Decidable (a ∣ b) := by
   match b with
   | .zero =>
     apply Decidable.isTrue
-    apply dvd_zero
+    apply dvd.zero
   | .succ b =>
   have := nat.find_divisor a b.succ b.succ (by
     intro k b_lt_k ak_eq_b
@@ -114,8 +116,8 @@ instance nat.dvd_dec (a b: nat) : Decidable (a ∣ b) := by
       rw [zero_eq, zero_mul] at ak_eq_b
       contradiction
     | .succ a =>
-    have := nat.mul_ge k.succ a.succ rfl
-    rw [mul_comm] at this
+    have := nat.mul.ge k.succ a.succ rfl
+    rw [mul.comm] at this
     rw [←ak_eq_b] at b_lt_k
     exact not_lt_and_ge b_lt_k this
     )
@@ -128,7 +130,7 @@ instance nat.dvd_dec (a b: nat) : Decidable (a ∣ b) := by
     have := h k
     contradiction
 
-#print axioms nat.dvd_dec
+#print axioms nat.dvd.dec
 
 def nat.dvd.le { a b: nat } ( b_nz: 0 < b ) (a_dvd_b: a ∣ b) : a ≤ b := by
   match b with
@@ -145,23 +147,23 @@ def nat.dvd.le { a b: nat } ( b_nz: 0 < b ) (a_dvd_b: a ∣ b) : a ≤ b := by
     rw [zero_eq, zero_mul] at prf
     contradiction
   | .succ a =>
-    have := mul_ge a.succ k.succ rfl
+    have := mul.ge a.succ k.succ rfl
     rw [prf] at this
     exact this
 
 #print axioms nat.dvd.le
 
-def nat.dvd_antisymm { a b: nat } : a ∣ b -> b ∣ a -> a = b := by
+def nat.dvd.antisymm { a b: nat } : a ∣ b -> b ∣ a -> a = b := by
   intro a_dvd_b b_dvd_a
   match b with
   | .zero =>
-    have := eq_zero_of_zero_dvd b_dvd_a
+    have := eq_zero_of_by_zero b_dvd_a
     rw [this]
     rfl
   | .succ b =>
   match a with
   | .zero => 
-    have := eq_zero_of_zero_dvd a_dvd_b
+    have := eq_zero_of_by_zero a_dvd_b
     rw [this]
     rfl
   | .succ a =>
@@ -169,9 +171,22 @@ def nat.dvd_antisymm { a b: nat } : a ∣ b -> b ∣ a -> a = b := by
   exact nat.dvd.le rfl a_dvd_b
   exact nat.dvd.le rfl b_dvd_a
 
-#print axioms nat.dvd_antisymm
+#print axioms nat.dvd.antisymm
 
-def nat.dvd_sub { a b: nat } : a ≤ b -> a ∣ b -> a ∣ (b - a) := by
+def nat.dvd.add { a b c: nat } : a ∣ (b + c) -> a ∣ b -> a ∣ c := by
+  intro a_dvd_bc a_dvd_b
+  have ⟨ x, x_prf ⟩ := a_dvd_bc
+  have ⟨ y, y_prf ⟩ := a_dvd_b
+  rw [←y_prf] at x_prf
+  clear a_dvd_b a_dvd_bc y_prf
+  exists (x - y)
+  rw [nat.mul_sub, x_prf]
+  rw [add.comm, ←add_sub, sub.refl, add_zero]
+  apply nat.le_refl
+
+#print axioms nat.dvd.add
+
+def nat.dvd.sub { a b: nat } : a ≤ b -> a ∣ b -> a ∣ (b - a) := by
   intro a_le_b a_dvd_b
   have ⟨ k, prf ⟩ := a_dvd_b
   match k with
@@ -184,91 +199,74 @@ def nat.dvd_sub { a b: nat } : a ≤ b -> a ∣ b -> a ∣ (b - a) := by
   | .succ k =>
     exists k
     rw [←prf]
-    rw [mul_succ, add_comm, ←add_sub, sub_refl, add_zero]
+    rw [mul_succ, add.comm, ←add_sub, sub.refl, add_zero]
     exact le_refl _
 
-def nat.dvd_add { a b c: nat } : a ∣ (b + c) -> a ∣ b -> a ∣ c := by
-  intro a_dvd_bc a_dvd_b
-  have ⟨ x, x_prf ⟩ := a_dvd_bc
-  have ⟨ y, y_prf ⟩ := a_dvd_b
-  rw [←y_prf] at x_prf
-  clear a_dvd_b a_dvd_bc y_prf
-  exists (x - y)
-  rw [nat.mul_sub, x_prf]
-  rw [add_comm, ←add_sub, sub_refl, add_zero]
-  apply nat.le_refl
+#print axioms nat.dvd.sub
 
-#print axioms nat.dvd_add
+def nat.dvd.mod_eq_zero: ∀{ a b: nat }, b ∣ a -> a % b = 0 := by
+  intro a b
+  cases b with
+  | zero => intros; rfl
+  | succ b =>
+  intro succ_b_dvd_a
+  apply nat.div_mod.induction (fun a b _ => b ∣ a -> a % b = 0)
+  {
+    intro a b a_lt_b b_dvd_a
+    rw [nat.mod.if_lt]
+    cases a with
+    | zero => rfl
+    | succ a =>
+      apply False.elim <| TotalOrder.not_lt_and_ge a_lt_b _
+      exact nat.dvd.le zero_lt_succ b_dvd_a
+    apply zero_lt_of_lt a_lt_b
+    assumption
+  }
+  {
+    intro a b b_nz a_ge_b ih b_dvd_a
+    cases a with
+      | zero => rw [zero_eq, nat.zero_mod]
+      | succ a => 
+      rw [nat.mod.if_ge]
+      apply ih
+      apply nat.dvd.sub
+      apply nat.dvd.le zero_lt_succ b_dvd_a
+      repeat assumption
+  }
+  apply zero_lt_succ
+  assumption
 
-def nat.dvd_def { a b: nat } : b ∣ a -> a = (a / b) * b := by
+#print axioms nat.dvd.mod_eq_zero
+
+def nat.dvd.def { a b: nat } : b ∣ a -> a = (a / b) * b := by
   match b with
   | .zero =>
     intro zero_dvd_a
-    rw [eq_zero_of_zero_dvd zero_dvd_a]
+    rw [eq_zero_of_by_zero zero_dvd_a]
     rfl
   | .succ b =>
-  have : ∀(a b: nat), b ∣ a -> 0 < b -> a = (a / b) * b := by
-    intro a b q r
-    apply nat.div_mod_induction (fun a b => b ∣ a -> 0 < b -> a = (a / b) * b)
-    {
-      intro a b a_lt_b b_dvd_a b_nz
-      rw [nat.div.is_lt']
-      rw [zero_mul]
-      match a with
-      | .zero => rfl
-      | .succ a =>
-        have b_le_a_succ := nat.dvd.le rfl b_dvd_a
-        have := not_lt_and_ge a_lt_b b_le_a_succ
-        contradiction
-      repeat assumption
-    }
-    {
-      intro a b a_ge_b ih b_dvd_a b_nz
-      rw [nat.div.is_ge', succ_mul, ←ih, add_sub, add_comm, ←add_sub, sub_refl, add_zero]
-      apply le_refl
-      any_goals assumption
-      apply nat.dvd_sub
-      repeat assumption
-
-    }
-    repeat assumption
-  intro b_dvd_a
-  apply this
-  assumption
-  rfl
-
-#print axioms nat.dvd_def
-
-def nat.mod_of_dvd { a b: nat } : b ∣ a -> a % b = 0 := by
-  intros a_dvd_b
-  cases b with
-  | zero => rfl
-  | succ b =>
-  have := nat.div_def a b.succ nat.zero_lt_succ
-  rw [←nat.dvd_def] at this
-  conv at this => {
-    lhs
-    rw [←nat.add_zero a]
-  }
-  exact (nat.add_cancel_left this).symm
+  intro b_dvd_a 
+  have := nat.div_def a b.succ zero_lt_succ
+  rw [nat.dvd.mod_eq_zero, add_zero] at this
+  exact this
   assumption
 
-#print axioms nat.mod_of_dvd
+#print axioms nat.dvd.def
 
-def nat.dvd_mod { a b c: nat } : c ∣ a -> c ∣ b -> c ∣ (a % b) := by
+def nat.dvd.mod { a b c: nat } : c ∣ a -> c ∣ b -> c ∣ (a % b) := by
   intro c_dvd_a c_dvd_b
   have ⟨ x, x_def ⟩ := c_dvd_a
   have ⟨ y, y_def ⟩ := c_dvd_b
   cases b with
-  | zero => apply dvd_zero
+  | zero => apply dvd.zero
   | succ b =>
     have := div_def a b.succ zero_lt_succ
     rw [←y_def, ←x_def] at this
-    rw [←mul_assoc, mul_comm _ c, mul_assoc] at this
+    rw [←mul.assoc, mul.comm _ c, mul.assoc] at this
     exists x - (c * x / (c * y) * y)
     rw [mul_sub]
     rw [x_def]
-    rw [←mul_assoc, mul_comm, ←mul_assoc, mul_comm _ c]
+    rw [←mul.assoc, mul.comm, ←mul.assoc, mul.comm _ c]
     rw [y_def]
     clear this y_def x_def y x
     have := div_def a b.succ zero_lt_succ
@@ -277,44 +275,43 @@ def nat.dvd_mod { a b c: nat } : c ∣ a -> c ∣ b -> c ∣ (a % b) := by
       lhs
       rw [this]
     }
-    rw [add_comm, ←add_sub, mul_comm, sub_refl, add_zero]
-    rw [mul_comm]
+    rw [add.comm, ←add_sub, mul.comm, sub.refl, add_zero]
+    rw [mul.comm]
     apply TotalOrder.le_refl
 
-#print axioms nat.dvd_mod
+#print axioms nat.dvd.mod
 
-def nat.of_dvd_mod { a b c: nat } : 0 < b -> c ∣ b -> c ∣ (a % b) -> c ∣ a := by
+def nat.dvd.of_mod { a b c: nat } : 0 < b -> c ∣ b -> c ∣ (a % b) -> c ∣ a := by
   intro zero_lt_b c_dvd_a c_dvd_ab
   rw [nat.div_def a b]
   have ⟨ x, xdef ⟩ := c_dvd_a
   have ⟨ y, ydef ⟩ := c_dvd_ab
-  -- a / b * x + y
   exists a / b * x + y
-  rw [mul_add, ←mul_assoc, mul_comm _ x, ←mul_assoc, ydef, mul_comm _ c, xdef, mul_comm]
+  rw [mul_add, ←mul.assoc, mul.comm _ x, ←mul.assoc, ydef, mul.comm _ c, xdef, mul.comm]
   assumption
 
-#print axioms nat.of_dvd_mod
+#print axioms nat.dvd.of_mod
 
-def nat.dvd_product : ∀(a b k: nat), (k * a) ∣ b -> k ∣ b ∧ a ∣ b := by
+def nat.dvd.of_mul : ∀(a b k: nat), (k * a) ∣ b -> k ∣ b ∧ a ∣ b := by
   intro a b k ka_dvd_b
   have ⟨ x, xprf ⟩ := ka_dvd_b
   apply And.intro
   exists a * x
-  rw [←nat.mul_assoc]
+  rw [←nat.mul.assoc]
   assumption
   exists k * x
-  rw [←nat.mul_assoc,  nat.mul_comm a]
+  rw [←nat.mul.assoc,  nat.mul.comm a]
   assumption
 
-#print axioms nat.dvd_product
+#print axioms nat.dvd.of_mul
 
 def nat.mul_div (a b: nat) : 0 < a -> (a * b) / a = b := by
   intro a_nz
   have := nat.div_def (a * b) a a_nz
-  rw [nat.mod_of_dvd, nat.add_zero, mul_comm _ a] at this
+  rw [nat.dvd.mod_eq_zero, nat.add_zero, mul.comm _ a] at this
   apply eq_of_mul_eq
   assumption
   exact this.symm
-  apply nat.dvd_mul_left
+  apply nat.dvd.mul_left
 
 #print axioms nat.mul_div

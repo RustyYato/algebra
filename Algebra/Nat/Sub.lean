@@ -36,12 +36,12 @@ def nat.succ_sub_succ (a b: nat) : a.succ - b.succ = a - b := rfl
 
 #print axioms nat.succ_sub_succ
 
-def nat.sub_refl (a: nat) : a - a = 0 := by
+def nat.sub.refl (a: nat) : a - a = 0 := by
   induction a with
   | zero => rfl
   | succ _ ih => rw [succ_sub_succ, ih]
 
-#print axioms nat.sub_refl
+#print axioms nat.sub.refl
 
 def nat.succ_sub {a b: nat} : b ≤ a -> a.succ - b = (a - b).succ := by
   intro b_le_a
@@ -67,8 +67,7 @@ def nat.succ_sub {a b: nat} : b ≤ a -> a.succ - b = (a - b).succ := by
       clear ih b_le_a b_eq_a_succ b 
       induction a with
       | zero => rfl
-      | succ a ih =>
-        rw [succ_sub_succ, ih]
+      | succ _ ih => congr
 
 #print axioms nat.succ_sub
 
@@ -100,7 +99,7 @@ def nat.add_sub (a b c: nat) : c ≤ b -> a + (b - c) = (a + b) - c := by
       rw [nat.succ_sub, nat.succ_sub, add_succ]
       rw [ih c c_le_b]
       apply le_trans c_le_b
-      apply le_add_left
+      apply add.le_right
       assumption
     | inr c_eq_b =>
       rw [c_eq_b]
@@ -110,20 +109,20 @@ def nat.add_sub (a b c: nat) : c ≤ b -> a + (b - c) = (a + b) - c := by
 #print axioms nat.add_sub
 
 def nat.add_sub_inv (a b: nat) : a + b - b = a := by
-  rw [←nat.add_sub, sub_refl, add_zero]
+  rw [←add_sub, sub.refl, add_zero]
   apply le_refl
 
 #print axioms nat.add_sub_inv
 
 def nat.sub_add_inv (a b: nat) : b ≤ a -> a - b + b = a := by
   intro b_le_a
-  rw [add_comm, nat.add_sub, add_comm]
+  rw [add.comm, nat.add_sub, add.comm]
   apply nat.add_sub_inv
   assumption
 
 #print axioms nat.sub_add_inv
 
-def nat.sub_le_left (a b c: nat) : a ≤ b -> a - c ≤ b - c := by
+def nat.sub.le_left (a b c: nat) : a ≤ b -> a - c ≤ b - c := by
   intro a_le_b
   induction c generalizing a b with
   | zero => rw [zero_eq, sub_zero, sub_zero]; assumption
@@ -138,9 +137,9 @@ def nat.sub_le_left (a b c: nat) : a ≤ b -> a - c ≤ b - c := by
     rw [succ_sub_succ, succ_sub_succ]
     exact ih a b a_le_b
 
-#print axioms nat.sub_le_left
+#print axioms nat.sub.le_left
 
-def nat.sub_le (a b: nat) : a - b ≤ a := by
+def nat.sub.le (a b: nat) : a - b ≤ a := by
   induction b with
   | zero =>
     apply le_of_eq
@@ -148,12 +147,12 @@ def nat.sub_le (a b: nat) : a - b ≤ a := by
   | succ x ih =>
     rw [sub_succ]
     apply le_trans _ ih
-    apply sub_le_left
-    apply dec_le
+    apply le_left
+    apply dec.le
 
-#print axioms nat.sub_le
+#print axioms nat.sub.le
 
-def nat.sub_nz_lt (a b: nat) : 0 < b -> b ≤ a -> a - b < a := by
+def nat.sub.lt_nz (a b: nat) : 0 < b -> b ≤ a -> a - b < a := by
   intro b_nz b_le_a
   match b with
   | .succ b =>
@@ -161,12 +160,12 @@ def nat.sub_nz_lt (a b: nat) : 0 < b -> b ≤ a -> a - b < a := by
   | .succ a =>
   rw [succ_sub_succ]
   apply lt_of_le_and_lt
-  apply sub_le
+  apply le
   apply lt_succ_self
 
-#print axioms nat.sub_nz_lt
+#print axioms nat.sub.lt_nz
 
-def nat.sub_lt { a b: nat }: a < b -> a - b = 0 := by
+def nat.sub.lt { a b: nat }: a < b -> a - b = 0 := by
   induction b generalizing a with
   | zero => 
     intro  h
@@ -181,3 +180,4 @@ def nat.sub_lt { a b: nat }: a < b -> a - b = 0 := by
       apply ih
       assumption
 
+#print axioms nat.sub.lt

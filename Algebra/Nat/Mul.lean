@@ -27,7 +27,7 @@ def nat.mul_zero (a: nat) : a * 0 = 0 := by
 def nat.mul_succ (a b: nat) : a * b.succ = a + (a * b) := by
   induction a generalizing b with
   | zero => rfl
-  | succ a ih => rw [succ_mul, ih, succ_mul, succ_add, succ_add, add_left_comm]
+  | succ a ih => rw [succ_mul, ih, succ_mul, succ_add, succ_add, add.comm_left]
 
 #print axioms nat.mul_succ
 
@@ -41,31 +41,31 @@ def nat.mul_one (a: nat) : a * 1 = a := by
 
 #print axioms nat.mul_one
 
-def nat.mul_comm (a b: nat) : a * b = b * a := by
+def nat.mul.comm (a b: nat) : a * b = b * a := by
   induction a generalizing b with
   | zero => rw [zero_eq, zero_mul, mul_zero]
   | succ a ih => rw [succ_mul, mul_succ, ih]
 
-#print axioms nat.mul_comm
+#print axioms nat.mul.comm
 
 def nat.add_mul (a b k: nat) : (a + b) * k = a * k + b * k := by
   induction k with
   | zero => rw [zero_eq, mul_zero, mul_zero, mul_zero, add_zero]
   | succ k ih =>
     rw [mul_succ, mul_succ, mul_succ, ih]
-    rw [add_assoc, add_assoc]
+    rw [add.assoc, add.assoc]
     apply nat.add_eq_add_right
-    rw [nat.add_left_comm]
+    rw [add.comm_left]
 
 #print axioms nat.add_mul
 
 def nat.mul_add (a b k: nat) : k * (a + b) = k * a + k * b := by
-  repeat rw [mul_comm k]
-  apply nat.add_mul
+  repeat rw [mul.comm k]
+  apply add_mul
 
 #print axioms nat.mul_add
 
-def nat.mul_assoc (a b c: nat) : (a * b) * c = a * (b * c) := by
+def nat.mul.assoc (a b c: nat) : (a * b) * c = a * (b * c) := by
   induction a generalizing b c with
   | zero => rw [zero_eq, zero_mul, zero_mul, zero_mul]
   | succ a ih => 
@@ -73,32 +73,32 @@ def nat.mul_assoc (a b c: nat) : (a * b) * c = a * (b * c) := by
     apply nat.add_eq_add_right
     apply ih
 
-#print axioms nat.mul_assoc
+#print axioms nat.mul.assoc
 
-def nat.mul_ge (a b: nat) (b_nz: 0 < b) : a ≤ a * b := by
+def nat.mul.ge (a b: nat) (b_nz: 0 < b) : a ≤ a * b := by
   match b with
   | .zero => contradiction
   | .succ b =>
     rw [mul_succ]
-    apply le_add_right
+    apply add.le_left
 
-#print axioms nat.mul_ge
+#print axioms nat.mul.ge
 
-def nat.mul_gt (a b: nat) (a_nz: 0 < a) (b_nz: 1 < b) : a < a * b := by
+def nat.mul.gt (a b: nat) (a_nz: 0 < a) (b_nz: 1 < b) : a < a * b := by
   match b with
   | .zero | .succ .zero => contradiction
   | .succ (.succ b) =>
     rw [mul_succ, mul_succ]
     match a with
     | .succ a =>
-    rw [nat.succ_add, add_left_comm, succ_add]
+    rw [nat.succ_add, add.comm_left, succ_add]
     apply succ_lt_succ
     apply lt_of_le_and_lt _ (lt_succ_self _)
-    apply le_add_right
+    apply add.le_left
 
-#print axioms nat.mul_gt
+#print axioms nat.mul.gt
 
-def nat.to_mul_lt_mul (a b c: nat) (a_nz: 0 < a) : b < c -> a * b < a * c := by
+def nat.mul.of_lt_cancel_left (a b c: nat) (a_nz: 0 < a) : b < c -> a * b < a * c := by
   induction b generalizing a c with
   | zero =>
     intro h
@@ -115,15 +115,21 @@ def nat.to_mul_lt_mul (a b c: nat) (a_nz: 0 < a) : b < c -> a * b < a * c := by
     match c with
     | .succ c =>
     rw [mul_succ, mul_succ]
-    apply nat.add_of_lt_cancel_left
+    apply add.of_lt_cancel_left
     apply ih
-    apply nat.zero_lt_succ
+    apply zero_lt_succ
     exact h
 
-#print axioms nat.to_mul_lt_mul
+#print axioms nat.mul.of_lt_cancel_left
 
+def nat.mul.of_lt_cancel_right (a b c: nat) (a_nz: 0 < a) : b < c -> b * a < c * a := by
+  intros
+  repeat rw [comm _ a]
+  apply of_lt_cancel_left <;> assumption
 
-def nat.mul_lt_mul (a b c: nat) (a_nz: 0 < a) : a * b < a * c -> b < c := by
+#print axioms nat.mul.of_lt_cancel_right
+
+def nat.mul.lt_cancel_left (a b c: nat) (a_nz: 0 < a) : a * b < a * c -> b < c := by
   induction c generalizing a b with
   | zero =>
     intro h
@@ -138,12 +144,18 @@ def nat.mul_lt_mul (a b c: nat) (a_nz: 0 < a) : a * b < a * c -> b < c := by
     | succ b =>
       rw [mul_succ] at h
       apply ih a b a_nz
-      apply nat.add_lt_cancel_left
+      apply add.lt_cancel_left
       exact h
 
-#print axioms nat.mul_lt_mul
+#print axioms nat.mul.lt_cancel_left
 
-def nat.mul_le_cancel_left (a b c: nat) : b ≤ c -> a * b ≤ a * c := by
+def nat.mul.lt_cancel_right (a b c: nat) (a_nz: 0 < a): b * a < c * a -> b < c := by
+  repeat rw [comm _ a]
+  apply lt_cancel_left <;> assumption
+
+#print axioms nat.mul.lt_cancel_right
+
+def nat.mul.of_le_cancel_left (a b c: nat) : b ≤ c -> a * b ≤ a * c := by
   induction c generalizing a b with
   | zero =>
     intro h
@@ -158,10 +170,16 @@ def nat.mul_le_cancel_left (a b c: nat) : b ≤ c -> a * b ≤ a * c := by
     | succ b =>
     have := ih a b h
     rw [mul_succ, mul_succ]
-    apply nat.add_le_cancel_left
+    apply add.of_le_cancel_left
     assumption
 
-#print axioms nat.mul_lt_mul
+#print axioms nat.mul.of_le_cancel_left
+
+def nat.mul.of_le_cancel_right (a b c: nat) : b ≤ c -> b * a ≤ c * a := by
+  repeat rw [comm _ a]
+  apply of_le_cancel_left
+
+#print axioms nat.mul.of_le_cancel_right
 
 def nat.mul_sub (a b c: nat) : a * (b - c) = a * b - a * c := by
   induction b generalizing a c with
@@ -170,13 +188,13 @@ def nat.mul_sub (a b c: nat) : a * (b - c) = a * b - a * c := by
     cases c with
     | zero => rw [zero_eq, sub_zero, mul_zero, sub_zero]
     | succ c =>
-      rw [succ_sub_succ, mul_succ, mul_succ, sub_add, add_comm, ←add_sub, sub_refl, add_zero]
+      rw [succ_sub_succ, mul_succ, mul_succ, sub_add, add.comm, ←add_sub, sub.refl, add_zero]
       apply ih
       apply TotalOrder.le_refl
 
 #print axioms nat.mul_sub
 
-def nat.mul_eq_zero (a b: nat) : a * b = 0 -> a = 0 ∨ b = 0 := by
+def nat.mul.eq_zero {a b: nat} : a * b = 0 -> a = 0 ∨ b = 0 := by
   intro mul_eq_zero
   cases a
   exact Or.inl rfl
@@ -185,9 +203,9 @@ def nat.mul_eq_zero (a b: nat) : a * b = 0 -> a = 0 ∨ b = 0 := by
   rw [succ_mul, succ_add] at mul_eq_zero
   contradiction
 
-#print axioms nat.mul_eq_zero
+#print axioms nat.mul.eq_zero
 
-def nat.mul_eq_one (a b: nat) : a * b = 1 -> a = 1 ∧ b = 1 := by
+def nat.mul.eq_one {a b: nat} : a * b = 1 -> a = 1 ∧ b = 1 := by
   intro mul_eq_one
   match a with
   | 0 => rw [zero_mul] at mul_eq_one; contradiction
@@ -213,7 +231,7 @@ def nat.mul_eq_one (a b: nat) : a * b = 1 -> a = 1 ∧ b = 1 := by
           rw [mul_succ]
           apply TotalOrder.lt_of_lt_and_le
           assumption
-          apply nat.le_add_left
+          apply nat.add.le_right
     have := this a b
     rw [mul_eq_one] at this
     cases this <;> contradiction
@@ -222,14 +240,14 @@ def nat.mul_eq_one (a b: nat) : a * b = 1 -> a = 1 ∧ b = 1 := by
     rw [one_mul] at mul_eq_one
     assumption
 
-#print axioms nat.mul_eq_one
+#print axioms nat.mul.eq_one
 
 def nat.eq_of_mul_eq { a b k: nat } : 0 < k -> k * a = k * b -> a = b := by
   intro k_nz k_mul
   induction a generalizing b k with
   | zero => 
     rw [zero_eq, mul_zero] at k_mul
-    cases mul_eq_zero _ _ k_mul.symm with
+    cases mul.eq_zero k_mul.symm with
     | inl h =>
       rw [h] at k_nz
       contradiction
@@ -238,7 +256,7 @@ def nat.eq_of_mul_eq { a b k: nat } : 0 < k -> k * a = k * b -> a = b := by
     cases b with
     | zero => 
       rw [zero_eq, mul_zero] at k_mul
-      cases mul_eq_zero _ _ k_mul with
+      cases mul.eq_zero k_mul with
       | inl h =>
         rw [h] at k_nz
         contradiction
@@ -248,7 +266,7 @@ def nat.eq_of_mul_eq { a b k: nat } : 0 < k -> k * a = k * b -> a = b := by
       apply ih
       assumption
       rw [mul_succ, mul_succ] at k_mul
-      apply nat.add_cancel_left
+      apply nat.add.cancel_left
       assumption
 
 #print axioms nat.eq_of_mul_eq

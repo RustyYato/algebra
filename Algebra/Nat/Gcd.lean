@@ -36,7 +36,7 @@ def nat.gcd.induction.fueled.termination
     simp only 
     have := ih b.succ (a % b.succ) (by
       apply TotalOrder.lt_of_lt_and_le
-      apply nat.mod_lt
+      apply nat.mod.lt
       apply nat.zero_lt_succ
       exact nat.le_of_lt_succ b_lt_succ_fuel
     )
@@ -77,12 +77,12 @@ def nat.gcd.induction.fueled.fuel_irr
           rw [ih]
           
           apply TotalOrder.lt_of_lt_and_le
-          apply nat.mod_lt
+          apply nat.mod.lt
           apply nat.zero_lt_succ
           exact nat.le_of_lt_succ b_le_fuela
           
           apply TotalOrder.lt_of_lt_and_le
-          apply nat.mod_lt
+          apply nat.mod.lt
           apply nat.zero_lt_succ
           exact nat.le_of_lt_succ b_le_fuelb
 
@@ -160,7 +160,7 @@ def nat.gcd.induction.right_nz
       rename_i h
       rw [induction.remove_fuel] at h
       rw [my_option.some.inj h]
-      apply nat.mod_lt
+      apply nat.mod.lt
       apply nat.zero_lt_succ
     }
     {
@@ -202,14 +202,14 @@ def nat.gcd.to_dvd : ∀{a b c: nat}, c ∣ gcd a b -> c ∣ a ∧ c ∣ b := by
     intro a c c_dvd_gcd
     apply And.intro
     assumption
-    apply nat.dvd_zero
+    apply nat.dvd.zero
   }
   {
     intro a b zero_lt_b ih c c_dvd_gcd
     rw [right_nz] at c_dvd_gcd
     have ⟨ c_dvd_b, c_dvd_rem ⟩ := ih c_dvd_gcd
     apply And.intro
-    apply of_dvd_mod 
+    apply dvd.of_mod
     repeat assumption
   }
 
@@ -226,13 +226,13 @@ def nat.gcd.of_dvd : ∀{a b c: nat}, c ∣ a -> c ∣ b -> c ∣ gcd a b := by
     rw [right_nz]
     apply ih
     assumption
-    apply dvd_mod <;> assumption
+    apply dvd.mod <;> assumption
     assumption
   }
 
 #print axioms nat.gcd.of_dvd
 
-def nat.gcd.dvd (a b: nat): gcd a b ∣ a ∧ gcd a b ∣ b := nat.gcd.to_dvd (nat.dvd_refl _)
+def nat.gcd.dvd (a b: nat): gcd a b ∣ a ∧ gcd a b ∣ b := nat.gcd.to_dvd (nat.dvd.refl _)
 
 #print axioms nat.gcd.dvd
 
@@ -243,7 +243,7 @@ def nat.gcd.dvd_right (a b: nat): gcd a b ∣ b := (nat.gcd.dvd a b).right
 
 def nat.gcd.comm : ∀(a b: nat), gcd a b = gcd b a := by
   intro a b
-  apply dvd_antisymm
+  apply dvd.antisymm
   have ⟨ _, _ ⟩ := nat.gcd.dvd a b
   apply of_dvd <;> assumption
   have ⟨ _, _ ⟩ := nat.gcd.dvd b a
@@ -253,10 +253,10 @@ def nat.gcd.comm : ∀(a b: nat), gcd a b = gcd b a := by
 
 def nat.gcd.idempot_left : ∀{a b: nat}, gcd (gcd a b) b = gcd a b := by
   intro a b
-  apply dvd_antisymm
+  apply dvd.antisymm
   exact (nat.gcd.dvd _ _).left
   apply of_dvd
-  apply dvd_refl
+  apply dvd.refl
   exact (nat.gcd.dvd _ _).right
 
 #print axioms nat.gcd.idempot_left
@@ -270,25 +270,25 @@ def nat.gcd.idempot_right : ∀{a b: nat}, gcd a (gcd a b) = gcd a b := by
 
 def nat.gcd.assoc : ∀{a b c: nat}, gcd (gcd a b) c = gcd a (gcd b c) := by
   intro a b c
-  apply dvd_antisymm
+  apply dvd.antisymm
   apply of_dvd
-  apply nat.dvd.trans
-  apply nat.gcd.dvd_left
-  apply nat.gcd.dvd_left
+  apply dvd.trans
+  apply dvd_left
+  apply dvd_left
   apply of_dvd
-  apply nat.dvd.trans
-  apply nat.gcd.dvd_left
-  apply nat.gcd.dvd_right
-  apply nat.gcd.dvd_right
+  apply dvd.trans
+  apply dvd_left
+  apply dvd_right
+  apply dvd_right
   apply of_dvd
   apply of_dvd
-  apply nat.gcd.dvd_left
-  apply nat.dvd.trans
-  apply nat.gcd.dvd_right
-  apply nat.gcd.dvd_left
-  apply nat.dvd.trans
-  apply nat.gcd.dvd_right
-  apply nat.gcd.dvd_right
+  apply dvd_left
+  apply dvd.trans
+  apply dvd_right
+  apply dvd_left
+  apply dvd.trans
+  apply dvd_right
+  apply dvd_right
 
 #print axioms nat.gcd.idempot_right
 
@@ -296,11 +296,11 @@ def nat.gcd_eq_zero : ∀{a b}, gcd a b = 0 -> a = 0 ∧ b = 0 := by
   intro a b  gcd_eq_zero
   have : 0 ∣ gcd a b := by
     rw [gcd_eq_zero]
-    apply nat.dvd_refl
+    apply dvd.refl
   have ⟨ zero_dvd_a, zero_dvd_b ⟩  := nat.gcd.to_dvd this
   apply And.intro
-  exact nat.eq_zero_of_zero_dvd zero_dvd_a
-  exact nat.eq_zero_of_zero_dvd zero_dvd_b
+  exact dvd.eq_zero_of_by_zero zero_dvd_a
+  exact dvd.eq_zero_of_by_zero zero_dvd_b
 
 #print axioms nat.gcd_eq_zero
 
@@ -323,17 +323,17 @@ def nat.gcd.common_right : ∀a b k, gcd (a * k) (b * k) = gcd a b * k := by
     rw [mul_succ]
     apply TotalOrder.lt_of_lt_and_le
     assumption
-    apply nat.le_add_right
+    apply nat.add.le_left
   }
 
 #print axioms nat.gcd.common_right
 
 def nat.gcd.common_left : ∀a b k, gcd (k * a) (k * b) = k * gcd a b := by
   intros a b k
-  rw [nat.mul_comm k]
-  rw [nat.mul_comm k]
-  rw [nat.mul_comm k]
-  apply nat.gcd.common_right
+  rw [mul.comm k]
+  rw [mul.comm k]
+  rw [mul.comm k]
+  apply common_right
 
 #print axioms nat.gcd.common_left
 

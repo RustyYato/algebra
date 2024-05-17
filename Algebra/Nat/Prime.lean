@@ -38,7 +38,7 @@ def Decidable.not_and { P Q: Prop }
 
 #print axioms Decidable.not_and
 
-def nat.prime_dvd_or_coprime : ∀a b, a.prime -> a ∣ b ∨ coprime a b := by
+def nat.prime.dvd_or_coprime : ∀a b, a.prime -> a ∣ b ∨ coprime a b := by
   intro a b prime_a
   apply Decidable.byContradiction
   intro not_a_dvd_b_or_coprime
@@ -47,7 +47,7 @@ def nat.prime_dvd_or_coprime : ∀a b, a.prime -> a ∣ b ∨ coprime a b := by
   | 0 =>
     have ⟨ a_eq_zero, b_eq_zero ⟩  := nat.gcd_eq_zero h
     rw [a_eq_zero, b_eq_zero] at not_dvd
-    have := nat.dvd_refl 0
+    have := nat.dvd.refl 0
     contradiction
   | 1 => contradiction
   | .succ (.succ c) =>
@@ -60,7 +60,7 @@ def nat.prime_dvd_or_coprime : ∀a b, a.prime -> a ∣ b ∨ coprime a b := by
       rw [gcd_eq_a] at this
       contradiction
 
-#print axioms nat.prime_dvd_or_coprime
+#print axioms nat.prime.dvd_or_coprime
 
 def nat.prime.search
   (p limit: nat)
@@ -72,7 +72,7 @@ def nat.prime.search
     intro k k_dvd_p
     cases k with
     | zero =>
-      have p_eq_zero := nat.eq_zero_of_zero_dvd  k_dvd_p
+      have p_eq_zero := dvd.eq_zero_of_by_zero  k_dvd_p
       rw [p_eq_zero] at p_gt_one
       contradiction
     | succ k =>
@@ -138,7 +138,7 @@ def nat.first_factor.find.is_factor (a current fuel: nat) : a = fuel + current -
     rw [zero_eq, zero_add] at enough_fuel
     unfold first_factor.find
     rw [enough_fuel]
-    apply nat.dvd_refl
+    apply dvd.refl
   | succ fuel ih => 
     intros enough_fuel
     unfold first_factor.find
@@ -147,6 +147,8 @@ def nat.first_factor.find.is_factor (a current fuel: nat) : a = fuel + current -
     apply ih
     rw [add_succ, ←succ_add]
     assumption
+
+#print axioms nat.first_factor.find.is_factor
 
 def nat.first_factor.is_factor (a: nat) : 1 < a -> a.first_factor ∣ a := by
   intro one_lt_a
@@ -157,6 +159,8 @@ def nat.first_factor.is_factor (a: nat) : 1 < a -> a.first_factor ∣ a := by
   have : 2 = nat.zero.succ.succ := rfl
   rw [this, succ_sub_succ, succ_sub_succ, zero_eq, sub_zero]
   rw [add_succ, add_succ, add_zero]
+
+#print axioms nat.first_factor.is_factor
 
 def nat.first_factor.find.lower_bound (a current fuel: nat) :
   current ≤ nat.first_factor.find a current fuel := by
@@ -170,6 +174,8 @@ def nat.first_factor.find.lower_bound (a current fuel: nat) :
     apply TotalOrder.le_trans _ (ih current.succ)
     apply TotalOrder.le_of_lt
     apply nat.lt_succ_self
+
+#print axioms nat.first_factor.find.lower_bound
 
 def nat.first_factor.find.is_smallest_factor (a current fuel: nat) :
   a = fuel + current ->
@@ -226,6 +232,7 @@ def nat.first_factor.find.is_smallest_factor (a current fuel: nat) :
       assumption
     }
 
+#print axioms nat.first_factor.find.is_smallest_factor
 
 def nat.first_factor.is_smallest_factor (a: nat) : 1 < a -> ∀k, 1 < k -> k ∣ a -> a.first_factor ≤ k := by
   intro one_lt_a k k_gt_1 k_dvd_a
@@ -246,6 +253,8 @@ def nat.first_factor.is_smallest_factor (a: nat) : 1 < a -> ∀k, 1 < k -> k ∣
   }
   repeat assumption
 
+#print axioms nat.first_factor.is_smallest_factor
+
 def nat.first_factor.is_prime (a: nat) : 1 < a -> a.first_factor.prime := by
   intro one_lt_a
   have is_factor := nat.first_factor.is_factor a one_lt_a
@@ -262,7 +271,7 @@ def nat.first_factor.is_prime (a: nat) : 1 < a -> a.first_factor.prime := by
   | 0 =>
     apply Or.inr
     apply Eq.symm
-    apply nat.eq_zero_of_zero_dvd
+    apply nat.dvd.eq_zero_of_by_zero
     assumption
   | 1 => exact Or.inl rfl
   | .succ (.succ k) => 
@@ -278,7 +287,7 @@ def nat.first_factor.is_prime (a: nat) : 1 < a -> a.first_factor.prime := by
     | isFalse h =>
       have := TotalOrder.not_lt_implies_ge h
       rw [nat.le_zero this] at is_factor
-      rw [nat.eq_zero_of_zero_dvd is_factor] at one_lt_a
+      rw [dvd.eq_zero_of_by_zero is_factor] at one_lt_a
       contradiction
   }
   assumption
@@ -287,14 +296,14 @@ def nat.first_factor.is_prime (a: nat) : 1 < a -> a.first_factor.prime := by
 
 def nat.coprime.cancel_left { a b c: nat }: coprime a b -> a ∣ (b * c) -> a ∣ c := by
   intro a_coprime_b a_dvd_bc
-  have g := gcd.of_dvd (dvd_mul_left a c) a_dvd_bc
+  have g := gcd.of_dvd (dvd.mul_left a c) a_dvd_bc
   rw [gcd.common_right, a_coprime_b, one_mul] at g
   assumption
 
 #print axioms nat.coprime.cancel_left
 
 def nat.coprime.cancel_right { a b c: nat }: coprime a b -> a ∣ (c * b) -> a ∣ c := by
-  rw [mul_comm]
+  rw [mul.comm]
   apply nat.coprime.cancel_left
 
 #print axioms nat.coprime.cancel_right
