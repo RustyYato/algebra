@@ -57,18 +57,18 @@ def PrimeFactorization.mul { a b: nat } : PrimeFactorization a -> PrimeFactoriza
     }
     {
       intro x y xs ys x_lt_y ih
-      rw [sorted_merge.if_lt, product.cons, ih, ←nat.mul_assoc, ←@product.cons x xs]
+      rw [sorted_merge.if_lt, product.cons, ih, ←nat.mul.assoc, ←@product.cons x xs]
       assumption
     }
     {
       intro x y xs ys x_gt_y ih
-      rw [sorted_merge.if_gt, product.cons, ih, nat.mul_comm, nat.mul_assoc, nat.mul_comm _ y, ←product.cons]
+      rw [sorted_merge.if_gt, product.cons, ih, nat.mul.comm, nat.mul.assoc, nat.mul.comm _ y, ←product.cons]
       assumption
     }
     {
       intro x y xs ys x_eq_y ih
       rw [sorted_merge.if_eq, product.cons, product.cons, ih,
-        nat.mul_comm (product xs), ←nat.mul_assoc y, ←@product.cons y, nat.mul_comm _ (product xs), ←nat.mul_assoc]
+        nat.mul.comm (product xs), ←nat.mul.assoc y, ←@product.cons y, nat.mul.comm _ (product xs), ←nat.mul.assoc]
       rfl
       assumption
     }
@@ -89,12 +89,12 @@ def PrimeFactorization.new (n: nat) : 0 < n -> PrimeFactorization n := by
   | isTrue h => 
   have is_prime := nat.first_factor.is_prime n h
   have is_factor := nat.first_factor.is_factor n h
-  have := nat.dvd_def is_factor
+  have := nat.dvd.def is_factor
   rw [this]
   apply PrimeFactorization.mul
   apply PrimeFactorization.new
   {
-    apply nat.div_gt_zero
+    apply nat.div.gt_zero
     apply TotalOrder.lt_trans
     apply nat.lt_succ_self
     exact is_prime.left
@@ -117,7 +117,7 @@ def product.eq_zero : product list = 0 -> 0 ∈ list := by
   | cons x xs ih => 
     unfold product
     intro eq_zero
-    cases nat.mul_eq_zero _ _ eq_zero with
+    cases nat.mul.eq_zero eq_zero with
     | inl h => rw [h]; apply List.Mem.head
     | inr h =>
       apply List.Mem.tail
@@ -129,11 +129,11 @@ def product.eq_one : product list = 1 -> ∀x, x ∈ list -> x = 1 := by
   intro eq_one y elem
   induction elem with
   | head _ => 
-    have ⟨ _, _ ⟩ := nat.mul_eq_one _ _ eq_one
+    have ⟨ _, _ ⟩ := nat.mul.eq_one eq_one
     assumption
   | tail _ _ ih =>
     apply ih
-    have ⟨ _, _ ⟩ := nat.mul_eq_one _ _ eq_one
+    have ⟨ _, _ ⟩ := nat.mul.eq_one eq_one
     assumption
 
 #print axioms product.eq_one
@@ -168,7 +168,7 @@ def PrimeFactorization.is_factor (n p: nat) (f: PrimeFactorization n) : p ∈ f.
       apply nat.lt_succ_self
       assumption)
     exists x * head
-    rw [←nat.mul_assoc, xprf, ←nat.dvd_def]
+    rw [←nat.mul.assoc, xprf, ←nat.dvd.def]
     exists product factors
 
 #print axioms PrimeFactorization.is_factor
@@ -189,7 +189,7 @@ def PrimeFactorization.is_complete (n p: nat) (f: PrimeFactorization n) : p.prim
   | nil =>
     unfold product at product_eq
     cases product_eq
-    cases nat.dvd_one p p_dvd_n
+    cases nat.dvd.eq_one_of_by_one p p_dvd_n
     contradiction
   | cons f factors ih =>
     cases decEq p f with
@@ -205,7 +205,7 @@ def PrimeFactorization.is_complete (n p: nat) (f: PrimeFactorization n) : p.prim
         rw [nat.mul_div]
         apply nat.coprime.cancel_left
         {
-          cases nat.prime_dvd_or_coprime p f prime_p with
+          cases nat.prime.dvd_or_coprime p f prime_p with
           | inl p_dvd_f =>
             cases is_prime.left.right p p_dvd_f with
             | inl h => cases h <;> contradiction
@@ -224,35 +224,6 @@ def PrimeFactorization.is_complete (n p: nat) (f: PrimeFactorization n) : p.prim
       exact is_prime.left.left
 
 #print axioms PrimeFactorization.is_complete
-
-def is_sorted.pick_first
-  [Ord α] [TotalOrder α]:
-  ∀{a x: α} {xs: List α},
-  is_sorted (x::xs) ->
-  a ∈ (x::xs) -> 
-  (∀y, y ∈ (x::xs) -> a ≤ y) ->
-  a = x := by
-    intro a x xs sorted_xs elem all_less
-    cases elem with
-    | head _ => rfl
-    | tail _ elem =>
-      induction elem with
-      | head _ => 
-        apply TotalOrder.le_antisymm
-        exact all_less x (.head _)
-        exact sorted_xs.left
-      | tail head _ ih =>
-        rename_i tail
-        apply ih
-        exact sorted_xs.pop_snd
-        intro y elem
-        apply all_less
-        cases elem with
-        | head => exact .head _
-        | tail _ _ =>
-          apply List.Mem.tail
-          apply List.Mem.tail
-          assumption
 
 def PrimeFactorization.unique (a b: PrimeFactorization n) : a = b := by
   have a_is_factor := a.is_factor

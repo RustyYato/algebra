@@ -71,6 +71,37 @@ def is_sorted.pop_snd [Ord α] [tle: TotalOrder α] (x x': α) (xs: List α) :
 
 #print axioms is_sorted.pop_snd
 
+def is_sorted.pick_first
+  [Ord α] [TotalOrder α]:
+  ∀{a x: α} {xs: List α},
+  is_sorted (x::xs) ->
+  a ∈ (x::xs) -> 
+  (∀y, y ∈ (x::xs) -> a ≤ y) ->
+  a = x := by
+    intro a x xs sorted_xs elem all_less
+    cases elem with
+    | head _ => rfl
+    | tail _ elem =>
+      induction elem with
+      | head _ => 
+        apply TotalOrder.le_antisymm
+        exact all_less x (.head _)
+        exact sorted_xs.left
+      | tail head _ ih =>
+        rename_i tail
+        apply ih
+        exact sorted_xs.pop_snd
+        intro y elem
+        apply all_less
+        cases elem with
+        | head => exact .head _
+        | tail _ _ =>
+          apply List.Mem.tail
+          apply List.Mem.tail
+          assumption
+
+#print axioms is_sorted.pick_first
+
 instance is_sorted.dec [Ord α] [TotalOrder α] (xs: List α) : Decidable (is_sorted xs) := 
   match xs with
   | [] => Decidable.isTrue True.intro
