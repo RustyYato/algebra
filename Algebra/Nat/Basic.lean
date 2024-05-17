@@ -3,8 +3,6 @@ inductive nat : Type where
   | succ (n: nat)
 deriving DecidableEq
 
-section nat
-
 def nat.ofNat (n: Nat) : nat := match n with
   | .zero => .zero
   | .succ n => .succ <| nat.ofNat n
