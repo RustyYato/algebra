@@ -65,6 +65,17 @@ def nat.mul_add (a b k: nat) : k * (a + b) = k * a + k * b := by
 
 #print axioms nat.mul_add
 
+def nat.mul.eq_zero {a b: nat} : a * b = 0 -> a = 0 ∨ b = 0 := by
+  intro mul_eq_zero
+  cases a
+  exact Or.inl rfl
+  cases b
+  exact Or.inr rfl
+  rw [succ_mul, succ_add] at mul_eq_zero
+  contradiction
+
+#print axioms nat.mul.eq_zero
+
 def nat.mul.assoc (a b c: nat) : (a * b) * c = a * (b * c) := by
   induction a generalizing b c with
   | zero => rw [zero_eq, zero_mul, zero_mul, zero_mul]
@@ -97,6 +108,39 @@ def nat.mul.gt (a b: nat) (a_nz: 0 < a) (b_nz: 1 < b) : a < a * b := by
     apply add.le_left
 
 #print axioms nat.mul.gt
+
+def nat.mul.cancel_left (a b c: nat) (a_nz: 0 < a) : a * b = a * c -> b = c := by
+  induction c generalizing a b with
+  | zero =>
+    intro h
+    rw [zero_eq, mul_zero] at h
+    cases nat.mul.eq_zero h
+    rename_i h
+    cases h
+    contradiction
+    assumption
+  | succ c ih =>
+    intro h
+    rw [mul_succ] at h
+    cases b with
+    | zero =>
+      rw [zero_eq, mul_zero] at h
+      cases add.eq_zero h.symm
+      contradiction
+    | succ b =>
+      rw [mul_succ] at h
+      congr
+      apply ih
+      assumption
+      apply add.cancel_left h
+
+#print axioms nat.mul.cancel_left
+
+def nat.mul.cancel_right (a b c: nat) (a_nz: 0 < a) : b * a = c * a -> b = c := by
+  repeat rw [comm _ a]
+  apply cancel_left <;> assumption
+
+#print axioms nat.mul.cancel_right
 
 def nat.mul.of_lt_cancel_left (a b c: nat) (a_nz: 0 < a) : b < c -> a * b < a * c := by
   induction b generalizing a c with
@@ -193,17 +237,6 @@ def nat.mul_sub (a b c: nat) : a * (b - c) = a * b - a * c := by
       apply TotalOrder.le_refl
 
 #print axioms nat.mul_sub
-
-def nat.mul.eq_zero {a b: nat} : a * b = 0 -> a = 0 ∨ b = 0 := by
-  intro mul_eq_zero
-  cases a
-  exact Or.inl rfl
-  cases b
-  exact Or.inr rfl
-  rw [succ_mul, succ_add] at mul_eq_zero
-  contradiction
-
-#print axioms nat.mul.eq_zero
 
 def nat.mul.eq_one {a b: nat} : a * b = 1 -> a = 1 ∧ b = 1 := by
   intro mul_eq_one

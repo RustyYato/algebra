@@ -337,3 +337,30 @@ def nat.gcd.common_left : ∀a b k, gcd (k * a) (k * b) = k * gcd a b := by
 
 #print axioms nat.gcd.common_left
 
+def nat.dvd.mul_div (a b c: nat) : c ∣ b -> a * (b / c) = (a * b) / c := by
+  intro c_dvd_b
+  have dvd₀ := nat.gcd.dvd_right c (a * b)
+  have dvd₁ := nat.gcd.of_dvd (dvd.refl c) c_dvd_b
+  have dvd₂ : gcd c b ∣ gcd c (a * b) := by
+    apply nat.gcd.of_dvd
+    apply nat.gcd.dvd_left
+    apply nat.dvd.trans
+    apply nat.gcd.dvd_right
+    apply nat.dvd.mul_right
+
+  cases c with
+  | zero => 
+    rw [zero_eq, nat.div_zero, nat.div_zero,  nat.mul_zero]
+  | succ c =>
+  
+  have ⟨ x, xprf ⟩ := nat.dvd.trans dvd₁ (nat.dvd.trans dvd₂ dvd₀)
+  have ⟨ y, yprf ⟩ := c_dvd_b
+  rw [←xprf, ←yprf, nat.mul_div, nat.mul_div]
+  rw [←yprf] at xprf
+  clear yprf
+  rw [←nat.mul.assoc, nat.mul.comm a, nat.mul.assoc] at xprf
+  apply nat.eq_of_mul_eq _ xprf.symm
+  repeat exact zero_lt_succ
+
+#print axioms nat.dvd.mul_div
+

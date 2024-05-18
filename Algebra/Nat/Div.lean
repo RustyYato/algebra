@@ -326,11 +326,21 @@ def nat.mod_zero : ∀{a: nat}, a % 0 = 0 := by intros; rfl
 
 #print axioms nat.mod_zero
 
+def nat.div_zero : ∀{a: nat}, a / 0 = 0 := by intros; rfl
+
+#print axioms nat.div_zero
+
 def nat.zero_mod : ∀{a: nat}, 0 % a = 0 := by
   intro a
   cases a <;> rfl
 
 #print axioms nat.zero_mod
+
+def nat.zero_div : ∀{a: nat}, 0 / a = 0 := by
+  intro a
+  cases a <;> rfl
+
+#print axioms nat.zero_div
 
 def nat.mul_mod :∀(a b k: nat), (a * k) % (b * k) = (a % b) * k := by
   intro a b
@@ -454,3 +464,4 @@ def nat.div.lt (a b: nat) : 1 < b -> 0 < a -> a / b < a := by
   assumption
  
 #print axioms nat.div.lt
+
