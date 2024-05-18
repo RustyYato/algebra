@@ -29,10 +29,13 @@ def int.add (a b: int): int :=
 #print axioms int.add
 
 instance int.add.inst : Add int := ⟨ int.add ⟩ 
+instance int.sub.inst : Sub int where
+  sub a b := a + (-b)
 
 #print axioms int.add.inst
 
 def int.add.def : a + b = int.add a b := rfl
+def int.sub.def : a - b = a + (-b) := rfl
 
 def int.add_zero { a: int } : a + 0 = a := by cases a <;> rfl
 
@@ -410,4 +413,32 @@ def int.add.assoc { a b c: int } : (a + b) + c = a + (b + c) := by
       rw [sub_nat.dec, sub_nat.dec, ih, dec_right]
 
 #print axioms int.add.assoc
+
+def int.add.neg_self { a: int } : a + -a = 0 := by
+  cases a with
+  | zero => rfl
+  | pos_succ a =>
+    rw [add.def]
+    unfold add
+    simp
+    induction a with
+    | zero => rfl
+    | succ a ih =>
+      rw [pos_succ.succ, inc_dec_inv, sub_nat]
+      assumption 
+  | neg_succ a => 
+    rw [add.def]
+    unfold add
+    simp
+    induction a with
+    | zero => rfl
+    | succ a ih =>
+      rw [neg_succ.succ, dec_inc_inv, add_nat]
+      assumption 
+
+#print axioms int.add.neg_self
+
+def int.sub.refl { a: int } : a - a = 0 := int.add.neg_self
+
+#print axioms int.sub.refl
 
