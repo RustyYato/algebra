@@ -119,6 +119,12 @@ def TotalOrder.gt_of_compare
 
 #print axioms TotalOrder.gt_of_compare
 
+def TotalOrder.compare_of_gt
+  [Ord α] [TotalOrder α]:
+  ∀{a b: α}, a > b -> compare a b = Ordering.gt := swap_compare
+
+#print axioms TotalOrder.gt_of_compare
+
 def TotalOrder.not_lt_implies_ge
   [Ord α] [TotalOrder α] :
   ∀{ a b: α }, ¬(a < b) -> a ≥ b := by

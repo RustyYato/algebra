@@ -28,9 +28,9 @@ instance int.instRepr : Repr int where
   reprPrec n := reprPrec n.toInt
 
 def int.zero_eq : int.zero = 0 := rfl
-#print axioms nat.zero_eq
+#print axioms int.zero_eq
 def int.one_eq : int.pos_succ .zero = 1 := rfl
-#print axioms nat.one_eq
+#print axioms int.one_eq
 
 instance nat_to_int : Coe nat int where
   coe := int.of_nat

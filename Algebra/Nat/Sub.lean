@@ -181,3 +181,19 @@ def nat.sub.lt { a b: nat }: a < b -> a - b = 0 := by
       assumption
 
 #print axioms nat.sub.lt
+
+def nat.sub_sub (a b c: nat) : c ≤ b -> a - (b - c) = (a + c) - b := by 
+  intro c_le_b
+  induction b generalizing a c with
+  | zero =>
+    cases nat.le_zero c_le_b
+    rw [sub_zero, zero_eq, sub_zero, add_zero, sub_zero]
+  | succ b ih =>  
+    cases c with
+    | zero => rw [zero_eq, add_zero, sub_zero]
+    | succ c =>
+      rw [succ_sub_succ, add_succ, succ_sub_succ]
+      apply ih
+      exact c_le_b
+
+#print axioms nat.sub_sub
