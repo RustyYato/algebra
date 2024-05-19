@@ -34,13 +34,35 @@ instance int.sub.inst : Sub int where
 
 #print axioms int.add.inst
 
-def int.add.def : a + b = int.add a b := rfl
-def int.sub.def : a - b = a + (-b) := rfl
+def int.add.def { a b: int } : a + b = int.add a b := rfl
+def int.sub.def { a b: int } : a - b = a + (-b) := rfl
 
 def int.add_zero { a: int } : a + 0 = a := by cases a <;> rfl
 
-def int.inc.pos : (int.pos_succ a).inc = int.pos_succ a.succ := rfl
-def int.dec.neg : (int.neg_succ a).dec = int.neg_succ a.succ := rfl
+def int.inc.pos_succ : (int.pos_succ a).inc = int.pos_succ a.succ := rfl
+def int.dec.neg_succ : (int.neg_succ a).dec = int.neg_succ a.succ := rfl
+
+def int.inc.neg { i: int } : -i.inc = (-i).dec := by
+  cases i
+  any_goals rfl
+  rename_i i
+  cases i <;> rfl
+
+#print axioms int.inc.neg
+
+def int.dec.neg { i: int } : -i.dec = (-i).inc := by
+  cases i
+  any_goals rfl
+  rename_i i
+  cases i <;> rfl
+
+#print axioms int.dec.neg
+
+def int.inc.zero : int.inc 0 = 1 := rfl
+def int.dec.zero : int.dec 0 = -1 := rfl
+
+def int.inc.neg_one : int.inc (-1) = 0 := rfl
+def int.dec.one : int.dec 1 = 0 := rfl
 
 def int.inc_dec_inv ( a: int ) : a.inc.dec = a := by
   cases a with
@@ -109,6 +131,7 @@ def int.neg_succ.def : int.neg_succ x = int.dec (-x) := by cases x <;> rfl
 def int.pos_succ.of_nat : nat.succ x = int.pos_succ x := by cases x <;> rfl
 def int.pos_succ.succ : int.pos_succ (nat.succ x) = int.inc (int.pos_succ x) := by cases x <;> rfl
 def int.neg_succ.succ : int.neg_succ (nat.succ x) = int.dec (int.neg_succ x) := by cases x <;> rfl
+def int.inc.of_nat_succ : of_nat (nat.succ x) = int.inc (of_nat x) := by cases x <;> rfl
 
 def int.add_nat.zero : int.add_nat 0 x = x := by
   induction x with
@@ -197,7 +220,7 @@ def int.zero_add { a: int } : 0 + a = a := by
     | zero => rfl
     | succ b ih =>
         unfold add_nat
-        rw [←int.inc.pos, add_nat.inc, ih]
+        rw [←int.inc.pos_succ, add_nat.inc, ih]
   }
   {
     rename_i b
@@ -208,7 +231,7 @@ def int.zero_add { a: int } : 0 + a = a := by
     | zero => rfl
     | succ b ih =>
         unfold sub_nat
-        rw [←int.dec.neg, sub_nat.dec, ih]
+        rw [←int.dec.neg_succ, sub_nat.dec, ih]
   }
 
 #print axioms int.zero_add
@@ -303,6 +326,28 @@ def int.add.dec_right { a b: int } : a + b.dec = (a + b).dec := by
   apply int.add.inc_dec_right.right
 
 #print axioms int.add.dec_right
+
+def int.sub.inc_left { a b : int } : a.inc - b = (a - b).inc := by
+  apply int.add.inc_left
+
+#print axioms int.sub.inc_left
+
+def int.sub.inc_right { a b : int } : a - b.inc = (a - b).dec := by
+  rw [sub.def, inc.neg]
+  apply int.add.dec_right
+
+#print axioms int.sub.inc_left
+
+def int.sub.dec_left { a b : int } : a.dec - b = (a - b).dec := by
+  apply int.add.dec_left
+
+#print axioms int.sub.dec_left
+
+def int.sub.dec_right { a b : int } : a - b.dec = (a - b).inc := by
+  rw [sub.def, dec.neg]
+  apply int.add.inc_right
+
+#print axioms int.sub.dec_right
 
 def int.add_nat.comm_pos { a b: nat } : (int.pos_succ a).add_nat b = (int.pos_succ b).add_nat a := by
   induction b generalizing a with
@@ -442,3 +487,142 @@ def int.sub.refl { a: int } : a - a = 0 := int.add.neg_self
 
 #print axioms int.sub.refl
 
+def int.add.zero_left { a: int } : 0 + a = a := by
+  rw [add.def]
+  cases a <;> (unfold add; simp)
+  rfl
+  rw [inc.zero, add_nat.one]
+  rw [dec.zero, sub_nat.neg_one]
+
+#print axioms int.add.zero_left
+
+def int.add.zero_right { a: int } : a + 0 = a := rfl
+
+#print axioms int.add.zero_right
+
+def int.sub.zero_left { a: int } : 0 - a = -a := by
+  rw [sub.def, add.zero_left]
+
+def int.of_gt_zero { a: int } : 0 < a -> ∃x, a = int.pos_succ x := by
+  intros 
+  cases a
+  any_goals contradiction
+  rename_i x _
+  exists x
+
+#print axioms int.of_gt_zero
+
+def int.of_lt_zero { a: int } : 0 > a -> ∃x, a = int.neg_succ x := by
+  intros 
+  cases a
+  any_goals contradiction
+  rename_i x _
+  exists x
+
+#print axioms int.of_lt_zero
+
+def int.inc.compare { a b: int } : compare a.inc b.inc = compare a b := by
+  cases a <;> cases b
+  any_goals rfl
+  any_goals simp
+  any_goals (
+    rename_i b
+    cases b
+    any_goals rfl)
+  all_goals rename_i a b
+  cases a <;> cases b
+  any_goals rfl
+  cases a <;> cases b
+  any_goals rfl
+
+#print axioms int.inc.compare
+
+def int.dec.compare { a b: int } : compare a.dec b.dec = compare a b := by
+  cases a <;> cases b
+  any_goals rfl
+  any_goals simp
+  any_goals (
+    rename_i b
+    cases b
+    any_goals rfl)
+  all_goals rename_i a b
+  cases a <;> cases b
+  any_goals rfl
+  cases a <;> cases b
+  any_goals rfl
+
+#print axioms int.dec.compare
+
+def int.inc_dec_compare { a b: int } : compare a.inc b = compare a b.dec := by
+  cases a <;> cases b
+  any_goals rfl
+  any_goals simp
+  any_goals (
+    rename_i b
+    cases b
+    any_goals rfl)
+  all_goals rename_i a b
+  cases a <;> cases b
+  any_goals rfl
+  cases a <;> cases b
+  any_goals rfl
+
+#print axioms int.inc_dec_compare
+
+def int.dec_inc_compare { a b: int } : compare a.dec b = compare a b.inc := by
+  cases a <;> cases b
+  any_goals rfl
+  any_goals simp
+  any_goals (
+    rename_i b
+    cases b
+    any_goals rfl)
+  all_goals rename_i a b
+  cases a <;> cases b
+  any_goals rfl
+  cases a <;> cases b
+  any_goals rfl
+
+#print axioms int.dec_inc_compare
+
+def int.inc.cmp { a b: int } : cmp a.inc b.inc = cmp a b := by
+  apply int.inc.compare
+
+#print axioms int.inc.cmp
+
+def int.dec.cmp { a b: int } : cmp a.dec b.dec = cmp a b := by
+  apply int.dec.compare
+
+#print axioms int.dec.cmp
+
+def int.inc_dec_cmp { a b: int } : cmp a.inc b = cmp a b.dec := by
+  apply int.inc_dec_compare
+
+#print axioms int.inc_dec_cmp
+
+def int.dec_inc_cmp { a b: int } : cmp a.dec b = cmp a b.inc := by
+  apply int.dec_inc_compare
+
+#print axioms int.dec_inc_cmp
+
+def int.add.compare_swap { a b k: int } : compare (a + k) b = compare a (b - k) := by
+  cases k with
+  | zero => rw [zero_eq, add_zero]; rfl
+  | pos_succ k =>
+    induction k generalizing a b with
+    | zero => 
+      rw [one_eq, one_right, sub.def, neg_one_right]
+      apply inc_dec_compare
+    | succ k ih =>
+      rw [pos_succ.succ, inc_right, ←inc_left, sub.def, inc.neg, dec_right, ←inc_dec_compare, ←sub.def]
+      apply ih
+  | neg_succ k =>
+    induction k generalizing a b with
+    | zero => 
+      rw [neg_one_eq, neg_one_right, sub.def, neg_neg, one_right]
+      apply dec_inc_compare
+    | succ k ih =>
+      rw [neg_succ.succ, dec_right, ←dec_left, sub.def, dec.neg, inc_right, ←dec_inc_compare, ←sub.def]
+      apply ih
+
+#print axioms int.add.compare_swap

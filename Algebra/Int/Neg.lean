@@ -79,3 +79,6 @@ def int.neg.swap_ge: ∀{ a b: int }, a ≥ b ↔ -b ≥ -a := by
 
 #print axioms int.neg.swap_ge
 
+def int.neg.zero : -(0: int) = 0 := rfl
+def int.neg.pos_succ : -int.pos_succ n = int.neg_succ n := rfl
+def int.neg.neg_succ : -int.neg_succ n = int.pos_succ n := rfl
