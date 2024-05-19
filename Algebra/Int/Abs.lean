@@ -7,11 +7,6 @@ def int.abs (i: int) : nat := match i with
 
 #print axioms int.abs
 
-def int.sign (i: int) : int.Sign := match i with
-  | .zero => .zero
-  | .pos_succ _ => .pos
-  | .neg_succ _ => .neg
-
 def int.sign.signum (i: int.Sign) : int := match i with
   | .neg => -1
   | .pos => 1
@@ -46,3 +41,21 @@ def int.abs.ge (i: int) : i ≤ i.abs := by
 
 #print axioms int.abs.ge
 
+def int.abs.sign { x: int } : x.sign * x.abs = x := by cases x <;> rfl
+
+#print axioms int.abs.sign
+
+def int.abs.flip_sign { x: int } : x.sign.flip * x.abs = -x := by cases x <;> rfl
+
+#print axioms int.abs.flip_sign
+
+def int.abs.sign_mul { s: int.Sign } { x: nat } : s ≠ int.Sign.zero ∨ x = .zero -> int.abs (s * x) = x := by
+  intro c
+  cases s <;> cases x
+  any_goals rfl
+  rename_i x
+  cases c <;> contradiction
+
+#print axioms int.abs.sign_mul
+
+def int.abs.zero : int.abs 0 = 0 := rfl

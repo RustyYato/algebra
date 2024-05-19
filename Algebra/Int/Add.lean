@@ -1,4 +1,5 @@
 import Algebra.Int.Neg
+import Algebra.Nat.Add
 
 def int.inc (a: int): int := match a with
   | .zero => .pos_succ .zero
@@ -749,3 +750,51 @@ def int.add.ne_left_iff_sub { a b k: int }: k + a ≠ b ↔ a ≠ b - k := by
 
 #print axioms int.add.ne_left_iff_sub
 
+def int.add.lift_nat { a b: nat } : (of_nat (a + b)) = (of_nat a) + (of_nat b) := by
+  induction b generalizing a with
+  | zero => 
+    conv => {
+      rhs; rhs; unfold of_nat; simp
+    }
+    rw [nat.zero_eq, zero_eq, add.zero_right, nat.add_zero]
+  | succ b ih =>
+    rw [nat.add_succ, ←nat.succ_add, inc.of_nat_succ, inc_right, ←inc_left, ←inc.of_nat_succ]
+    apply ih
+
+#print axioms int.add.lift_nat
+
+def int.add_nat.neg { a: int } { b: nat }  : -int.add_nat a b = int.sub_nat (-a) b := by
+  induction b generalizing a with
+  | zero => rfl
+  | succ b ih =>
+    unfold add_nat sub_nat
+    rw [add_nat.inc,  sub_nat.dec, int.inc.neg,ih]
+
+#print axioms int.add_nat.neg
+
+def int.sub_nat.neg { a: int } { b: nat }  : -int.sub_nat a b = int.add_nat (-a) b := by
+  induction b generalizing a with
+  | zero => rfl
+  | succ b ih =>
+    unfold add_nat sub_nat
+    rw [add_nat.inc,  sub_nat.dec, int.dec.neg,ih]
+
+#print axioms int.sub_nat.neg
+
+def int.add.neg { a b: int } : -(a + b) = -a + -b := by
+  cases b with
+  | zero => rw [zero_eq, zero_right, neg.zero, zero_right]
+  | pos_succ b =>
+    rw [add.def]
+    unfold add
+    simp only
+    rw [int.add_nat.neg, neg.pos_succ, add.def, inc.neg]
+    rfl
+  | neg_succ b => 
+    rw [add.def]
+    unfold add
+    simp only
+    rw [int.sub_nat.neg, neg.neg_succ, add.def, dec.neg]
+    rfl
+
+#print axioms int.add.neg

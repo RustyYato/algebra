@@ -1,7 +1,7 @@
 -- This module serves as the root of the `Algebra` library.
 -- Import modules here that should be built as part of the library.
 import «Algebra».Nat.PrimeFactorization
-import «Algebra».Int.Add
+import «Algebra».Int.Mul
 import «Algebra».Nat.Factorial
 import «Algebra».SortedList.Intersection
 import «Algebra».SortedList.Difference

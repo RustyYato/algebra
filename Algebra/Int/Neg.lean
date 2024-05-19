@@ -19,6 +19,8 @@ def int.neg_neg : ∀i: int, - -i = i := by intro i; cases i <;> rfl
 def int.neg_one_eq : int.neg_succ .zero = -1 := rfl
 #print axioms int.neg_one_eq
 
+def int.Sign.int_neg { x: nat } :  Sign.neg * x = -(x: int) := by cases x <;> rfl
+
 def int.neg.inj: ∀{ a b: int }, -a = -b -> a = b := by
   intros a b
   cases a <;> cases b

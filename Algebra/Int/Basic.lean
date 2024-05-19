@@ -63,3 +63,41 @@ instance nat.mul_sign : HMul int.Sign nat int where
       | .succ n => .neg_succ n
 
 #print axioms nat.mul_sign
+
+def int.sign (i: int) : int.Sign := match i with
+  | .zero => .zero
+  | .pos_succ _ => .pos
+  | .neg_succ _ => .neg
+
+#print axioms int.sign
+
+@[simp]
+def int.Sign.flip (s: int.Sign) : int.Sign := match s with
+  | .zero => .zero
+  | .pos => .neg
+  | .neg => .pos
+
+def int.sign.zero : int.sign 0 = .zero := rfl
+def int.sign.pos : int.sign (int.pos_succ x) = .pos := rfl
+def int.sign.neg : int.sign (int.neg_succ x) = .neg := rfl
+
+def int.Sign.zero_left :  Sign.zero * x = Sign.zero := by cases x <;> rfl
+def int.Sign.zero_right :  x * Sign.zero = Sign.zero := by cases x <;> rfl
+def int.Sign.pos_left :  Sign.pos * x = x := by cases x <;> rfl
+def int.Sign.pos_right :  x * Sign.pos = x := by cases x <;> rfl
+def int.Sign.neg_left :  Sign.neg * x = x.flip := by cases x <;> rfl
+def int.Sign.neg_right :  x * Sign.neg = x.flip := by cases x <;> rfl
+
+def int.Sign.int_zero { x: nat } :  Sign.zero * x = (0: int) := by cases x <;> rfl
+def int.Sign.int_pos { x: nat } :  Sign.pos * x = x := by cases x <;> rfl
+
+def int.sign.of_sign_mul { s: int.Sign } { x: nat } : s = int.Sign.zero ∨ x ≠ .zero -> int.sign (s * x) = s := by
+  intros
+  cases s <;> cases x
+  any_goals rfl
+  all_goals (
+    rename_i c
+    cases c <;> contradiction
+  )
+
+#print axioms int.sign.of_sign_mul
