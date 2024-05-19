@@ -626,3 +626,126 @@ def int.add.compare_swap { a b k: int } : compare (a + k) b = compare a (b - k) 
       apply ih
 
 #print axioms int.add.compare_swap
+
+def int.add.right_iff_sub { a b k: int }: a + k = b ↔ a = b - k := by
+  apply Iff.intro
+  intros h
+  apply TotalOrder.eq_of_compare_eq
+  rw [←int.add.compare_swap]
+  cases h
+  apply TotalOrder.compare_eq_refl
+  intros h
+  apply TotalOrder.eq_of_compare_eq
+  rw [int.add.compare_swap]
+  cases h
+  apply TotalOrder.compare_eq_refl
+
+#print axioms int.add.right_iff_sub
+
+def int.add.left_iff_sub { a b k: int }: k + a = b ↔ a = b - k := by
+  rw [add.comm]
+  apply int.add.right_iff_sub
+
+#print axioms int.add.left_iff_sub
+
+def int.add.lt_right_iff_sub { a b k: int }: a + k < b ↔ a < b - k := by
+  apply Iff.intro
+  intros h
+  rw [TotalOrder.unfold_lt]
+  rw [←int.add.compare_swap]
+  assumption
+  intros h
+  rw [TotalOrder.unfold_lt]
+  rw [int.add.compare_swap]
+  assumption
+
+#print axioms int.add.lt_right_iff_sub
+
+def int.add.lt_left_iff_sub { a b k: int }: k + a < b ↔ a < b - k := by
+  rw [add.comm]
+  apply int.add.lt_right_iff_sub
+
+#print axioms int.add.lt_left_iff_sub
+
+def int.add.le_right_iff_sub { a b k: int }: a + k ≤ b ↔ a ≤ b - k := by
+  apply Iff.intro
+  intros h
+  rw [TotalOrder.unfold_le]
+  rw [←int.add.compare_swap]
+  assumption
+  intros h
+  rw [TotalOrder.unfold_le]
+  rw [int.add.compare_swap]
+  assumption
+
+#print axioms int.add.lt_right_iff_sub
+
+def int.add.le_left_iff_sub { a b k: int }: k + a ≤ b ↔ a ≤ b - k := by
+  rw [add.comm]
+  apply int.add.le_right_iff_sub
+
+#print axioms int.add.le_left_iff_sub
+
+def int.add.gt_right_iff_sub { a b k: int }: a + k > b ↔ a > b - k := by
+  apply Iff.intro
+  intros h
+  apply TotalOrder.gt_of_compare
+  rw [←int.add.compare_swap]
+  apply TotalOrder.compare_of_gt
+  assumption
+  intros h
+  apply TotalOrder.gt_of_compare
+  rw [int.add.compare_swap]
+  apply TotalOrder.compare_of_gt
+  assumption
+
+#print axioms int.add.gt_right_iff_sub
+
+def int.add.gt_left_iff_sub { a b k: int }: k + a > b ↔ a > b - k := by
+  rw [add.comm]
+  apply int.add.gt_right_iff_sub
+
+#print axioms int.add.gt_left_iff_sub
+
+def int.add.ge_right_iff_sub { a b k: int }: a + k ≥ b ↔ a ≥ b - k := by
+  apply Iff.intro
+  intros h
+  apply TotalOrder.ge_of_compare
+  rw [←int.add.compare_swap]
+  apply TotalOrder.compare_of_ge
+  assumption
+  intros h
+  apply TotalOrder.ge_of_compare
+  rw [int.add.compare_swap]
+  apply TotalOrder.compare_of_ge
+  assumption
+
+#print axioms int.add.ge_right_iff_sub
+
+def int.add.ge_left_iff_sub { a b k: int }: k + a ≥ b ↔ a ≥ b - k := by
+  rw [add.comm]
+  apply int.add.ge_right_iff_sub
+
+#print axioms int.add.ge_left_iff_sub
+
+def int.add.ne_right_iff_sub { a b k: int }: a + k ≠ b ↔ a ≠ b - k := by
+  apply Iff.intro
+  intros h
+  apply TotalOrder.ne_of_compare
+  rw [←int.add.compare_swap]
+  apply TotalOrder.compare_of_ne
+  assumption
+  intros h
+  apply TotalOrder.ne_of_compare
+  rw [int.add.compare_swap]
+  apply TotalOrder.compare_of_ne
+  assumption
+
+#print axioms int.add.ge_right_iff_sub
+
+def int.add.ne_left_iff_sub { a b k: int }: k + a ≠ b ↔ a ≠ b - k := by
+  rw [add.comm]
+  apply int.add.ne_right_iff_sub
+
+#print axioms int.add.ne_left_iff_sub
+
