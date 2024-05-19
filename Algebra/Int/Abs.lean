@@ -7,6 +7,18 @@ def int.abs (i: int) : nat := match i with
 
 #print axioms int.abs
 
+def int.sign (i: int) : int.Sign := match i with
+  | .zero => .zero
+  | .pos_succ _ => .pos
+  | .neg_succ _ => .neg
+
+def int.sign.signum (i: int.Sign) : int := match i with
+  | .neg => -1
+  | .pos => 1
+  | .zero => 0
+
+#print axioms int.sign.signum
+
 def int.signum (i: int) : int := match i with
   | .neg_succ _ => -1
   | .pos_succ _ => 1
