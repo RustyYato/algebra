@@ -113,6 +113,8 @@ def TotalOrder.le_trans
 
 #print axioms TotalOrder.le_trans
 
+--- start conversions to/from compare ---
+
 def TotalOrder.gt_of_compare
   [Ord α] [TotalOrder α]:
   ∀{a b: α}, compare a b = Ordering.gt -> a > b := swap_compare
@@ -123,7 +125,89 @@ def TotalOrder.compare_of_gt
   [Ord α] [TotalOrder α]:
   ∀{a b: α}, a > b -> compare a b = Ordering.gt := swap_compare
 
-#print axioms TotalOrder.gt_of_compare
+#print axioms TotalOrder.compare_of_gt
+
+def TotalOrder.lt_of_compare
+  [Ord α] [TotalOrder α]:
+  ∀{a b: α}, compare a b = Ordering.lt -> a < b := id
+
+#print axioms TotalOrder.lt_of_compare
+
+def TotalOrder.compare_of_lt
+  [Ord α] [TotalOrder α]:
+  ∀{a b: α}, a < b -> compare a b = Ordering.lt := id
+
+#print axioms TotalOrder.compare_of_lt
+
+def TotalOrder.eq_of_compare
+  [Ord α] [TotalOrder α]:
+  ∀{a b: α}, compare a b = Ordering.eq -> a = b := eq_of_compare_eq
+
+#print axioms TotalOrder.eq_of_compare
+
+def TotalOrder.compare_of_eq
+  [Ord α] [TotalOrder α]:
+  ∀{a b: α}, a = b -> compare a b = Ordering.eq := fun x => match x with | .refl _ => compare_eq_refl _
+
+#print axioms TotalOrder.compare_of_eq
+
+def TotalOrder.le_of_compare
+  [Ord α] [TotalOrder α]:
+  ∀{a b: α}, compare a b = Ordering.lt ∨ compare a b = Ordering.eq -> a ≤ b := id
+
+#print axioms TotalOrder.le_of_compare
+
+def TotalOrder.compare_of_le
+  [Ord α] [TotalOrder α]:
+  ∀{a b: α}, a ≤ b -> compare a b = Ordering.lt ∨ compare a b = Ordering.eq := id
+
+#print axioms TotalOrder.compare_of_le
+
+def TotalOrder.ge_of_compare
+  [Ord α] [TotalOrder α]:
+  ∀{a b: α}, compare a b = Ordering.gt ∨ compare a b = Ordering.eq -> a ≥ b := by
+    intro a b ge
+    cases ge
+    rename_i h
+    apply Or.inl; apply swap_compare h
+    rename_i h
+    cases eq_of_compare_eq h; apply le_refl
+
+#print axioms TotalOrder.ge_of_compare
+
+def TotalOrder.compare_of_ge
+  [Ord α] [TotalOrder α]:
+  ∀{a b: α}, a ≥ b -> compare a b = Ordering.gt ∨ compare a b = Ordering.eq := by
+    intro a b a_ge_b
+    cases a_ge_b
+    apply Or.inl; rename_i h; apply swap_compare h
+    apply Or.inr;  rename_i h; apply swap_compare h
+
+#print axioms TotalOrder.compare_of_ge
+
+def TotalOrder.ne_of_compare
+  [Ord α] [TotalOrder α]:
+  ∀{a b: α}, compare a b = Ordering.gt ∨ compare a b = Ordering.lt -> a ≠ b := by
+    intro a b ne
+    intro a_eq_b
+    cases a_eq_b
+    cases ne <;> (rw [TotalOrder.compare_eq_refl] at *; contradiction)
+
+#print axioms TotalOrder.ne_of_compare
+
+def TotalOrder.compare_of_ne
+  [Ord α] [TotalOrder α]:
+  ∀{a b: α}, a ≠ b -> compare a b = Ordering.gt ∨ compare a b = Ordering.lt := by
+    intro a b a_ne_b
+    cases h:compare a b
+    any_goals (apply Or.inl; rfl)
+    any_goals (apply Or.inr; rfl)
+    have := eq_of_compare_eq h
+    contradiction
+
+#print axioms TotalOrder.compare_of_ne
+
+--- end conversions to/from compare ---
 
 def TotalOrder.not_lt_implies_ge
   [Ord α] [TotalOrder α] :
