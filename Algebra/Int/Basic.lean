@@ -107,3 +107,10 @@ def int.sign.of_sign_mul { s: int.Sign } { x: nat } : s = int.Sign.zero âˆ¨ x â‰
 def int.Sign.flip_flip { s: int.Sign } : s.flip.flip = s := by cases s <;> rfl
 
 #print axioms int.Sign.flip_flip
+
+def int.of_nat.inj { a b: nat } : int.of_nat a = int.of_nat b -> a = b := by
+  intro eq
+  cases a <;> cases b <;> cases eq
+  rfl; rfl
+
+#print axioms int.of_nat.inj

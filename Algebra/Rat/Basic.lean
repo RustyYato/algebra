@@ -177,5 +177,211 @@ instance : Div rat where
      | .zero => rat.zero
      | .pos_succ _ | .neg_succ _ => rat.div a b (by intro g; rw [h] at g; contradiction)
 
+def rat.new.def (num: int) (den: nat) : ∀den_nz g h, rat.new num den den_nz = rat.mk num den g h := by
+  intro den_nz zero_lt_den is_reduced
+  unfold new
+  congr
+  {
+    cases den with
+    | zero => contradiction
+    | succ den =>
+      unfold int.of_nat 
+      simp only
+      rw [int.sign.pos, int.Sign.pos_left, int.abs.pos_succ, is_reduced, nat.div.one, int.abs.sign]
+  }
+  {
+    cases den with
+    | zero => contradiction
+    | succ den =>
+      unfold int.of_nat 
+      simp only
+      rw [int.abs.pos_succ, is_reduced, nat.div.one]
+  }
 
+#print axioms rat.new.def
 
+def rat.equiv (anum bnum: int) (aden bden: nat) := anum * bden = bnum * aden 
+
+def rat.eq_of_equiv (anum bnum: int) (aden bden: nat) (aden_nz: (aden: int) ≠ 0) (bden_nz: (bden: int) ≠ 0) : 
+  rat.equiv anum bnum aden bden ->
+  rat.new anum aden aden_nz = rat.new bnum bden bden_nz := by
+  intro equiv
+  unfold rat.equiv at equiv
+  match aden with 
+  | .succ aden =>
+  match bden with 
+  | .succ bden =>
+  unfold new
+  have this_fst : ∀{a b c d: nat},
+    0 < b ->
+    0 < d ->
+    a * d = c * b -> a / b = c / d := by
+    clear equiv bden_nz bden aden_nz anum bnum
+    clear aden bden
+    clear aden
+    intro a b c d b_nz d_nz ad_eq_cb
+    apply nat.eq_of_mul_eq b_nz
+    apply nat.eq_of_mul_eq d_nz
+    -- here is a sketch of the proof
+    -- d * (b * (a / b)) = d * (b * (c / d))
+    -- d * (a - (a % b)) = b * (d * (c / d))
+    -- d * a - d * (a % b) = b * c - b * (c % d)
+    -- d * (a % b) = b * (c % d)
+    -- ((d * a) % (d * b)) = ((b * c) % (b * d))
+    -- d * b = b * d
+    have div_mul_eq : ∀{a b: nat} (b_nz: 0 < b), a / b * b = a - a % b := by
+      intro a b b_nz
+      have ab_div_def := nat.div_def a b b_nz
+      have : a - (a % b) = a - (a % b) := rfl
+      conv at this => {
+        lhs; lhs
+        rw [ab_div_def]
+      }
+      rw [nat.add_sub_inv] at this
+      assumption
+    rw [nat.mul.comm b, ←nat.mul.assoc d b, nat.mul.comm d b, nat.mul.assoc, nat.mul.comm d (_ / _), div_mul_eq b_nz, div_mul_eq d_nz]
+    rw [nat.mul_sub, nat.mul_sub]
+    congr 1
+    rw [nat.mul.comm, ad_eq_cb, nat.mul.comm]
+    rw [nat.mul.comm, ←nat.mul_mod, nat.mul.comm b (_ % _), ←nat.mul_mod]
+    congr 1
+    rw [nat.mul.comm]
+
+  have this_snd : ∀{a b c d: nat},
+    a * d = c * b -> a * (nat.gcd d c) = c * (nat.gcd b a) := by
+    clear this_fst
+    clear equiv bden_nz bden aden_nz anum bnum
+    clear aden bden
+    clear aden
+    intro a d c b
+    intro ab_eq_de
+    rw [←nat.gcd.common_left, ←nat.gcd.common_left, ab_eq_de, nat.mul.comm a c]
+
+  conv at equiv => {
+    rw [int.mul.def, int.mul.def, int.mul, int.mul]
+    unfold int.of_nat
+    simp only
+    rw [int.sign.pos, int.sign.pos, int.Sign.pos_right, int.Sign.pos_right, int.abs.pos_succ, int.abs.pos_succ]
+  }
+  congr 1
+  {
+    unfold int.of_nat
+    simp only
+    rw [int.sign.pos, int.sign.pos, int.Sign.pos_left, int.Sign.pos_left]
+    congr 1 
+    {
+      cases anum <;> cases bnum
+      any_goals rfl
+      all_goals contradiction
+    }
+    {
+      rw [int.abs.pos_succ, int.abs.pos_succ]
+      apply this_fst
+
+      cases h:nat.gcd anum.abs aden.succ
+      have ⟨ _, _ ⟩ := nat.gcd.eq_zero h
+      contradiction
+      apply nat.zero_lt_succ
+      cases h:nat.gcd bnum.abs bden.succ
+      have ⟨ _, _ ⟩ := nat.gcd.eq_zero h
+      contradiction
+      apply nat.zero_lt_succ
+
+      repeat rw [nat.gcd.comm _ (.succ _)]
+      apply @this_snd anum.abs aden.succ bnum.abs bden.succ
+      cases anum <;> cases bnum
+      any_goals contradiction
+      rw [int.zero_eq, int.abs.zero, nat.zero_mul, nat.zero_mul]
+      rename_i anum bnum
+      rw [int.abs.pos_succ, int.abs.pos_succ]
+      conv at equiv => {
+        rw [int.sign.pos, int.sign.pos, int.Sign.int_pos, int.Sign.int_pos]
+        rw [int.abs.pos_succ, int.abs.pos_succ]
+      }
+      apply int.of_nat.inj
+      assumption
+      rename_i anum bnum
+      rw [int.abs.neg_succ, int.abs.neg_succ]
+      conv at equiv => {
+        rw [int.sign.neg, int.sign.neg, int.Sign.int_neg, int.Sign.int_neg]
+        rw [int.abs.neg_succ, int.abs.neg_succ]
+      }
+      apply int.of_nat.inj
+      apply int.neg.inj
+      assumption
+    }
+  }
+  {
+    apply this_fst
+
+    cases h:nat.gcd anum.abs (int.abs aden.succ)
+    have ⟨ _, _ ⟩ := nat.gcd.eq_zero h
+    contradiction
+    apply nat.zero_lt_succ
+    cases h:nat.gcd bnum.abs (int.abs bden.succ)
+    have ⟨ _, _ ⟩ := nat.gcd.eq_zero h
+    contradiction
+    apply nat.zero_lt_succ
+
+    unfold int.of_nat
+    rw [int.abs.pos_succ, int.abs.pos_succ]
+    apply this_snd
+    apply Eq.symm
+    rw [nat.mul.comm, nat.mul.comm (.succ _)]
+    cases anum <;> cases bnum
+    any_goals contradiction
+    rw [int.zero_eq, int.abs.zero, nat.zero_mul, nat.zero_mul]
+    rename_i anum bnum
+    rw [int.abs.pos_succ, int.abs.pos_succ]
+    conv at equiv => {
+      rw [int.sign.pos, int.sign.pos, int.Sign.int_pos, int.Sign.int_pos]
+      rw [int.abs.pos_succ, int.abs.pos_succ]
+    }
+    apply int.of_nat.inj
+    assumption
+    conv at equiv => {
+      rw [int.sign.neg, int.sign.neg, int.Sign.int_neg, int.Sign.int_neg]
+      rw [int.abs.neg_succ, int.abs.neg_succ]
+    }
+    rw [int.abs.neg_succ, int.abs.neg_succ]
+    apply int.of_nat.inj
+    apply int.neg.inj
+    assumption
+  }
+
+#print axioms rat.eq_of_equiv
+
+def rat.neg.def (r: rat) : ∀g h, -r = rat.mk (-r.num) r.den g h := by
+  intro g h
+  cases r
+  conv => {
+    lhs
+    unfold Neg.neg
+  }
+  unfold rat.neg.inst
+  simp only
+  unfold rat.neg
+  rw [rat.new.def]
+
+#print axioms rat.new.def
+
+def rat.add.comm (a b : rat ) : a + b = b + a := by
+  cases a with
+  | mk a_num a_den a_den_nz a_is_reduced =>
+  cases b with
+  | mk b_num b_den b_den_nz b_is_reduced =>
+  unfold HAdd.hAdd instHAdd Add.add inst 
+  simp only
+  unfold add
+  simp only
+  congr 1
+  {
+    rw [int.add.comm, int.mul.comm]
+    congr 1
+    apply int.mul.comm
+  }
+  {
+    rw [int.mul.comm]
+  }
+
+#print axioms rat.add.comm

@@ -342,6 +342,31 @@ def nat.zero_div : ∀{a: nat}, 0 / a = 0 := by
 
 #print axioms nat.zero_div
 
+def nat.div.one : ∀{a: nat}, a / 1 = a := by
+  intro a
+  apply div_mod.induction (fun a b _ => b = 1 -> a / b = a) _ _ a 1 (zero_lt_succ) rfl
+  {
+    intro a b a_lt_b b_eq_one
+    cases b_eq_one
+    match a with
+    | .zero => rfl
+    | .succ a =>
+      have := nat.not_lt_zero a_lt_b
+      contradiction
+  }
+  {
+    intro a b b_nz a_ge_b ih b_eq_one
+    cases b_eq_one
+    rw [div.if_ge]
+    rw [ih rfl]
+    any_goals assumption
+    match a with
+    | .succ a =>
+    rw [←nat.one_eq, succ_sub_succ, zero_eq, sub_zero]
+  }
+
+#print axioms nat.div.one
+
 def nat.mul_mod :∀(a b k: nat), (a * k) % (b * k) = (a % b) * k := by
   intro a b
   cases b with
