@@ -1,5 +1,6 @@
 import Algebra.Int.Neg
 import Algebra.Nat.Add
+import Algebra.Nat.Sub
 
 def int.inc (a: int): int := match a with
   | .zero => .pos_succ .zero
@@ -763,6 +764,24 @@ def int.add.lift_nat { a b: nat } : (of_nat (a + b)) = (of_nat a) + (of_nat b) :
 
 #print axioms int.add.lift_nat
 
+def int.sub.lift_nat { a b: nat } : b ≤ a -> (of_nat (a - b)) = (of_nat a) - (of_nat b) := by
+  intro b_le_a
+  induction b generalizing a with
+  | zero => 
+    conv => {
+      rhs; rhs; unfold of_nat; simp
+    }
+  | succ b ih =>
+    cases a with
+    | zero => cases nat.le_zero b_le_a
+    | succ a =>
+    rw [nat.succ_sub_succ]
+    repeat rw [inc.of_nat_succ]
+    rw [sub.def, inc.neg, add.dec_right, add.inc_left, inc_dec_inv, ←sub.def]
+    apply ih b_le_a
+
+#print axioms int.sub.lift_nat
+
 def int.add_nat.neg { a: int } { b: nat }  : -int.add_nat a b = int.sub_nat (-a) b := by
   induction b generalizing a with
   | zero => rfl
@@ -798,3 +817,148 @@ def int.add.neg { a b: int } : -(a + b) = -a + -b := by
     rfl
 
 #print axioms int.add.neg
+
+def int.add.sign_mul { s: int.Sign } { a b: nat } :  s * (a + b) = s * a + s * b := by
+  cases a with
+  | zero => rw [nat.zero_eq, nat.zero_add, int.Sign.int_zero_nat, zero_left]
+  | succ a =>
+    rw [nat.succ_add, ←nat.add_succ]
+    cases s with
+    | zero =>
+      repeat rw [int.Sign.int_zero]
+      rfl
+    | pos =>
+      repeat rw [int.Sign.int_pos]
+      rw [←int.add.lift_nat]
+      rw [nat.succ_add, nat.add_succ]
+    | neg =>
+      repeat rw [int.Sign.int_neg]
+      apply int.neg.inj
+      rw [int.add.neg]
+      repeat rw [neg_neg]
+      rw [←int.add.lift_nat]
+      rw [nat.succ_add, nat.add_succ]
+
+#print axioms int.add.sign_mul
+
+def int.sub.sign_mul { s: int.Sign } { a b: nat } : b ≤ a -> s * (a - b) = s * a - s * b := by
+  intro b_le_a
+  induction a generalizing s b with
+  | zero =>
+    cases nat.le_zero b_le_a
+    rw [nat.zero_eq, nat.sub_zero, int.Sign.int_zero_nat]
+    rfl
+  | succ a ih =>
+    cases b with
+    | zero => rw [nat.zero_eq, nat.sub_zero, int.Sign.int_zero_nat, sub.def, neg.zero, add.zero_right]
+    | succ b =>
+    have b_le_a : b ≤ a := b_le_a
+    cases s with
+    | zero =>
+      repeat rw [int.Sign.int_zero]
+      rfl
+    | pos =>
+      repeat rw [int.Sign.int_pos]
+      apply sub.lift_nat
+      assumption
+    | neg =>
+      repeat rw [int.Sign.int_neg]
+      apply int.neg.inj
+      rw [sub.def, int.add.neg]
+      repeat rw [neg_neg]
+      rw [←sub.def]
+      apply int.sub.lift_nat
+      assumption
+
+#print axioms int.sub.sign_mul
+
+def int.add.lift_pos_pos_to_nat { a b: nat } : (int.pos_succ a) + (int.pos_succ b) = int.pos_succ ((a + b).succ) := by
+  rw [add.def]
+  unfold add
+  simp
+
+  induction b generalizing a with
+  | zero =>
+    unfold add_nat
+    rw [pos_succ.succ, nat.zero_eq, nat.add_zero]
+  | succ b ih =>
+    unfold add_nat
+    rw [nat.add_succ, ←nat.succ_add]
+    apply ih
+
+#print axioms int.add.lift_pos_pos_to_nat
+
+def int.add.lift_neg_neg_to_nat { a b: nat } : (int.neg_succ a) + (int.neg_succ b) = int.neg_succ ((a + b).succ) := by
+  apply int.neg.inj
+  rw [int.add.neg]
+  apply int.add.lift_pos_pos_to_nat
+
+#print axioms int.add.lift_neg_neg_to_nat
+
+def int.add.lift_pos_neg_gt_to_nat { a b: nat } : a > b -> (int.pos_succ a) + (int.neg_succ b) = int.pos_succ (a - b.succ) := by
+  intro a_gt_b
+
+  rw [add.def]
+  unfold add
+  simp only
+
+  induction b generalizing a with
+  | zero =>
+    unfold sub_nat
+    match a with
+    | .succ a =>
+    rw [nat.zero_eq, nat.succ_sub_succ, nat.sub_zero, pos_succ.succ, inc_dec_inv]
+  | succ b ih =>
+    unfold sub_nat
+    cases a with
+    | zero => exact False.elim <| nat.not_lt_zero a_gt_b
+    | succ a =>
+    rw [nat.succ_sub_succ, pos_succ.succ, inc_dec_inv]
+    apply ih
+    apply nat.lt_of_succ_lt_succ
+    exact a_gt_b
+
+#print axioms int.add.lift_pos_neg_gt_to_nat
+
+def int.add.lift_pos_neg_lt_to_nat { a b: nat } : a < b -> (int.pos_succ a) + (int.neg_succ b) = int.neg_succ (b - a.succ) := by
+  intro a_lt_b
+
+  rw [add.def]
+  unfold add
+  simp only
+
+  induction b generalizing a with
+  | zero =>
+    exact False.elim <| nat.not_lt_zero a_lt_b
+  | succ b ih =>
+    unfold sub_nat
+    cases a with
+    | zero =>
+      rw [nat.zero_eq, nat.succ_sub_succ, nat.sub_zero]
+      unfold dec
+      rw [←nat.zero_eq]
+      simp
+      rw [neg_one_eq, sub_nat.neg_one]
+    | succ a =>
+      rw [nat.succ_sub_succ, pos_succ.succ, inc_dec_inv]
+      apply ih
+      assumption
+
+#print axioms int.add.lift_pos_neg_lt_to_nat
+
+def int.add.lift_neg_pos_gt_to_nat { a b: nat } : a > b -> (int.neg_succ a) + (int.pos_succ b) = int.neg_succ (a - b.succ) := by
+  intro a_gt_b
+  rw [add.comm]
+  apply int.add.lift_pos_neg_lt_to_nat
+  assumption
+
+#print axioms int.add.lift_neg_pos_gt_to_nat
+
+def int.add.lift_neg_pos_lt_to_nat { a b: nat } : a < b -> (int.neg_succ a) + (int.pos_succ b) = int.pos_succ (b - a.succ) := by
+  intro a_lt_b
+  rw [add.comm]
+  apply int.add.lift_pos_neg_gt_to_nat
+  assumption
+
+#print axioms int.add.lift_neg_pos_lt_to_nat
+

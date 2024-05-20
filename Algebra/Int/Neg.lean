@@ -84,3 +84,12 @@ def int.neg.swap_ge: ∀{ a b: int }, a ≥ b ↔ -b ≥ -a := by
 def int.neg.zero : -(0: int) = 0 := rfl
 def int.neg.pos_succ : -int.pos_succ n = int.neg_succ n := rfl
 def int.neg.neg_succ : -int.neg_succ n = int.pos_succ n := rfl
+
+def int.neg.sign_mul { s: int.Sign } { x: nat } : -(s * x) = s.flip * x := by
+  cases s with
+  | zero => rfl
+  | pos | neg =>
+    cases x <;> rfl
+
+#print axioms int.neg.sign_mul
+    

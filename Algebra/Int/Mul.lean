@@ -1,5 +1,5 @@
-import Algebra.Int.Add
 import Algebra.Int.Abs
+import Algebra.Int.Add
 import Algebra.Nat.Mul
 
 def int.mul (a b: int) : int := a.sign * b.sign * (a.abs * b.abs)
@@ -63,9 +63,9 @@ def int.mul.comm { a b: int } : a * b = b * a := by
   congr 1
   cases a <;> cases b <;> rfl
 
-#print axioms nat.mul.comm
+#print axioms int.mul.comm
 
-def int.mul.asoc { a b c: int } : a * b * c = a * (b * c) := by
+def int.mul.assoc { a b c: int } : a * b * c = a * (b * c) := by
   repeat rw [mul.def]
   unfold mul
   rw [int.abs.sign_mul]
@@ -102,4 +102,122 @@ def int.mul.asoc { a b c: int } : a * b * c = a * (b * c) := by
     all_goals (rw [zero_eq, abs.zero, nat.mul_zero]; apply Or.inr; rfl)
   }
 
-#print axioms nat.mul.assoc
+#print axioms int.mul.assoc
+  
+def int.mul.abs_sign_mul_pos : ∀(x: nat) (y: int), y.sign * (nat.succ x * y.abs) = (int.pos_succ x) * y := by intro x y; cases y <;> rfl
+def int.mul.abs_sign_mul_neg : ∀(x: nat) (y: int), y.sign.flip * (nat.succ x * y.abs) = (int.neg_succ x) * y := by intro x y; cases y <;> rfl
+
+def int.mul.add_left { a b k: int } : (a + b) * k = a * k + b * k := by
+  cases a with
+  | zero => rw [zero_eq, add.zero_left, zero_left, add.zero_left]
+  | pos_succ a =>
+    cases b with
+    | zero => rw [zero_eq, add.zero_right, zero_left, add.zero_right]
+    | pos_succ b =>
+      rw [int.add.lift_pos_pos_to_nat, mul.def]
+      unfold mul
+      rw [sign.pos, int.Sign.pos_left, int.abs.pos_succ]
+      rw [←nat.add_succ, ←nat.succ_add, nat.add_mul, int.add.sign_mul]
+      congr 1 <;> apply int.mul.abs_sign_mul_pos
+    | neg_succ b =>
+      cases h:compare a b with
+      | lt => 
+        rw [int.add.lift_pos_neg_lt_to_nat]
+        any_goals assumption
+        rw [mul.def]
+        unfold mul
+        rw [sign.neg, int.Sign.neg_left, abs.neg_succ, ←nat.succ_sub, nat.sub_mul, int.sub.sign_mul]
+        rw [sub.def, neg.sign_mul, Sign.flip_flip]
+        rw [int.mul.abs_sign_mul_neg, int.mul.abs_sign_mul_pos]
+        apply add.comm
+        apply nat.mul.of_le_cancel_right
+        apply TotalOrder.le_of_lt
+        assumption
+        apply nat.succ_le_of_lt h
+      | eq =>
+        cases TotalOrder.eq_of_compare_eq h
+        clear h
+        rw [←neg_neg (.neg_succ a), ←sub.def, neg.neg_succ, sub.refl, zero_left]
+        rw [←neg_left, add.neg_self]
+      | gt =>
+        rw [int.add.lift_pos_neg_gt_to_nat]
+        any_goals (apply TotalOrder.gt_of_compare; assumption)
+        rw [mul.def]
+        unfold mul
+        rw [sign.pos, int.Sign.pos_left, abs.pos_succ, ←nat.succ_sub, nat.sub_mul, int.sub.sign_mul]
+        rw [sub.def, neg.sign_mul]
+        rw [int.mul.abs_sign_mul_neg, int.mul.abs_sign_mul_pos]
+        apply nat.mul.of_le_cancel_right
+        apply TotalOrder.le_of_lt
+        apply TotalOrder.gt_of_compare
+        assumption
+        apply nat.succ_le_of_lt
+        apply TotalOrder.gt_of_compare
+        assumption
+  | neg_succ a =>
+    cases b with
+    | zero => rw [zero_eq, add.zero_right, zero_left, add.zero_right]
+    | pos_succ b =>
+      rw [add.comm, @add.comm (_ * k)]
+
+      cases h:compare b a with
+      | lt => 
+        rw [int.add.lift_pos_neg_lt_to_nat]
+        any_goals assumption
+        rw [mul.def]
+        unfold mul
+        rw [sign.neg, int.Sign.neg_left, abs.neg_succ, ←nat.succ_sub, nat.sub_mul, int.sub.sign_mul]
+        rw [sub.def, neg.sign_mul, Sign.flip_flip]
+        rw [int.mul.abs_sign_mul_neg, int.mul.abs_sign_mul_pos]
+        apply add.comm
+        apply nat.mul.of_le_cancel_right
+        apply TotalOrder.le_of_lt
+        assumption
+        apply nat.succ_le_of_lt h
+      | eq =>
+        cases TotalOrder.eq_of_compare_eq h
+        clear h
+        rw [←neg_neg (.neg_succ a), ←sub.def, neg.neg_succ, sub.refl, zero_left]
+        rw [←neg_left, add.neg_self]
+      | gt =>
+        rw [int.add.lift_pos_neg_gt_to_nat]
+        any_goals (apply TotalOrder.gt_of_compare; assumption)
+        rw [mul.def]
+        unfold mul
+        rw [sign.pos, int.Sign.pos_left, abs.pos_succ, ←nat.succ_sub, nat.sub_mul, int.sub.sign_mul]
+        rw [sub.def, neg.sign_mul]
+        rw [int.mul.abs_sign_mul_neg, int.mul.abs_sign_mul_pos]
+        apply nat.mul.of_le_cancel_right
+        apply TotalOrder.le_of_lt
+        apply TotalOrder.gt_of_compare
+        assumption
+        apply nat.succ_le_of_lt
+        apply TotalOrder.gt_of_compare
+        assumption
+    | neg_succ b =>
+      apply int.neg.inj
+      rw [neg_left, add.neg, add.neg, neg_left, neg_left, neg.neg_succ, neg.neg_succ]
+      rw [int.add.lift_pos_pos_to_nat, mul.def]
+      unfold mul
+      rw [sign.pos, int.Sign.pos_left, int.abs.pos_succ]
+      rw [←nat.add_succ, ←nat.succ_add, nat.add_mul, int.add.sign_mul]
+      congr 1 <;> apply int.mul.abs_sign_mul_pos
+
+#print axioms int.mul.add_left
+
+def int.mul.add_right { a b k: int } : k * (a + b) = k * a + k * b := by
+  repeat rw [@int.mul.comm k]
+  apply int.mul.add_left
+
+#print axioms int.mul.add_right
+
+def int.mul.sub_left { a b k: int } : (a - b) * k = a * k - b * k := by
+  rw [sub.def, add_left, ←neg_left, ←sub.def]
+
+#print axioms int.mul.sub_left
+
+def int.mul.sub_right { a b k: int } : k * (a - b) = k * a - k * b := by
+  rw [sub.def, add_right, ←neg_right, ←sub.def]
+
+#print axioms int.mul.sub_right
+

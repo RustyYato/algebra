@@ -88,6 +88,8 @@ def int.Sign.pos_right :  x * Sign.pos = x := by cases x <;> rfl
 def int.Sign.neg_left :  Sign.neg * x = x.flip := by cases x <;> rfl
 def int.Sign.neg_right :  x * Sign.neg = x.flip := by cases x <;> rfl
 
+def int.Sign.int_zero_nat { s: int.Sign } : s * (0: nat) = 0 := by cases s <;> rfl
+
 def int.Sign.int_zero { x: nat } :  Sign.zero * x = (0: int) := by cases x <;> rfl
 def int.Sign.int_pos { x: nat } :  Sign.pos * x = x := by cases x <;> rfl
 
@@ -101,3 +103,7 @@ def int.sign.of_sign_mul { s: int.Sign } { x: nat } : s = int.Sign.zero âˆ¨ x â‰
   )
 
 #print axioms int.sign.of_sign_mul
+
+def int.Sign.flip_flip { s: int.Sign } : s.flip.flip = s := by cases s <;> rfl
+
+#print axioms int.Sign.flip_flip

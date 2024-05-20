@@ -59,3 +59,5 @@ def int.abs.sign_mul { s: int.Sign } { x: nat } : s ≠ int.Sign.zero ∨ x = .z
 #print axioms int.abs.sign_mul
 
 def int.abs.zero : int.abs 0 = 0 := rfl
+def int.abs.pos_succ : int.abs (.pos_succ a) = a.succ := rfl
+def int.abs.neg_succ : int.abs (.neg_succ a) = a.succ := rfl

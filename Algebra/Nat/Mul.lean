@@ -238,6 +238,12 @@ def nat.mul_sub (a b c: nat) : a * (b - c) = a * b - a * c := by
 
 #print axioms nat.mul_sub
 
+def nat.sub_mul (a b c: nat): (b - c) * a = b * a - c * a := by
+  repeat rw [mul.comm _ a]
+  apply nat.mul_sub
+
+#print axioms nat.sub_mul
+
 def nat.mul.eq_one {a b: nat} : a * b = 1 -> a = 1 ∧ b = 1 := by
   intro mul_eq_one
   match a with
