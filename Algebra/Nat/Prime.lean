@@ -45,7 +45,7 @@ def nat.prime.dvd_or_coprime : ∀a b, a.prime -> a ∣ b ∨ coprime a b := by
   have ⟨ not_dvd, not_coprime ⟩  := Decidable.not_or not_a_dvd_b_or_coprime
   match h:gcd a b with
   | 0 =>
-    have ⟨ a_eq_zero, b_eq_zero ⟩  := nat.gcd_eq_zero h
+    have ⟨ a_eq_zero, b_eq_zero ⟩  := nat.gcd.eq_zero h
     rw [a_eq_zero, b_eq_zero] at not_dvd
     have := nat.dvd.refl 0
     contradiction

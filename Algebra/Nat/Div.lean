@@ -465,3 +465,19 @@ def nat.div.lt (a b: nat) : 1 < b -> 0 < a -> a / b < a := by
  
 #print axioms nat.div.lt
 
+def nat.div.of_eq_zero { a b: nat } : a / b = 0 -> b = 0 ∨ a < b := by
+  cases b with
+  | zero => exact Or.inl
+  | succ b =>
+    intro div_eq_zero
+    apply Or.inr
+    apply Decidable.byContradiction
+    intro h
+    have a_ge_b_succ := TotalOrder.not_lt_implies_ge h 
+    rw [if_ge] at div_eq_zero
+    contradiction
+    apply zero_lt_succ
+    assumption
+
+#print axioms nat.div.of_eq_zero
+

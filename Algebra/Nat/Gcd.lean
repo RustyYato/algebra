@@ -292,7 +292,7 @@ def nat.gcd.assoc : ∀{a b c: nat}, gcd (gcd a b) c = gcd a (gcd b c) := by
 
 #print axioms nat.gcd.idempot_right
 
-def nat.gcd_eq_zero : ∀{a b}, gcd a b = 0 -> a = 0 ∧ b = 0 := by
+def nat.gcd.eq_zero : ∀{a b}, gcd a b = 0 -> a = 0 ∧ b = 0 := by
   intro a b  gcd_eq_zero
   have : 0 ∣ gcd a b := by
     rw [gcd_eq_zero]
@@ -302,7 +302,7 @@ def nat.gcd_eq_zero : ∀{a b}, gcd a b = 0 -> a = 0 ∧ b = 0 := by
   exact dvd.eq_zero_of_by_zero zero_dvd_a
   exact dvd.eq_zero_of_by_zero zero_dvd_b
 
-#print axioms nat.gcd_eq_zero
+#print axioms nat.gcd.eq_zero
 
 def nat.gcd.common_right : ∀a b k, gcd (a * k) (b * k) = gcd a b * k := by
   apply nat.gcd.induction
@@ -336,6 +336,24 @@ def nat.gcd.common_left : ∀a b k, gcd (k * a) (k * b) = k * gcd a b := by
   apply common_right
 
 #print axioms nat.gcd.common_left
+
+def nat.gcd.div_common : ∀a b k, k ∣ a -> k ∣ b -> gcd (a / k) (b / k) = gcd a b / k := by
+  intros a b k k_dvd_a k_dvd_b
+  cases k with
+  | zero => 
+    rw [zero_eq, nat.div_zero, nat.div_zero, nat.div_zero]
+    rfl
+  | succ k => 
+    have ⟨ x, xprf ⟩ := k_dvd_a
+    have ⟨ y, yprf ⟩ := k_dvd_b
+    cases xprf
+    cases yprf
+    clear k_dvd_b k_dvd_a
+    rw [nat.gcd.common_left]
+    repeat rw [mul_div]
+    repeat apply zero_lt_succ
+
+#print axioms nat.gcd.div_common
 
 def nat.dvd.mul_div (a b c: nat) : c ∣ b -> a * (b / c) = (a * b) / c := by
   intro c_dvd_b
@@ -383,4 +401,18 @@ def nat.gcd.eq_right_of_dvd : ∀(a b: nat), b ∣ a -> gcd a b = b := by
   apply dvd.refl
 
 #print axioms nat.gcd.eq_right_of_dvd
+
+def nat.gcd.one_right : gcd a 1 = 1 := by
+  apply nat.dvd.antisymm
+  apply gcd.dvd_right
+  apply nat.dvd.by_one
+
+#print axioms nat.gcd.one_right
+
+def nat.gcd.one_left : gcd 1 a = 1 := by
+  apply nat.dvd.antisymm
+  apply gcd.dvd_left
+  apply nat.dvd.by_one
+
+#print axioms nat.gcd.one_left
 

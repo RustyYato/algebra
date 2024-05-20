@@ -2,6 +2,7 @@
 -- Import modules here that should be built as part of the library.
 import «Algebra».Nat.PrimeFactorization
 import «Algebra».Int.Mul
+import «Algebra».Rat.Basic
 import «Algebra».Nat.Factorial
 import «Algebra».SortedList.Intersection
 import «Algebra».SortedList.Difference
