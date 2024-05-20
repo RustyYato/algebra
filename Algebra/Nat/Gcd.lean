@@ -364,3 +364,23 @@ def nat.dvd.mul_div (a b c: nat) : c ∣ b -> a * (b / c) = (a * b) / c := by
 
 #print axioms nat.dvd.mul_div
 
+def nat.gcd.eq_left_of_dvd : ∀(a b: nat), a ∣ b -> gcd a b = a := by
+  intro a b a_dvd_b
+  apply nat.dvd.antisymm
+  apply gcd.dvd_left
+  apply gcd.of_dvd
+  apply dvd.refl
+  assumption
+
+#print axioms nat.gcd.eq_left_of_dvd
+
+def nat.gcd.eq_right_of_dvd : ∀(a b: nat), b ∣ a -> gcd a b = b := by
+  intro a b a_dvd_b
+  apply nat.dvd.antisymm
+  apply gcd.dvd_right
+  apply gcd.of_dvd
+  assumption
+  apply dvd.refl
+
+#print axioms nat.gcd.eq_right_of_dvd
+

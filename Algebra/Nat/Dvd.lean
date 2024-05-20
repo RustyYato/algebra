@@ -238,6 +238,15 @@ def nat.dvd.mod_eq_zero: ∀{ a b: nat }, b ∣ a -> a % b = 0 := by
 
 #print axioms nat.dvd.mod_eq_zero
 
+def nat.dvd.of_mod_eq_zero: ∀{ a b: nat }, 0 < b -> a % b = 0 -> b ∣ a := by
+  intro a b b_nz a_mod_b_eq_zero
+  have := nat.div_def a b b_nz
+  rw [a_mod_b_eq_zero, add_zero] at this
+  rw [this]
+  apply nat.dvd.mul_right
+
+#print axioms nat.dvd.of_mod_eq_zero
+
 def nat.dvd.def { a b: nat } : b ∣ a -> a = (a / b) * b := by
   match b with
   | .zero =>
@@ -315,6 +324,22 @@ def nat.mul_div (a b: nat) : 0 < a -> (a * b) / a = b := by
   apply nat.dvd.mul_left
 
 #print axioms nat.mul_div
+
+def nat.dvd.of_div : ∀(a b k: nat), k ∣ a -> a ∣ b -> (a / k) ∣ (b / k) := by
+  intro a b k k_dvd_a a_dvd_b
+  cases k with
+  | zero => apply dvd.refl
+  | succ k =>
+  have ⟨ x, xprf ⟩ := k_dvd_a
+  have ⟨ y, yprf ⟩ := a_dvd_b
+  exists y
+  rw [←yprf]
+  rw [←xprf]
+  rw [mul_div, mul.assoc, mul_div]
+  apply zero_lt_succ
+  apply zero_lt_succ
+
+#print axioms nat.dvd.of_div
 
 def nat.div.self { a: nat }: 0 < a -> a / a = 1 := by
   intro a_nz 
