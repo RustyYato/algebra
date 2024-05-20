@@ -1,4 +1,4 @@
-import Algebra.Int.Abs
+import Algebra.Int.Mul
 import Algebra.Nat.Gcd
 
 structure rat where
@@ -100,4 +100,82 @@ def rat.new (num den: int) (den_nz: den ≠ 0) : rat :=
         intro; contradiction)
 
 #print axioms rat.new
+
+def rat.zero : rat := rat.mk 0 1 (by decide) (by decide)
+
+def rat.neg (a: rat) : rat := rat.new (-a.num) a.den (by
+  cases a with
+  | mk _ a a_nz _ =>
+  simp only
+  cases a
+  contradiction
+  intro; contradiction)
+
+#print axioms rat.neg
+
+instance rat.neg.inst : Neg rat := ⟨ rat.neg ⟩
+
+-- a.n / a.d + b.n / b.d
+-- (a.n * b.d) / (a.d * b.d) + (a.d * b.n) / (a.d * b.d)
+-- (a.n * b.d + a.d * b.n) / (a.d * b.d)
+def rat.add (a b: rat) : rat := rat.new (
+    a.num * b.den + a.den * b.num
+  ) (
+    a.den * b.den
+  ) (by
+    cases a with
+    | mk _ a a_nz _ =>
+    cases b with
+    | mk _ b b_nz _ =>
+    match a with
+    | .succ a =>
+    match b with
+    | .succ b =>
+      intro; contradiction
+  )
+
+#print axioms rat.add
+
+instance rat.add.inst : Add rat := ⟨ rat.add ⟩ 
+
+def rat.sub (a b: rat) : rat := a + -b
+
+#print axioms rat.sub
+
+instance rat.sub.inst : Sub rat := ⟨ rat.sub ⟩ 
+
+def rat.mul (a b: rat) : rat := rat.new (
+    a.num * b.den + a.den * b.num
+  ) (
+    a.den * b.den
+  ) (by
+    cases a with
+    | mk _ a a_nz _ =>
+    cases b with
+    | mk _ b b_nz _ =>
+    match a with
+    | .succ a =>
+    match b with
+    | .succ b =>
+      intro; contradiction
+  )
+
+#print axioms rat.add
+
+instance rat.mul.inst : Mul rat := ⟨ rat.mul ⟩
+
+def rat.invert (a: rat) : a.num ≠ 0 -> rat := rat.new a.den a.num
+
+postfix:max " ⁻¹ " => rat.invert
+
+#print axioms rat.invert
+
+def rat.div (a b: rat) : b.num ≠ 0 -> rat := fun h => a * (b⁻¹ h)
+
+instance : Div rat where
+  div a b := match h:b.num with
+     | .zero => rat.zero
+     | .pos_succ _ | .neg_succ _ => rat.div a b (by intro g; rw [h] at g; contradiction)
+
+
 
