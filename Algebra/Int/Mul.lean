@@ -221,3 +221,62 @@ def int.mul.sub_right { a b k: int } : k * (a - b) = k * a - k * b := by
 
 #print axioms int.mul.sub_right
 
+def int.mul.pos_pos_is_pos { a b: int } : 0 < a -> 0 < b -> 0 < a * b := by
+  intros pos_a pos_b
+  cases a <;> cases b
+  any_goals assumption
+  rfl
+
+#print axioms int.mul.pos_pos_is_pos
+
+def int.mul.neg_neg_is_pos { a b: int } : 0 > a -> 0 > b -> 0 < a * b := by
+  intros pos_a pos_b
+  cases a <;> cases b
+  any_goals assumption
+  rfl
+
+#print axioms int.mul.neg_neg_is_pos
+
+def int.mul.pos_neg_is_neg { a b: int } : 0 < a -> 0 > b -> 0 > a * b := by
+  intros pos_a pos_b
+  cases a <;> cases b
+  any_goals assumption
+  rfl
+
+#print axioms int.mul.pos_neg_is_neg
+
+def int.mul.neg_pos_is_neg { a b: int } : 0 > a -> 0 < b -> 0 > a * b := by
+  intros pos_a pos_b
+  cases a <;> cases b
+  any_goals assumption
+  rfl
+
+#print axioms int.mul.neg_pos_is_neg
+
+def int.mul.eq_zero { a b: int } : a * b = 0 -> a = 0 ∨ b = 0 := by
+  intro ab_eq_zero
+  cases a <;> cases b
+  any_goals (apply Or.inl; rfl)
+  any_goals (apply Or.inr; rfl)
+  all_goals contradiction
+
+#print axioms int.mul.eq_zero
+
+def int.mul.eq_pos { a b: int } : a * b > 0 -> (a < 0 ∧ b < 0) ∨ (a > 0 ∧ b > 0) := by
+  intro ab_gt_zero
+  cases a <;> cases b
+  any_goals contradiction
+  apply Or.inr <;> apply And.intro <;> assumption
+  apply Or.inl <;> apply And.intro <;> assumption
+
+#print axioms int.mul.eq_pos
+
+def int.mul.eq_neg { a b: int } : a * b < 0 -> (a < 0 ∧ b > 0) ∨ (a > 0 ∧ b < 0) := by
+  intro ab_lt_zero
+  cases a <;> cases b
+  any_goals contradiction
+  apply Or.inr <;> apply And.intro <;> assumption
+  apply Or.inl <;> apply And.intro <;> assumption
+
+#print axioms int.mul.eq_neg
+
