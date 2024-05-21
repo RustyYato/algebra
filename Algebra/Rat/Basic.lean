@@ -1,7 +1,7 @@
 import Algebra.Nat.Gcd
 import Algebra.Int.Mul
 
-structure simple_rat where
+structure fract where
   num: int
   den: nat
   den_nz: 0 < den
@@ -14,9 +14,9 @@ structure rat where
   is_reduced: num.abs.gcd den = 1
 deriving Repr, DecidableEq
 
-def simple_rat.equiv (a b: simple_rat) : Prop := a.num * b.den = b.num * a.den
+def fract.equiv (a b: fract) : Prop := a.num * b.den = b.num * a.den
 
-def simple_rat.to_rat (r: simple_rat) : rat := rat.mk
+def fract.to_rat (r: fract) : rat := rat.mk
     (r.num.sign * (r.num.abs / (r.num.abs.gcd r.den)))
     (r.den / (r.num.abs.gcd r.den))
     (by
@@ -93,17 +93,17 @@ def simple_rat.to_rat (r: simple_rat) : rat := rat.mk
         apply Or.inl
         intro; contradiction)
 
-#print axioms simple_rat.to_rat
+#print axioms fract.to_rat
 
-def rat.to_simple (r: rat) : simple_rat := simple_rat.mk r.num r.den r.den_nz
+def rat.to_simple (r: rat) : fract := fract.mk r.num r.den r.den_nz
 
 def rat.new (num den: int) (den_nz: den ≠ 0) : rat := 
-  (simple_rat.mk num den.abs (by cases den <;> trivial)).to_rat
+  (fract.mk num den.abs (by cases den <;> trivial)).to_rat
 
 #print axioms rat.new
 
 def rat.to_simple_to_rat (r: rat) : r.to_simple.to_rat = r := by
-  unfold to_simple simple_rat.to_rat
+  unfold to_simple fract.to_rat
   simp only
   congr
   rw [r.is_reduced, nat.div.one, int.abs.sign]
@@ -149,15 +149,15 @@ def nat.mul_gcd_eq: ∀{a b c d: nat},
     intro ab_eq_de
     rw [←nat.gcd.common_left, ←nat.gcd.common_left, ab_eq_de, nat.mul.comm a c]
 
-def rat.eq_of_equiv (a b: simple_rat) : a.equiv b -> a.to_rat = b.to_rat := by
+def rat.eq_of_equiv (a b: fract) : a.equiv b -> a.to_rat = b.to_rat := by
   intro a_eq_b
   cases a with
   | mk anum aden aden_nz =>
   cases b with
   | mk bnum bden bden_nz =>
-  unfold simple_rat.to_rat
+  unfold fract.to_rat
   simp only at *
-  unfold simple_rat.equiv at a_eq_b
+  unfold fract.equiv at a_eq_b
   simp only at a_eq_b
   match aden with
   | .succ aden =>
@@ -251,9 +251,9 @@ def rat.eq_of_equiv (a b: simple_rat) : a.equiv b -> a.to_rat = b.to_rat := by
 
 #print axioms rat.eq_of_equiv
 
-def simple_rat.equiv_refl (a: simple_rat) : a.equiv a := rfl
+def fract.equiv_refl (a: fract) : a.equiv a := rfl
 
-def simple_rat.to_rat_to_simple (a: simple_rat) : a.to_rat.to_simple.equiv a := by
+def fract.to_rat_to_simple (a: fract) : a.to_rat.to_simple.equiv a := by
   unfold to_rat rat.to_simple
   unfold equiv
   rw [@int.mul.def a.num]
@@ -343,7 +343,7 @@ def simple_rat.to_rat_to_simple (a: simple_rat) : a.to_rat.to_simple.equiv a := 
     }
   }
 
-#print axioms simple_rat.to_rat_to_simple
+#print axioms fract.to_rat_to_simple
 
 def rat.zero : rat := rat.mk 0 1 (by decide) (by decide)
 
@@ -359,7 +359,7 @@ def rat.neg (a: rat) : rat := rat.new (-a.num) a.den (by
 
 instance rat.neg.inst : Neg rat := ⟨ rat.neg ⟩
 
-def simple_rat.add (a b: simple_rat) : simple_rat := simple_rat.mk (
+def fract.add (a b: fract) : fract := fract.mk (
     a.num * b.den + a.den * b.num
   ) (
     a.den * b.den
@@ -375,9 +375,9 @@ def simple_rat.add (a b: simple_rat) : simple_rat := simple_rat.mk (
     rfl
   )
 
-#print axioms simple_rat.add
+#print axioms fract.add
 
-instance simple_rat.add.inst : Add simple_rat := ⟨ simple_rat.add ⟩ 
+instance fract.add.inst : Add fract := ⟨ fract.add ⟩ 
 
 -- a.n / a.d + b.n / b.d
 -- (a.n * b.d) / (a.d * b.d) + (a.d * b.n) / (a.d * b.d)
@@ -463,7 +463,7 @@ def rat.neg.def (r: rat) : ∀g h, -r = rat.mk (-r.num) r.den g h := by
   simp only
   unfold rat.neg
   unfold new
-  apply simple_rat.to_rat.def
+  apply fract.to_rat.def
   rw [rat.new.def]
 
 #print axioms rat.new.def
