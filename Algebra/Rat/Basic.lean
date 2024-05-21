@@ -489,9 +489,6 @@ def rat.add.comm (a b : rat ) : a + b = b + a := by
 
 #print axioms rat.add.comm
 
-def rat.add.of_simple
-  { a b: simple_rat }
-
 def rat.add.assoc (a b c: rat ) : (a + b) + c = a + (b + c) := by
   cases a with
   | mk a_num a_den a_den_nz a_is_reduced =>
@@ -502,43 +499,33 @@ def rat.add.assoc (a b c: rat ) : (a + b) + c = a + (b + c) := by
   unfold HAdd.hAdd instHAdd Add.add inst 
   simp only
   unfold add
-  have := rat.eq_of_equiv
-  simp only
 
   apply rat.eq_of_equiv
-  unfold int.of_nat
-
-
-  all_goals (
-    cases a_den
-    contradiction
-    cases b_den
-    contradiction
-    cases c_den
-    contradiction
-    rename_i a_den b_den c_den
-  )
-  split
-  {
-    rw [int.zero_eq, int.mul.zero_left]
-    rename_i h
-    unfold new at h
-    simp only at h
-    cases nat.div.of_eq_zero h with
-    | inl h =>
-      have ⟨ _, _ ⟩ := nat.gcd.eq_zero h
-      contradiction
-    | inr h =>
-      apply False.elim
-      apply TotalOrder.not_lt_and_ge h
-      apply nat.dvd.le
-      rfl
-      apply nat.gcd.dvd_right
+  conv =>{
+    arg 1
+    conv => {
+      arg 1
+      arg 1
+      unfold to_simple
+    }
+    conv => {
+      arg 2 
+      unfold to_simple
+    }
   }
-  {
-    rfl
+  conv =>{
+    arg 2
+    conv => {
+      arg 2
+      arg 1
+      unfold to_simple
+    }
+    conv => {
+      arg 1 
+      unfold to_simple
+    }
   }
-  admit
+  simp only
   admit
 
 #print axioms rat.add.assoc
