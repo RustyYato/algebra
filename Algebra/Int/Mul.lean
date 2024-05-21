@@ -1,5 +1,5 @@
-import Algebra.Int.Abs
 import Algebra.Int.Add
+import Algebra.Int.Abs
 import Algebra.Nat.Mul
 
 def int.mul (a b: int) : int := a.sign * b.sign * (a.abs * b.abs)
@@ -279,4 +279,39 @@ def int.mul.eq_neg { a b: int } : a * b < 0 -> (a < 0 ∧ b > 0) ∨ (a > 0 ∧ 
   apply Or.inl <;> apply And.intro <;> assumption
 
 #print axioms int.mul.eq_neg
+
+def int.sign_mul.mul_of_nat { s: int.Sign } { a b: nat } : s * a * (b: int) = s * (a * b) := by
+  cases b with
+  | zero =>
+    unfold of_nat
+    simp only
+    rw [zero_eq, mul.zero_right, nat.zero_eq, nat.mul_zero]
+    cases s <;> rfl
+  | succ b =>
+  cases a with
+  | zero => 
+    cases s <;> rfl
+  | succ a =>
+    unfold of_nat
+    simp only
+
+    rw [int.mul.def]
+    unfold mul
+    rw [sign.of_sign_mul, sign.pos, int.Sign.pos_right, abs.pos_succ]
+    {
+      cases s with
+      | zero => rfl
+      | pos =>
+        repeat rw [int.Sign.int_pos]
+        rw [abs.of_nat]
+      | neg =>
+        repeat rw [int.Sign.int_neg]
+        rw [abs.neg_of_nat]
+    }
+    {
+      apply Or.inr
+      apply nat.noConfusion
+    }
+
+#print axioms int.sign_mul.mul_of_nat
 

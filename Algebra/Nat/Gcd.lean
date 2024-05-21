@@ -416,3 +416,11 @@ def nat.gcd.one_left : gcd 1 a = 1 := by
 
 #print axioms nat.gcd.one_left
 
+def nat.gcd.gt_zero { a b: nat } : 0 < a ∨ 0 < b -> 0 < gcd a b := by
+  intro a_nz_or_b_nz
+  cases h:gcd a b
+  have ⟨ _, _ ⟩  := eq_zero h
+  cases a <;> cases b <;> contradiction
+  apply zero_lt_succ
+
+#print axioms nat.gcd.gt_zero
