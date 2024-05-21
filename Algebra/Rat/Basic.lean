@@ -109,7 +109,7 @@ def rat.to_simple_to_rat (r: rat) : r.to_simple.to_rat = r := by
   rw [r.is_reduced, nat.div.one, int.abs.sign]
   rw [r.is_reduced, nat.div.one]
 
-#print axioms rat.to_simple_to_rat
+ #print axioms rat.to_simple_to_rat
 
 def nat.div_eq_of_mul_eq: ∀{a b c d: nat},
   0 < b ->
@@ -389,6 +389,22 @@ def rat.add (a b: rat) : rat :=
 
 instance rat.add.inst : Add rat := ⟨ rat.add ⟩
 
+def fract.add.def { a b: fract } : ∃h, a + b = fract.mk (a.num * b.den + a.den * b.num) (a.den * b.den) h := by
+  exists (by
+    cases a with
+    | mk _ aden aden_nz =>
+    cases b with
+    | mk _ bden bden_nz =>
+    match aden with
+    | .succ aden =>
+    match bden with
+    | .succ bden =>
+    rw [nat.mul_succ, nat.succ_add]
+    apply nat.zero_lt_succ
+  )
+
+#print axioms fract.add.def
+
 def rat.add.def { a b: rat } : a + b = (a.to_simple + b.to_simple).to_rat := rfl
 
 def rat.sub (a b: rat) : rat := a + -b
@@ -430,28 +446,6 @@ instance : Div rat where
      | .zero => rat.zero
      | .pos_succ _ | .neg_succ _ => rat.div a b (by intro g; rw [h] at g; contradiction)
 
-def rat.new.def (num: int) (den: nat) : ∀den_nz g h, rat.new num den den_nz = rat.mk num den g h := by
-  intro den_nz zero_lt_den is_reduced
-  unfold new
-  congr
-  {
-    cases den with
-    | zero => contradiction
-    | succ den =>
-      unfold int.of_nat 
-      simp only
-      rw [int.sign.pos, int.Sign.pos_left, int.abs.pos_succ, is_reduced, nat.div.one, int.abs.sign]
-  }
-  {
-    cases den with
-    | zero => contradiction
-    | succ den =>
-      unfold int.of_nat 
-      simp only
-      rw [int.abs.pos_succ, is_reduced, nat.div.one]
-  }
-
-#print axioms rat.new.def
 def rat.neg.def (r: rat) : ∀g h, -r = rat.mk (-r.num) r.den g h := by
   intro g h
   cases r
@@ -463,29 +457,66 @@ def rat.neg.def (r: rat) : ∀g h, -r = rat.mk (-r.num) r.den g h := by
   simp only
   unfold rat.neg
   unfold new
-  apply fract.to_rat.def
-  rw [rat.new.def]
+  rename_i num den den_nz is_reduced 
+  have := fun a => rat.eq_of_equiv a <| fract.mk (-num) den den_nz
+  simp only at h
+  have to_rat_eq : (fract.mk (-num) den den_nz).to_rat = rat.mk (-num) den g h := by
+    clear this
+    unfold fract.to_rat
+    simp only
+    congr
+    {
+    cases num
+    rfl
+    rename_i num
+    rw [int.neg.pos_succ, int.abs.neg_succ, int.sign.neg, int.Sign.int_neg]
+    apply int.neg.inj
+    rw [int.neg_neg, int.neg.neg_succ]
+    rw [int.neg.pos_succ, int.abs.neg_succ] at h
+    rw [int.abs.pos_succ] at is_reduced
+    rw [is_reduced, nat.div.one]
+    rfl
+    {
+      rw [int.neg.neg_succ, int.abs.pos_succ] at h
+      rw [int.neg.neg_succ, int.abs.pos_succ, int.sign.pos, int.Sign.int_pos, h, nat.div.one]
+      rfl
+    }
+    }
+    rw [h, nat.div.one]
+  rw [to_rat_eq] at this
+  apply this
+  simp only
+  conv => {
+    lhs
+    arg 2
+    rw [int.abs.of_nat]
+  }
 
-#print axioms rat.new.def
+#print axioms rat.neg.def
+
+def fract.add.comm (a b : fract ) : equiv (a + b) (b + a) := by
+  cases a with
+  | mk anum aden aden_nz =>
+  cases b with
+  | mk bnum bden bden_nz =>
+  have ⟨ val, prf ⟩  := @fract.add.def (fract.mk anum aden aden_nz) (fract.mk bnum bden bden_nz)
+  rw [prf]
+  have ⟨ val, prf ⟩  := @fract.add.def (fract.mk bnum bden bden_nz) (fract.mk anum aden aden_nz)
+  rw [prf]
+  simp only
+  clear prf
+  clear prf
+  unfold equiv
+  simp only
+  clear val
+  clear val
+  rw [int.add.comm, @int.mul.comm bnum, @int.mul.comm anum, nat.mul.comm]
+
+#print axioms fract.add.comm
 
 def rat.add.comm (a b : rat ) : a + b = b + a := by
-  cases a with
-  | mk a_num a_den a_den_nz a_is_reduced =>
-  cases b with
-  | mk b_num b_den b_den_nz b_is_reduced =>
-  unfold HAdd.hAdd instHAdd Add.add inst 
-  simp only
-  unfold add
-  simp only
-  congr 1
-  {
-    rw [int.add.comm, int.mul.comm]
-    congr 1
-    apply int.mul.comm
-  }
-  {
-    rw [int.mul.comm]
-  }
+  apply rat.eq_of_equiv
+  apply fract.add.comm
 
 #print axioms rat.add.comm
 
