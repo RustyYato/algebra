@@ -65,6 +65,12 @@ def int.mul.comm { a b: int } : a * b = b * a := by
 
 #print axioms int.mul.comm
 
+def int.mul.one_right { b: int } :  b * 1 = b := by
+  rw [int.mul.comm, int.mul.one_left]
+
+def int.mul.neg_one_right { b: int } :  b * -1 = -b := by
+  rw [int.mul.comm, int.mul.neg_one_left]
+
 def int.mul.assoc { a b c: int } : a * b * c = a * (b * c) := by
   repeat rw [mul.def]
   unfold mul
@@ -315,3 +321,65 @@ def int.sign_mul.mul_of_nat { s: int.Sign } { a b: nat } : s * a * (b: int) = s 
 
 #print axioms int.sign_mul.mul_of_nat
 
+def int.mul.inc_right (a b: int) : a * b.inc = a * b + a := by
+  rw [int.inc.eq_add_one, int.mul.add_right]
+  congr
+  rw [int.mul.one_right]
+
+#print axioms int.mul.inc_right
+
+def int.mul.inc_left (a b: int) : a.inc * b = a * b + b := by
+  rw [int.inc.eq_add_one, int.mul.add_left]
+  congr
+  rw [int.mul.one_left]
+
+#print axioms int.mul.inc_left
+
+def int.mul.dec_right (a b: int) : a * b.dec = a * b - a := by
+  rw [int.dec.eq_add_neg_one, int.mul.add_right]
+  congr
+  rw [int.mul.neg_one_right]
+
+#print axioms int.mul.inc_right
+
+def int.mul.dec_left (a b: int) : a.dec * b = a * b - b := by
+  rw [int.dec.eq_add_neg_one, int.mul.add_left]
+  congr
+  rw [int.mul.neg_one_left]
+
+#print axioms int.mul.inc_left
+
+def int.mul.lift_nat (a b: nat) : (a: int) * (b: int) = of_nat (a * b) := by
+  induction b with
+  | zero =>
+    have : of_nat 0 = 0 := rfl
+    rw [nat.zero_eq, nat.mul_zero, this, mul.zero_right]
+  | succ b ih =>
+    rw [int.inc.of_nat_succ, int.mul.inc_right, nat.mul_succ, int.add.lift_nat, ih, int.add.comm]
+
+def int.mul.of_eq (a b: int) : ∀k, k ≠ 0 -> a * k = b * k -> a = b := by
+  apply int.induction (fun a => ∀b k, k ≠ 0 -> a * k = b * k -> a = b) _ _ _ a
+  {
+    clear a b
+    intro b k k_nz ak_eq_bk
+    rw [int.mul.zero_left] at ak_eq_bk
+    cases int.mul.eq_zero ak_eq_bk.symm with
+    | inr h => contradiction
+    | inl h => exact h.symm
+  }
+  {
+    clear a b
+    intro a ih b k k_nz ak_eq_bk
+    apply int.inc.inj
+    apply ih b.inc k k_nz
+    rw [int.mul.inc_left, int.mul.inc_left, ak_eq_bk]
+  }
+  {
+    clear a b
+    intro a ih b k k_nz ak_eq_bk
+    apply int.dec.inj
+    apply ih b.dec k k_nz
+    rw [int.mul.dec_left, int.mul.dec_left, ak_eq_bk]
+  }
+
+#print axioms int.mul.of_eq

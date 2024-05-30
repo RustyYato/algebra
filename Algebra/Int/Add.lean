@@ -1,6 +1,7 @@
-import Algebra.Int.Neg
+import Algebra.Int.Abs
 import Algebra.Nat.Add
 import Algebra.Nat.Sub
+import Algebra.Nat.WellFounded
 
 def int.inc (a: int): int := match a with
   | .zero => .pos_succ .zero
@@ -44,6 +45,10 @@ def int.add_zero { a: int } : a + 0 = a := by cases a <;> rfl
 def int.inc.pos_succ : (int.pos_succ a).inc = int.pos_succ a.succ := rfl
 def int.dec.neg_succ : (int.neg_succ a).dec = int.neg_succ a.succ := rfl
 
+def int.inc.eq_add_one (a: int) : a.inc = a + 1 := rfl
+def int.dec.eq_add_neg_one (a: int) : a.dec = a + -1 := rfl
+def int.dec.eq_sub_one (a: int) : a.dec = a - 1 := rfl
+
 def int.inc.neg { i: int } : -i.inc = (-i).dec := by
   cases i
   any_goals rfl
@@ -65,6 +70,7 @@ def int.dec.zero : int.dec 0 = -1 := rfl
 
 def int.inc.neg_one : int.inc (-1) = 0 := rfl
 def int.dec.one : int.dec 1 = 0 := rfl
+
 
 def int.inc_dec_inv ( a: int ) : a.inc.dec = a := by
   cases a with
@@ -962,3 +968,62 @@ def int.add.lift_neg_pos_lt_to_nat { a b: nat } : a < b -> (int.neg_succ a) + (i
 
 #print axioms int.add.lift_neg_pos_lt_to_nat
 
+def int.induction
+  (motive: int -> Prop)
+  (if_zero: motive 0)
+  (from_inc: ∀(x: int), motive (x.inc) -> motive x)
+  (from_dec: ∀(x: int), motive (x.dec) -> motive x):
+  ∀x, motive x := by
+    intro x
+    cases x with
+    | zero => exact if_zero
+    | pos_succ x =>
+      apply from_dec
+      cases x with
+      | zero => exact if_zero
+      | succ x => 
+        rw [pos_succ.succ, inc_dec_inv]
+        apply int.induction <;> assumption
+    | neg_succ x => 
+      apply from_inc
+      cases x with
+      | zero => exact if_zero
+      | succ x => 
+        rw [neg_succ.succ, dec_inc_inv]
+        apply int.induction <;> assumption
+termination_by x => int.abs x
+decreasing_by
+  apply nat.lt_succ_self 
+  apply nat.lt_succ_self 
+
+#print axioms int.induction
+
+def int.inc.inj (a b: int) : a.inc = b.inc -> a = b := by
+  intro a_eq_b
+  rw [int.inc.eq_add_one, int.inc.eq_add_one] at a_eq_b
+  have : (a + 1) - 1 = (a + 1) - 1 := rfl
+  conv at this => {
+    conv => {
+      rhs
+      rw [a_eq_b]
+    }
+    rw [int.sub.def, int.sub.def,  int.add.assoc, int.add.assoc, int.add.neg_self, int.add_zero, int.add_zero]
+  }
+  assumption
+
+#print axioms int.inc.inj
+
+def int.dec.inj (a b: int) : a.dec = b.dec -> a = b := by
+  intro a_eq_b
+  rw [int.dec.eq_sub_one, int.dec.eq_sub_one] at a_eq_b
+  have : (a - 1) + 1 = (a - 1) + 1 := rfl
+  conv at this => {
+    conv => {
+      rhs
+      rw [a_eq_b]
+    }
+    rw [int.sub.def, int.sub.def,  int.add.assoc, int.add.assoc, @int.add.comm _ 1, int.add.neg_self, int.add_zero, int.add_zero]
+  }
+  assumption
+
+#print axioms int.dec.inj
