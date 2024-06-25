@@ -31,7 +31,7 @@ def int.add (a b: int): int :=
 
 #print axioms int.add
 
-instance int.add.inst : Add int := ⟨ int.add ⟩ 
+instance int.add.inst : Add int := ⟨ int.add ⟩
 instance int.sub.inst : Sub int where
   sub a b := a + (-b)
 
@@ -87,7 +87,7 @@ def int.inc_dec_swap { a: int } : a.inc.dec = a.dec.inc := by rw [int.inc_dec_in
 def int.add_nat.inc { x: int } { y: nat } : int.add_nat x.inc y = (int.add_nat x y).inc := by
   induction y generalizing x with
   | zero => rfl
-  | succ y ih => 
+  | succ y ih =>
     conv => {
       lhs
       unfold add_nat
@@ -100,7 +100,7 @@ def int.add_nat.inc { x: int } { y: nat } : int.add_nat x.inc y = (int.add_nat x
 def int.add_nat.dec { x: int } { y: nat } : int.add_nat x.dec y = (int.add_nat x y).dec := by
   cases y with
   | zero => rfl
-  | succ y => 
+  | succ y =>
     unfold add_nat
     rw [
     int.dec_inc_inv x,
@@ -112,7 +112,7 @@ def int.add_nat.dec { x: int } { y: nat } : int.add_nat x.dec y = (int.add_nat x
 def int.sub_nat.dec { x: int } { y: nat } : int.sub_nat x.dec y = (int.sub_nat x y).dec := by
   induction y generalizing x with
   | zero => rfl
-  | succ y ih => 
+  | succ y ih =>
     conv => {
       lhs
       unfold sub_nat
@@ -125,7 +125,7 @@ def int.sub_nat.dec { x: int } { y: nat } : int.sub_nat x.dec y = (int.sub_nat x
 def int.sub_nat.inc { x: int } { y: nat } : int.sub_nat x.inc y = (int.sub_nat x y).inc := by
   cases y with
   | zero => rfl
-  | succ y => 
+  | succ y =>
     unfold sub_nat
     rw [
     int.inc_dec_inv x,
@@ -144,7 +144,7 @@ def int.inc.of_nat_succ : of_nat (nat.succ x) = int.inc (of_nat x) := by cases x
 def int.add_nat.zero : int.add_nat 0 x = x := by
   induction x with
   | zero => rfl
-  | succ x ih => 
+  | succ x ih =>
     unfold of_nat
     simp
     unfold add_nat
@@ -157,7 +157,7 @@ def int.add_nat.zero : int.add_nat 0 x = x := by
 def int.add_nat.neg_one : int.add_nat (-1) x = int.dec x := by
   induction x with
   | zero => rfl
-  | succ x ih => 
+  | succ x ih =>
     unfold of_nat
     rw [←neg_one_eq] at *
     unfold add_nat
@@ -170,7 +170,7 @@ def int.add_nat.neg_one : int.add_nat (-1) x = int.dec x := by
 def int.add_nat.one : int.add_nat 1 x = int.pos_succ x := by
   induction x with
   | zero => rfl
-  | succ x ih => 
+  | succ x ih =>
     rw [←one_eq] at *
     unfold add_nat
     rw [add_nat.inc, ih]
@@ -181,7 +181,7 @@ def int.add_nat.one : int.add_nat 1 x = int.pos_succ x := by
 def int.sub_nat.zero : int.sub_nat 0 x = -x := by
   induction x with
   | zero => rfl
-  | succ x ih => 
+  | succ x ih =>
     unfold of_nat
     simp
     unfold sub_nat
@@ -194,7 +194,7 @@ def int.sub_nat.zero : int.sub_nat 0 x = -x := by
 def int.sub_nat.neg_one : int.sub_nat (-1) x = int.neg_succ x := by
   induction x with
   | zero => rfl
-  | succ x ih => 
+  | succ x ih =>
     rw [←neg_one_eq] at *
     unfold sub_nat
     rw [sub_nat.dec, ih]
@@ -205,7 +205,7 @@ def int.sub_nat.neg_one : int.sub_nat (-1) x = int.neg_succ x := by
 def int.sub_nat.one : int.sub_nat 1 x = int.inc (-x) := by
   induction x with
   | zero => rfl
-  | succ x ih => 
+  | succ x ih =>
     unfold of_nat
     rw [←one_eq] at *
     unfold sub_nat
@@ -246,7 +246,7 @@ def int.zero_add { a: int } : 0 + a = a := by
 
 def int.add.neg_one_right { a: int } : a + -1 = a.dec := by cases a <;> rfl
 def int.add.one_right { a: int } : a + 1 = a.inc := by cases a <;> rfl
-  
+
 def int.add.inc_left { a b: int } : a.inc + b = (a + b).inc := by
   cases b with
   | zero => rfl
@@ -284,10 +284,10 @@ def int.add.inc_dec_right { a b: int } : a + b.inc = (a + b).inc ∧ a + b.dec =
   | zero => apply And.intro <;> rfl
   | neg_succ b =>
     induction b generalizing a with
-    | zero => 
+    | zero =>
       rw [neg_one_eq, neg_one_right, dec_inc_inv]
       apply And.intro <;> rfl
-    | succ b ih => 
+    | succ b ih =>
       apply And.intro
       rw [neg_succ.succ, ih.right, dec_inc_inv, dec_inc_inv]
       rw [neg_succ.succ, ih.right]
@@ -304,10 +304,10 @@ def int.add.inc_dec_right { a b: int } : a + b.inc = (a + b).inc ∧ a + b.dec =
       rw [sub_nat.dec]
   | pos_succ b =>
     induction b generalizing a with
-    | zero => 
+    | zero =>
       rw [one_eq, one_right, inc_dec_inv]
       apply And.intro <;> rfl
-    | succ b ih => 
+    | succ b ih =>
       apply And.intro
       rw [pos_succ.succ, ih.left]
       rw [←pos_succ.succ, ←pos_succ.succ]
@@ -359,7 +359,7 @@ def int.sub.dec_right { a b : int } : a - b.dec = (a - b).inc := by
 
 def int.add_nat.comm_pos { a b: nat } : (int.pos_succ a).add_nat b = (int.pos_succ b).add_nat a := by
   induction b generalizing a with
-  | zero => 
+  | zero =>
     rw [one_eq, add_nat.one]
     rfl
   | succ b ih =>
@@ -370,7 +370,7 @@ def int.add_nat.comm_pos { a b: nat } : (int.pos_succ a).add_nat b = (int.pos_su
 
 def int.add_nat.comm_neg { a b: nat } : ((int.neg_succ a).add_nat b).inc = ((int.pos_succ b).sub_nat a).dec := by
   induction b generalizing a with
-  | zero => 
+  | zero =>
     rw [one_eq, sub_nat.one, inc_dec_inv]
     unfold add_nat
     rw [neg_succ.def, dec_inc_inv]
@@ -382,7 +382,7 @@ def int.add_nat.comm_neg { a b: nat } : ((int.neg_succ a).add_nat b).inc = ((int
 
 def int.sub_nat.comm_pos { a b: nat } : ((int.pos_succ a).sub_nat b).dec = ((int.neg_succ b).add_nat a).inc := by
   induction b generalizing a with
-  | zero => 
+  | zero =>
     unfold sub_nat
     rw [←add_nat.inc]
     unfold int.inc
@@ -396,7 +396,7 @@ def int.sub_nat.comm_pos { a b: nat } : ((int.pos_succ a).sub_nat b).dec = ((int
 
 def int.sub_nat.comm_neg { a b: nat } : (int.neg_succ a).sub_nat b = (int.neg_succ b).sub_nat a := by
   induction b generalizing a with
-  | zero => 
+  | zero =>
     rw [neg_one_eq, sub_nat.neg_one]
     rfl
   | succ b ih =>
@@ -443,25 +443,25 @@ def int.add.assoc { a b c: int } : (a + b) + c = a + (b + c) := by
   | pos_succ c =>
     rw [@add.def _ (.pos_succ c)]
     rw [@add.def _ (.pos_succ c)]
-    unfold add 
+    unfold add
     simp
     rw [add_nat.inc, add_nat.inc, add.inc_right]
     congr
     induction c generalizing a b with
     | zero => rfl
-    | succ c ih => 
+    | succ c ih =>
       unfold add_nat
       rw [add_nat.inc, add_nat.inc, ih, inc_right]
   | neg_succ c =>
     rw [@add.def _ (.neg_succ c)]
     rw [@add.def _ (.neg_succ c)]
-    unfold add 
+    unfold add
     simp
     rw [sub_nat.dec, sub_nat.dec, add.dec_right]
     congr
     induction c generalizing a b with
     | zero => rfl
-    | succ c ih => 
+    | succ c ih =>
       unfold sub_nat
       rw [sub_nat.dec, sub_nat.dec, ih, dec_right]
 
@@ -478,8 +478,8 @@ def int.add.neg_self { a: int } : a + -a = 0 := by
     | zero => rfl
     | succ a ih =>
       rw [pos_succ.succ, inc_dec_inv, sub_nat]
-      assumption 
-  | neg_succ a => 
+      assumption
+  | neg_succ a =>
     rw [add.def]
     unfold add
     simp
@@ -487,7 +487,7 @@ def int.add.neg_self { a: int } : a + -a = 0 := by
     | zero => rfl
     | succ a ih =>
       rw [neg_succ.succ, dec_inc_inv, add_nat]
-      assumption 
+      assumption
 
 #print axioms int.add.neg_self
 
@@ -512,7 +512,7 @@ def int.sub.zero_left { a: int } : 0 - a = -a := by
   rw [sub.def, add.zero_left]
 
 def int.of_gt_zero { a: int } : 0 < a -> ∃x, a = int.pos_succ x := by
-  intros 
+  intros
   cases a
   any_goals contradiction
   rename_i x _
@@ -521,7 +521,7 @@ def int.of_gt_zero { a: int } : 0 < a -> ∃x, a = int.pos_succ x := by
 #print axioms int.of_gt_zero
 
 def int.of_lt_zero { a: int } : 0 > a -> ∃x, a = int.neg_succ x := by
-  intros 
+  intros
   cases a
   any_goals contradiction
   rename_i x _
@@ -618,7 +618,7 @@ def int.add.compare_swap { a b k: int } : compare (a + k) b = compare a (b - k) 
   | zero => rw [zero_eq, add_zero]; rfl
   | pos_succ k =>
     induction k generalizing a b with
-    | zero => 
+    | zero =>
       rw [one_eq, one_right, sub.def, neg_one_right]
       apply inc_dec_compare
     | succ k ih =>
@@ -626,7 +626,7 @@ def int.add.compare_swap { a b k: int } : compare (a + k) b = compare a (b - k) 
       apply ih
   | neg_succ k =>
     induction k generalizing a b with
-    | zero => 
+    | zero =>
       rw [neg_one_eq, neg_one_right, sub.def, neg_neg, one_right]
       apply dec_inc_compare
     | succ k ih =>
@@ -759,7 +759,7 @@ def int.add.ne_left_iff_sub { a b k: int }: k + a ≠ b ↔ a ≠ b - k := by
 
 def int.add.lift_nat { a b: nat } : (of_nat (a + b)) = (of_nat a) + (of_nat b) := by
   induction b generalizing a with
-  | zero => 
+  | zero =>
     conv => {
       rhs; rhs; unfold of_nat; simp
     }
@@ -773,10 +773,11 @@ def int.add.lift_nat { a b: nat } : (of_nat (a + b)) = (of_nat a) + (of_nat b) :
 def int.sub.lift_nat { a b: nat } : b ≤ a -> (of_nat (a - b)) = (of_nat a) - (of_nat b) := by
   intro b_le_a
   induction b generalizing a with
-  | zero => 
+  | zero =>
     conv => {
       rhs; rhs; unfold of_nat; simp
     }
+    rfl
   | succ b ih =>
     cases a with
     | zero => cases nat.le_zero b_le_a
@@ -815,7 +816,7 @@ def int.add.neg { a b: int } : -(a + b) = -a + -b := by
     simp only
     rw [int.add_nat.neg, neg.pos_succ, add.def, inc.neg]
     rfl
-  | neg_succ b => 
+  | neg_succ b =>
     rw [add.def]
     unfold add
     simp only
@@ -981,20 +982,20 @@ def int.induction
       apply from_dec
       cases x with
       | zero => exact if_zero
-      | succ x => 
+      | succ x =>
         rw [pos_succ.succ, inc_dec_inv]
         apply int.induction <;> assumption
-    | neg_succ x => 
+    | neg_succ x =>
       apply from_inc
       cases x with
       | zero => exact if_zero
-      | succ x => 
+      | succ x =>
         rw [neg_succ.succ, dec_inc_inv]
         apply int.induction <;> assumption
 termination_by x => int.abs x
 decreasing_by
-  apply nat.lt_succ_self 
-  apply nat.lt_succ_self 
+  apply nat.lt_succ_self
+  apply nat.lt_succ_self
 
 #print axioms int.induction
 

@@ -16,6 +16,86 @@ deriving Repr, DecidableEq
 
 def fract.equiv (a b: fract) : Prop := a.num * b.den = b.num * a.den
 
+instance fract.equiv.instEquiv : Equivalence fract.equiv where
+  refl := fun _ => rfl
+  symm := by
+    intro x y
+    unfold equiv
+    intro x_eq_y
+    rw [x_eq_y]
+  trans := by
+    intro x y z
+    unfold equiv
+    intro x_eq_y y_eq_z
+
+    -- xnum * yden = ynum * xden
+    -- xnum * yden * zden = ynum * xden * zden
+    -- (xnum * zden) * yden = ynum * xden * zden
+    
+    -- ynum * zden = znum * yden
+    -- ynum * zden * xden = znum * yden * xden
+    -- ynum * (zden * xden) = znum * yden * xden
+    -- ynum * (xden * zden) = znum * yden * xden
+    -- (xden * zden) * ynum = znum * yden * xden
+    -- (xden * zden) * ynum = znum * yden  * xden
+    --                       (xnum * zden) * yden = ynum * xden * zden -- from before
+    --                       (znum * xden) * yden = ynum * xden * zden
+    --                       (znum * yden) * xden = ynum * xden * zden
+    --
+    -- (xden * zden) * ynum = ynum * xden * zden
+    cases y with
+    | mk ynum yden yden_nz =>
+
+    simp only at *
+    cases g:ynum with
+    | zero =>
+      cases g
+      rw [int.zero_eq] at *
+      rw [int.mul.zero_left] at *
+      cases int.mul.eq_zero x_eq_y with
+      | inr h => cases yden <;> contradiction
+      | inl h =>
+      rw [h]
+      clear h
+      cases int.mul.eq_zero y_eq_z.symm with
+      | inr h => cases yden <;> contradiction
+      | inl h =>
+      rw [h]
+      clear h
+      repeat rw [int.mul.zero_left]
+    | pos_succ ynum' | neg_succ ynum' =>
+      have x_eq_y' : (x.num * yden) * z.den = (x.num * yden) * z.den := rfl
+      conv at x_eq_y' => {
+        rhs
+        rw [x_eq_y]
+      }
+      have y_eq_z': (ynum * z.den) * x.den = (ynum * z.den) * x.den := rfl
+      conv at y_eq_z' => {
+        rhs
+        rw [y_eq_z]
+      }
+      conv at y_eq_z' => {
+        lhs
+        rw [int.mul.assoc, @int.mul.comm z.den, ←int.mul.assoc]
+      }
+      have x_eq_z := Eq.trans x_eq_y' y_eq_z'
+      apply int.mul.of_eq
+      intro x
+      have : int.of_nat yden = int.of_nat 0 := x
+      cases int.of_nat.inj this
+      contradiction
+      clear x_eq_y' y_eq_z' g y_eq_z x_eq_y ynum' yden_nz ynum
+      rw [int.mul.assoc, @int.mul.comm z.den, ←int.mul.assoc, x_eq_z]
+      rw [int.mul.assoc, @int.mul.comm yden, ←int.mul.assoc]
+
+#print axioms fract.equiv.instEquiv
+
+instance fract.equiv.transInst : Trans fract.equiv fract.equiv fract.equiv := ⟨ fract.equiv.instEquiv.trans ⟩ 
+
+instance : HasEquiv fract := ⟨ fract.equiv ⟩
+
+def fract.equiv.def (a b: fract) : (a ≈ b) = (fract.equiv a b) := rfl
+
 def fract.to_rat (r: fract) : rat := rat.mk
     (r.num.sign * (r.num.abs / (r.num.abs.gcd r.den)))
     (r.den / (r.num.abs.gcd r.den))
@@ -149,7 +229,7 @@ def nat.mul_gcd_eq: ∀{a b c d: nat},
     intro ab_eq_de
     rw [←nat.gcd.common_left, ←nat.gcd.common_left, ab_eq_de, nat.mul.comm a c]
 
-def rat.eq_of_equiv (a b: fract) : a.equiv b -> a.to_rat = b.to_rat := by
+def rat.eq_of_equiv (a b: fract) : a ≈ b -> a.to_rat = b.to_rat := by
   intro a_eq_b
   cases a with
   | mk anum aden aden_nz =>
@@ -157,6 +237,7 @@ def rat.eq_of_equiv (a b: fract) : a.equiv b -> a.to_rat = b.to_rat := by
   | mk bnum bden bden_nz =>
   unfold fract.to_rat
   simp only at *
+  rw [fract.equiv.def] at a_eq_b
   unfold fract.equiv at a_eq_b
   simp only at a_eq_b
   match aden with
@@ -250,80 +331,6 @@ def rat.eq_of_equiv (a b: fract) : a.equiv b -> a.to_rat = b.to_rat := by
   }
 
 #print axioms rat.eq_of_equiv
-
-instance fract.equiv.instEquiv : Equivalence fract.equiv where
-  refl := fun _ => rfl
-  symm := by
-    intro x y
-    unfold equiv
-    intro x_eq_y
-    rw [x_eq_y]
-  trans := by
-    intro x y z
-    unfold equiv
-    intro x_eq_y y_eq_z
-
-    -- xnum * yden = ynum * xden
-    -- xnum * yden * zden = ynum * xden * zden
-    -- (xnum * zden) * yden = ynum * xden * zden
-    
-    -- ynum * zden = znum * yden
-    -- ynum * zden * xden = znum * yden * xden
-    -- ynum * (zden * xden) = znum * yden * xden
-    -- ynum * (xden * zden) = znum * yden * xden
-    -- (xden * zden) * ynum = znum * yden * xden
-    -- (xden * zden) * ynum = znum * yden  * xden
-    --                       (xnum * zden) * yden = ynum * xden * zden -- from before
-    --                       (znum * xden) * yden = ynum * xden * zden
-    --                       (znum * yden) * xden = ynum * xden * zden
-    --
-    -- (xden * zden) * ynum = ynum * xden * zden
-    cases y with
-    | mk ynum yden yden_nz =>
-
-    simp only at *
-    cases g:ynum with
-    | zero =>
-      cases g
-      rw [int.zero_eq] at *
-      rw [int.mul.zero_left] at *
-      cases int.mul.eq_zero x_eq_y with
-      | inr h => cases yden <;> contradiction
-      | inl h =>
-      rw [h]
-      clear h
-      cases int.mul.eq_zero y_eq_z.symm with
-      | inr h => cases yden <;> contradiction
-      | inl h =>
-      rw [h]
-      clear h
-      repeat rw [int.mul.zero_left]
-    | pos_succ ynum' | neg_succ ynum' =>
-      have x_eq_y' : (x.num * yden) * z.den = (x.num * yden) * z.den := rfl
-      conv at x_eq_y' => {
-        rhs
-        rw [x_eq_y]
-      }
-      have y_eq_z': (ynum * z.den) * x.den = (ynum * z.den) * x.den := rfl
-      conv at y_eq_z' => {
-        rhs
-        rw [y_eq_z]
-      }
-      conv at y_eq_z' => {
-        lhs
-        rw [int.mul.assoc, @int.mul.comm z.den, ←int.mul.assoc]
-      }
-      have x_eq_z := Eq.trans x_eq_y' y_eq_z'
-      apply int.mul.of_eq
-      intro x
-      have : int.of_nat yden = int.of_nat 0 := x
-      cases int.of_nat.inj this
-      contradiction
-      clear x_eq_y' y_eq_z' g y_eq_z x_eq_y ynum' yden_nz ynum
-      rw [int.mul.assoc, @int.mul.comm z.den, ←int.mul.assoc, x_eq_z]
-      rw [int.mul.assoc, @int.mul.comm yden, ←int.mul.assoc]
-
-#print axioms fract.equiv.instEquiv
 
 def fract.to_rat_to_simple (a: fract) : a.to_rat.to_simple.equiv a := by
   unfold to_rat rat.to_simple
@@ -565,7 +572,7 @@ def rat.neg.def (r: rat) : ∀g h, -r = rat.mk (-r.num) r.den g h := by
 
 #print axioms rat.neg.def
 
-def fract.add.comm (a b : fract ) : equiv (a + b) (b + a) := by
+def fract.add.comm (a b : fract ) : (a + b) ≈ (b + a) := by
   cases a with
   | mk anum aden aden_nz =>
   cases b with
@@ -577,6 +584,7 @@ def fract.add.comm (a b : fract ) : equiv (a + b) (b + a) := by
   simp only
   clear prf
   clear prf
+  rw [fract.equiv.def]
   unfold equiv
   simp only
   clear val
@@ -591,7 +599,7 @@ def rat.add.comm (a b : rat ) : a + b = b + a := by
 
 #print axioms rat.add.comm
 
-def fract.add.rewrite_left (a b k: fract) : fract.equiv a k -> fract.equiv (a + b) (k + b) := by
+def fract.add.cancel_left (a b k: fract) : fract.equiv a k -> fract.equiv (a + b) (k + b) := by
   intro a_eq_k
   unfold equiv
   have ⟨ h, prf ⟩ := fract.add.def a b
@@ -618,13 +626,26 @@ def fract.add.rewrite_left (a b k: fract) : fract.equiv a k -> fract.equiv (a + 
   congr 2 
   rw [int.mul.comm]
 
-#print axioms fract.add.rewrite_left
+#print axioms fract.add.cancel_left
 
-def fract.add.rewrite_right (a b k: fract) : fract.equiv a k -> fract.equiv (b + a) (b + k) := by
+def fract.add.cancel_right (a b k: fract) : a ≈ k -> (b + a) ≈ (b + k) := by
   intro a_eq_k
-  have := fract.add.comm a b
+  apply equiv.instEquiv.trans (fract.add.comm b a)
+  apply equiv.instEquiv.trans _ (fract.add.comm k b)
+  apply fract.add.cancel_left
+  assumption
 
-#print axioms fract.add.rewrite_left
+#print axioms fract.add.cancel_right
+
+def fract.add.of_equiv (a b c d: fract) : a ≈ c -> b ≈ d -> (a + b) ≈ (c + d) := by
+  intro a_eq_c b_eq_d
+  exact equiv.instEquiv.trans
+    (fract.add.cancel_left a b c a_eq_c)
+    (fract.add.cancel_right b c d b_eq_d)
+
+#print axioms fract.add.of_equiv
+
+def fract.add.rewrite_left (a b k: fract) : a ≈ b := sorry
 
 def fract.equiv.rewrite {c d: fract -> fract} (a b: fract) : 
   (∀x, fract.equiv (c x) (d x)) ->
@@ -675,6 +696,7 @@ def rat.add.assoc (a b c: rat) : (a + b) + c = a + (b + c) := by
     }
   }
   simp only
+
 
   admit
 
