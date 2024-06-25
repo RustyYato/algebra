@@ -30,3 +30,10 @@ def Vector.to_list (vs: Vector α n) : List α :=
   | .cons v vs => .cons v vs.to_list
 
 #print axioms Vector.flatten
+
+-- def Vector.find [DecidableEq α] (vs: Vector α n) (elem: α) : Option (Fin n) :=
+--   match vs with
+--   | .nil => .none
+--   | .cons v vs =>
+--     match decEq v elem with
+--     | .isTrue _ => .some (Fin.mk 0)

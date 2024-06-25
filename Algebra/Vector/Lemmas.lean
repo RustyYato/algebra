@@ -199,7 +199,9 @@ def Vector.to_list_from_list { vs: Vector α n }
 
 #print axioms Vector.from_list_to_list
 
-def Vector.to_list_of_veq :
+def Vector.to_list_of_veq
+  { vs: Vector α n }
+  { ws: Vector α m }:
   vs =v ws -> vs.to_list = ws.to_list := by
   intro eq
   cases eq
