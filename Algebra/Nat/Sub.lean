@@ -19,14 +19,14 @@ def nat.sub_zero (a: nat) : a - 0 = a := by
 
 #print axioms nat.sub_zero
 
-def nat.sub_succ (a b: nat) : a - b.succ = a.dec - b := rfl 
+def nat.sub_succ (a b: nat) : a - b.succ = a.dec - b := rfl
 
 #print axioms nat.sub_succ
 
 def nat.zero_sub (b: nat) : 0 - b = 0 := by
   induction b with
   | zero => rfl
-  | succ b ih => 
+  | succ b ih =>
     rw [nat.sub_succ]
     exact ih
 
@@ -46,7 +46,7 @@ def nat.sub.refl (a: nat) : a - a = 0 := by
 def nat.succ_sub {a b: nat} : b ≤ a -> a.succ - b = (a - b).succ := by
   intro b_le_a
   induction a generalizing b with
-  | zero => 
+  | zero =>
     rw [le_zero b_le_a]
     rfl
   | succ a  ih =>
@@ -64,7 +64,7 @@ def nat.succ_sub {a b: nat} : b ≤ a -> a.succ - b = (a - b).succ := by
     | inr b_eq_a_succ =>
       rw [b_eq_a_succ]
       repeat rw [succ_sub_succ, sub_refl]
-      clear ih b_le_a b_eq_a_succ b 
+      clear ih b_le_a b_eq_a_succ b
       induction a with
       | zero => rfl
       | succ _ ih => congr
@@ -133,7 +133,7 @@ def nat.sub.le_left (a b c: nat) : a ≤ b -> a - c ≤ b - c := by
     apply zero_le
   | succ a =>
     match b with
-    | succ b => 
+    | succ b =>
     rw [succ_sub_succ, succ_sub_succ]
     exact ih a b a_le_b
 
@@ -167,7 +167,7 @@ def nat.sub.lt_nz (a b: nat) : 0 < b -> b ≤ a -> a - b < a := by
 
 def nat.sub.lt { a b: nat }: a < b -> a - b = 0 := by
   induction b generalizing a with
-  | zero => 
+  | zero =>
     intro  h
     have := nat.not_lt_zero h
     contradiction
@@ -182,13 +182,13 @@ def nat.sub.lt { a b: nat }: a < b -> a - b = 0 := by
 
 #print axioms nat.sub.lt
 
-def nat.sub_sub (a b c: nat) : c ≤ b -> a - (b - c) = (a + c) - b := by 
+def nat.sub_sub (a b c: nat) : c ≤ b -> a - (b - c) = (a + c) - b := by
   intro c_le_b
   induction b generalizing a c with
   | zero =>
     cases nat.le_zero c_le_b
     rw [sub_zero, zero_eq, sub_zero, add_zero, sub_zero]
-  | succ b ih =>  
+  | succ b ih =>
     cases c with
     | zero => rw [zero_eq, add_zero, sub_zero]
     | succ c =>
@@ -197,3 +197,32 @@ def nat.sub_sub (a b c: nat) : c ≤ b -> a - (b - c) = (a + c) - b := by
       exact c_le_b
 
 #print axioms nat.sub_sub
+
+def nat.sub.eq_zero {a b: nat} : a - b = 0 ↔ a ≤ b := by
+  induction a generalizing b with
+  | zero =>
+    apply Iff.intro
+    intro
+    apply zero_le
+    intro
+    rw [zero_eq, zero_sub]
+  | succ a ih =>
+    match b with
+    | 0 =>
+      apply Iff.intro
+      intro
+      contradiction
+      intro
+      have := @nat.zero_lt_succ a
+      have := TotalOrder.not_lt_and_ge this
+      contradiction
+    | succ b =>
+      rw [succ_sub_succ]
+      apply Iff.intro
+      intro h
+      apply succ_le_succ
+      exact ih.mp h
+      intro h
+      exact ih.mpr h
+
+#print axioms nat.sub.eq_zero
