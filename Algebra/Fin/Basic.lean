@@ -53,6 +53,16 @@ def fin.mk_val (x: nat) (h: x < n) : (fin.mk x h).val = x := by
 
 #print axioms fin.mk_val
 
+def fin.val_mk (x: fin n) : fin.mk x.val x.valLt = x := by
+  induction x with
+  | zero => rfl
+  | succ x ih =>
+    unfold val mk
+    dsimp
+    rw [ih]
+
+#print axioms fin.val_mk
+
 def fin.n_gt_zero (x: fin n) : 0 < n := by
   cases x <;> trivial
 
