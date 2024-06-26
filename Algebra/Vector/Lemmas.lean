@@ -209,66 +209,66 @@ def Vector.to_list_of_veq
 
 #print axioms Vector.from_list_to_list
 
-def Vector.get_append_left
-  (vs: Vector α n) (ws: Vector α m) (idx: { x: nat // x < n }):
-  (vs ++ ws).get ⟨ idx.val, by
-    apply TotalOrder.lt_of_lt_and_le
-    exact idx.property
-    exact nat.add.le_left n m ⟩ = vs.get idx := by
-    cases idx with
-    | mk idx idxLt =>
-    induction vs generalizing idx with
-    | nil =>
-      have := nat.not_lt_zero idxLt
-      contradiction
-    | cons v vs ih =>
-      cases idx with
-      | zero => rfl
-      | succ idx =>
-        unfold Vector.get
-        dsimp
-        rename_i n
-        split
-        rw [nat.succ_add n m] at *
-        contradiction
-        rename_i n' _ vs' _ _ h₀ h _ _
-        rw [nat.succ_add n m] at *
-        injection h₀
-        subst n'
-        cases h
-        apply ih
+-- def Vector.get_append_left
+--   (vs: Vector α n) (ws: Vector α m) (idx: { x: nat // x < n }):
+--   (vs ++ ws).get ⟨ idx.val, by
+--     apply TotalOrder.lt_of_lt_and_le
+--     exact idx.property
+--     exact nat.add.le_left n m ⟩ = vs.get idx := by
+--     cases idx with
+--     | mk idx idxLt =>
+--     induction vs generalizing idx with
+--     | nil =>
+--       have := nat.not_lt_zero idxLt
+--       contradiction
+--     | cons v vs ih =>
+--       cases idx with
+--       | zero => rfl
+--       | succ idx =>
+--         unfold Vector.get
+--         dsimp
+--         rename_i n
+--         split
+--         rw [nat.succ_add n m] at *
+--         contradiction
+--         rename_i n' _ vs' _ _ h₀ h _ _
+--         rw [nat.succ_add n m] at *
+--         injection h₀
+--         subst n'
+--         cases h
+--         apply ih
 
-#print axioms Vector.get_append_left
+-- #print axioms Vector.get_append_left
 
-def Vector.get_append_right
-  (vs: Vector α n) (ws: Vector α m) (idx: { x: nat // n ≤ x ∧ x < n + m }):
-  (vs ++ ws).get ⟨ idx.val, idx.property.right ⟩ = ws.get ⟨ idx.val - n, by
-    cases idx with
-    | mk idx idxLt =>
-    dsimp
-    apply @nat.add.lt_cancel_right _ _ n
-    rw [nat.sub_add_inv, nat.add.comm]
-    exact idxLt.right
-    exact idxLt.left ⟩  := by
-    cases idx with
-    | mk idx idxLt =>
-    induction vs generalizing idx with
-    | nil => rfl
-    | cons v vs ih =>
-      cases idx with
-      | zero =>
-        have := nat.le_zero idxLt.left
-        contradiction
-      | succ idx =>
-        dsimp
-        rename_i n'
-        conv in idx.succ - n'.succ => {
-          rw [nat.succ_sub_succ]
-        }
-        apply ih
-        exact idxLt
+-- def Vector.get_append_right
+--   (vs: Vector α n) (ws: Vector α m) (idx: { x: nat // n ≤ x ∧ x < n + m }):
+--   (vs ++ ws).get ⟨ idx.val, idx.property.right ⟩ = ws.get ⟨ idx.val - n, by
+--     cases idx with
+--     | mk idx idxLt =>
+--     dsimp
+--     apply @nat.add.lt_cancel_right _ _ n
+--     rw [nat.sub_add_inv, nat.add.comm]
+--     exact idxLt.right
+--     exact idxLt.left ⟩  := by
+--     cases idx with
+--     | mk idx idxLt =>
+--     induction vs generalizing idx with
+--     | nil => rfl
+--     | cons v vs ih =>
+--       cases idx with
+--       | zero =>
+--         have := nat.le_zero idxLt.left
+--         contradiction
+--       | succ idx =>
+--         dsimp
+--         rename_i n'
+--         conv in idx.succ - n'.succ => {
+--           rw [nat.succ_sub_succ]
+--         }
+--         apply ih
+--         exact idxLt
 
-#print axioms Vector.get_append_right
+-- #print axioms Vector.get_append_right
 
 def Vector.append_veq
   { vs: Vector α n }
