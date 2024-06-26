@@ -1,4 +1,6 @@
 import Algebra.Vector.Basic
+import Algebra.Fin.Basic
+import Algebra.Range.Basic
 
 def Vector.append (vs: Vector α n) (ws: Vector α m) :
   Vector α (n + m) :=
@@ -31,9 +33,19 @@ def Vector.to_list (vs: Vector α n) : List α :=
 
 #print axioms Vector.flatten
 
--- def Vector.find [DecidableEq α] (vs: Vector α n) (elem: α) : Option (Fin n) :=
---   match vs with
---   | .nil => .none
---   | .cons v vs =>
---     match decEq v elem with
---     | .isTrue _ => .some (Fin.mk 0)
+def Vector.get (vs: Vector α n) (idx: fin n) : α :=
+  match idx with
+  | .zero => match vs with
+    | .cons v _ => v
+  | .succ idx => match vs with
+    | .cons _ vs => vs.get idx
+
+def Vector.set (vs: Vector α n) (idx: fin n) (value: α) : Vector α n :=
+  match idx with
+  | .zero => match vs with
+    | .cons _ vs => .cons value vs
+  | .succ idx => match vs with
+    | .cons v vs => .cons v (vs.set idx value)
+
+def Vector.swap (vs: Vector α n) (a b: fin n) : Vector α n := by
+  exact (vs.set b (vs.get a)).set a (vs.get b)

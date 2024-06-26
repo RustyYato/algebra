@@ -79,7 +79,7 @@ def nat.mul.eq_zero {a b: nat} : a * b = 0 -> a = 0 ∨ b = 0 := by
 def nat.mul.assoc (a b c: nat) : (a * b) * c = a * (b * c) := by
   induction a generalizing b c with
   | zero => rw [zero_eq, zero_mul, zero_mul, zero_mul]
-  | succ a ih => 
+  | succ a ih =>
     rw [succ_mul, succ_mul, add_mul]
     apply nat.add_eq_add_right
     apply ih
@@ -248,7 +248,7 @@ def nat.mul.eq_one {a b: nat} : a * b = 1 -> a = 1 ∧ b = 1 := by
   intro mul_eq_one
   match a with
   | 0 => rw [zero_mul] at mul_eq_one; contradiction
-  | .succ (.succ a) => 
+  | .succ (.succ a) =>
     have : ∀(a b: nat), a.succ.succ * b = 0 ∨ a.succ.succ * b > 1 := by
       clear mul_eq_one a b
       clear a
@@ -265,7 +265,7 @@ def nat.mul.eq_one {a b: nat} : a * b = 1 -> a = 1 ∧ b = 1 := by
           rw [add_zero]
           apply nat.zero_lt_succ
           assumption
-        | inr ih => 
+        | inr ih =>
           apply Or.inr
           rw [mul_succ]
           apply TotalOrder.lt_of_lt_and_le
@@ -284,7 +284,7 @@ def nat.mul.eq_one {a b: nat} : a * b = 1 -> a = 1 ∧ b = 1 := by
 def nat.eq_of_mul_eq { a b k: nat } : 0 < k -> k * a = k * b -> a = b := by
   intro k_nz k_mul
   induction a generalizing b k with
-  | zero => 
+  | zero =>
     rw [zero_eq, mul_zero] at k_mul
     cases mul.eq_zero k_mul.symm with
     | inl h =>
@@ -293,7 +293,7 @@ def nat.eq_of_mul_eq { a b k: nat } : 0 < k -> k * a = k * b -> a = b := by
     | inr h => exact h.symm
   | succ a ih =>
     cases b with
-    | zero => 
+    | zero =>
       rw [zero_eq, mul_zero] at k_mul
       cases mul.eq_zero k_mul with
       | inl h =>
@@ -310,3 +310,35 @@ def nat.eq_of_mul_eq { a b k: nat } : 0 < k -> k * a = k * b -> a = b := by
 
 #print axioms nat.eq_of_mul_eq
 
+def nat.mul.le (a b c d: nat) : a ≤ c -> b ≤ d -> a * b ≤ c * d := by
+  intro a_le_c b_le_d
+  apply nat.le_trans (nat.mul.of_le_cancel_left _ _ _ b_le_d)
+  exact (nat.mul.of_le_cancel_right _ _ _ a_le_c)
+
+#print axioms nat.mul.le
+
+def nat.mul.lt (a b c d: nat) : a < c -> b < d -> a * b < c * d := by
+  intro a_lt_c b_lt_d
+  match c with
+  | .zero =>
+    have := not_lt_zero a_lt_c
+    contradiction
+  | .succ c =>
+  match b with
+  | .zero =>
+    rw [nat.zero_eq, mul_zero]
+    match d with
+    | 0 =>
+      have := not_lt_zero b_lt_d
+      contradiction
+    | .succ d => rfl
+  | .succ b =>
+  apply @nat.lt_trans (a * b.succ) (c.succ * b.succ) (c.succ * d)
+  apply of_lt_cancel_right
+  rfl
+  assumption
+  apply of_lt_cancel_left
+  rfl
+  assumption
+
+#print axioms nat.mul.lt

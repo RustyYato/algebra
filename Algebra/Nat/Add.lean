@@ -243,3 +243,15 @@ def nat.add_one (a: nat) : a + 1 = a.succ := by
   rw [add.comm, one_add]
 
 #print axioms nat.add_one
+
+def nat.add.le (a b c d: nat) : a ≤ c -> b ≤ d -> a + b ≤ c + d := by
+  intro a_le_c b_le_d
+  apply le_trans (of_le_cancel_right b a c a_le_c) (of_le_cancel_left c b d b_le_d)
+
+#print axioms nat.add.le
+
+def nat.add.lt (a b c d: nat) : a < c -> b < d -> a + b < c + d := by
+  intro a_le_c b_le_d
+  apply lt_trans (of_lt_cancel_right a_le_c) (of_lt_cancel_left b_le_d)
+
+#print axioms nat.add.lt

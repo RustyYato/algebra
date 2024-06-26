@@ -8,6 +8,11 @@ def nat.sub (a b: nat) := match b with
 
 #print axioms nat.sub
 
+def nat.pred (n: nat) :=
+  match n with
+  | .succ n => n
+  | .zero => 0
+
 instance nat.sub_inst : Sub nat where
   sub := nat.sub
 

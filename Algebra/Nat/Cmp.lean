@@ -9,12 +9,12 @@ def nat.cmp (a b: nat) : Ordering := match a, b with
 
 #print axioms nat.cmp
 
-instance nat.ordInst : Ord nat := ⟨ nat.cmp ⟩ 
+instance nat.ordInst : Ord nat := ⟨ nat.cmp ⟩
 
 def nat.cmp.swap {a b: nat} : a.cmp b = (b.cmp a).swap := by
   induction a generalizing b with
   | zero => cases b <;> trivial
-  | succ a ih => 
+  | succ a ih =>
     cases b with
     | zero => trivial
     | succ b => exact ih
@@ -45,7 +45,7 @@ def nat.cmp.eq_of_compare_eq { a b: nat } : compare a b = Ordering.eq -> a = b :
 #print axioms nat.cmp.eq_of_compare_eq
 
 def nat.cmp.trans { a b c: nat } { o : Ordering } :
-  a.cmp b = o -> 
+  a.cmp b = o ->
   b.cmp c = o ->
   a.cmp c = o := by
     intro cmp_ab cmp_bc
@@ -118,7 +118,7 @@ def nat.ge_of_beq { a b: nat } : a == b -> a ≥ b := fun a_eq_b => nat.le_of_be
 
 #print axioms nat.ge_of_beq
 
-def nat.ge_of_eq { a b: nat } : a = b -> a ≥ b := fun a_eq_b => nat.le_of_eq a_eq_b.symm 
+def nat.ge_of_eq { a b: nat } : a = b -> a ≥ b := fun a_eq_b => nat.le_of_eq a_eq_b.symm
 
 #print axioms nat.ge_of_eq
 
@@ -140,7 +140,7 @@ inductive LtOrGe (a b: nat): Type where
   | Lt : a < b -> LtOrGe a b
   | Ge : a ≥ b -> LtOrGe a b
 
-def nat.lt_or_ge_dec (a b: nat) : LtOrGe a b := 
+def nat.lt_or_ge_dec (a b: nat) : LtOrGe a b :=
   match  h:nat.cmp a b with
   | .lt =>.Lt h
   | .eq => .Ge <| nat.ge_of_eq (nat.eq_of_cmp h)
@@ -203,7 +203,7 @@ def nat.le_of_lt_succ { a b: nat } : a < b.succ -> a ≤ b := by
     | zero =>
       have := nat.not_lt_zero a_lt_b_succ
       contradiction
-    | succ b => 
+    | succ b =>
       apply ih
       assumption
 
@@ -220,7 +220,7 @@ def nat.succ_le_of_lt { a b: nat } : a < b -> a.succ ≤ b := by
     | zero =>
       have := nat.not_lt_zero a_lt_b_succ
       contradiction
-    | succ b => 
+    | succ b =>
       apply ih
       assumption
 
@@ -271,3 +271,64 @@ def nat.lt_or_ge_dec.pick_ge {a b: nat} : (a_ge_b: a ≥ b) -> nat.lt_or_ge_dec 
 def nat.zero_lt_of_lt { a b: nat } (a_lt_b: a < b): 0 < b := TotalOrder.lt_of_le_and_lt (zero_le _) a_lt_b
 
 #print axioms nat.zero_lt_of_lt
+
+def nat.toNat_lt { a b: nat } : a < b -> a.toNat < b.toNat := by
+  intro a_lt_b
+  induction a generalizing b with
+  | zero =>
+    match b with
+    | .succ _ => apply Nat.zero_lt_succ
+  | succ a ih =>
+    match b with
+    | .succ b =>
+    unfold toNat
+    apply Nat.succ_lt_succ
+    apply ih
+    assumption
+
+#print axioms nat.toNat_lt
+
+def nat.toNat_le { a b: nat } : a ≤ b -> a.toNat ≤ b.toNat := by
+  intro a_lt_b
+  induction a generalizing b with
+  | zero =>
+    apply Nat.zero_le
+  | succ a ih =>
+    match b with
+    | .succ b =>
+    unfold toNat
+    apply Nat.succ_le_succ
+    apply ih
+    assumption
+
+#print axioms nat.toNat_le
+
+def nat.ofNat_lt { a b: Nat } : a < b -> nat.ofNat a < nat.ofNat b := by
+  intro a_lt_b
+  induction a generalizing b with
+  | zero =>
+    match b with
+    | .succ _ => trivial
+  | succ a ih =>
+    match b with
+    | .succ b =>
+    apply nat.succ_lt_succ
+    apply ih
+    apply Nat.lt_of_succ_lt_succ
+    exact a_lt_b
+
+#print axioms nat.toNat_lt
+
+def nat.ofNat_le { a b: Nat } : a ≤ b -> nat.ofNat a ≤ nat.ofNat b := by
+  intro a_le_b
+  induction a generalizing b with
+  | zero => apply zero_le
+  | succ a ih =>
+    match b with
+    | .succ b =>
+    apply nat.succ_le_succ
+    apply ih
+    apply Nat.le_of_succ_le_succ
+    exact a_le_b
+
+#print axioms nat.toNat_le

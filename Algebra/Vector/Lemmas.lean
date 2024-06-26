@@ -209,18 +209,6 @@ def Vector.to_list_of_veq
 
 #print axioms Vector.from_list_to_list
 
-def Vector.get (vs: Vector α n) (idx: { x: nat // x < n }) : α :=
-  match idx with
-  | .mk val valLt =>
-  match vs with
-  | .nil => by
-    have := nat.not_lt_zero valLt
-    contradiction
-  | .cons v vs =>
-    match val with
-    | .zero => v
-    | .succ val => vs.get <| ⟨ val, valLt ⟩
-
 def Vector.get_append_left
   (vs: Vector α n) (ws: Vector α m) (idx: { x: nat // x < n }):
   (vs ++ ws).get ⟨ idx.val, by
