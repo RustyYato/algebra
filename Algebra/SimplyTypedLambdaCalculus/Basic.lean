@@ -330,7 +330,27 @@ instance ReductionStep.subsingleton: Subsingleton (a ⤳ b) where
 
 #print axioms ReductionStep.subsingleton
 
-def ReductionStepList.subsingleton : Subsingleton (a ~~> b) where
+def ReductionStepList.determanistic : a ~~> b -> a ~~> c -> b = c := by
+  intro x y
+  induction x with
+  | Refl a a_term =>
+    cases y
+    rfl
+    rename_i h _
+    have := h.never_terminal
+    contradiction
+  | Cons x _ ih =>
+    cases y
+    have := x.never_terminal
+    contradiction
+    apply ih
+    rename_i y ys
+    have := ReductionStep.determanistic x y
+    rename_i b
+    subst b
+    assumption
+
+instance ReductionStepList.subsingleton : Subsingleton (a ~~> b) where
   allEq := by
     intro x y
     induction x with
@@ -362,3 +382,13 @@ def ReductionStep.allHEq
   apply Subsingleton.allEq
 
 #print axioms ReductionStep.allHEq
+
+def ReductionStepList.allHEq
+  (x: a ~~> b) (y: a ~~> c):
+  HEq x y := by
+  have := x.determanistic y
+  subst c
+  congr
+  apply Subsingleton.allEq
+
+#print axioms ReductionStepList.allHEq
