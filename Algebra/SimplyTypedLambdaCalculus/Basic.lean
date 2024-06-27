@@ -207,14 +207,14 @@ inductive ReductionStep : Term ctx ty -> Term ctx ty -> Type where
 infix:60 " ⤳ " => ReductionStep
 
 inductive ReductionStepList : Term ctx ty -> Term ctx ty -> Type where
-| Refl : ∀(a: Term ctx ty), a.is_terminal -> ReductionStepList a a
+| Refl : ReductionStepList a a
 | Cons : ∀{a b c}, a ⤳ b -> ReductionStepList b c ->  ReductionStepList a c
 
 infix:60 " ~~> " => ReductionStepList
 
 def ReductionStepList.length (red: ReductionStepList a b)  : nat :=
   match red with
-  | .Refl _ _ => 0
+  | .Refl => 0
   | .Cons _ list => list.length
 
 instance ReductionStep.never_terminal:
@@ -330,10 +330,12 @@ instance ReductionStep.subsingleton: Subsingleton (a ⤳ b) where
 
 #print axioms ReductionStep.subsingleton
 
-def ReductionStepList.determanistic : a ~~> b -> a ~~> c -> b = c := by
-  intro x y
+def ReductionStepList.determanistic (b c: Term ctx ty) :
+  b.is_terminal -> c.is_terminal ->
+  a ~~> b -> a ~~> c -> b = c := by
+  intro b_term c_term x y
   induction x with
-  | Refl a a_term =>
+  | Refl =>
     cases y
     rfl
     rename_i h _
@@ -341,20 +343,24 @@ def ReductionStepList.determanistic : a ~~> b -> a ~~> c -> b = c := by
     contradiction
   | Cons x _ ih =>
     cases y
-    have := x.never_terminal
-    contradiction
-    apply ih
-    rename_i y ys
-    have := ReductionStep.determanistic x y
-    rename_i b
-    subst b
-    assumption
+    {
+      have := x.never_terminal
+      contradiction
+    }
+    {
+      rename_i y ys
+      have := ReductionStep.determanistic x y
+      rename_i b
+      subst b
+      apply ih
+      repeat assumption
+    }
 
-instance ReductionStepList.subsingleton : Subsingleton (a ~~> b) where
+instance ReductionStepList.subsingleton (b: Term ctx ty) (b_term: b.is_terminal) : Subsingleton (a ~~> b) where
   allEq := by
     intro x y
     induction x with
-    | Refl x x_term =>
+    | Refl =>
       cases y
       rfl
       rename_i h _
@@ -370,6 +376,7 @@ instance ReductionStepList.subsingleton : Subsingleton (a ~~> b) where
       congr
       apply Subsingleton.allEq
       apply ih
+      assumption
 
 #print axioms ReductionStepList.subsingleton
 
@@ -383,12 +390,58 @@ def ReductionStep.allHEq
 
 #print axioms ReductionStep.allHEq
 
-def ReductionStepList.allHEq
-  (x: a ~~> b) (y: a ~~> c):
-  HEq x y := by
-  have := x.determanistic y
-  subst c
-  congr
-  apply Subsingleton.allEq
+structure CommonReduction { ctx: TypeCtx n } { a b c: Term ctx ty } (ab: a ~~> b) (ac: a ~~> c) where
+  term: Term ctx ty
+  red: a ~~> term
+  to_b: term ~~> b
+  to_c: term ~~> c
 
-#print axioms ReductionStepList.allHEq
+  is_sub_ab: red.length ≤ ab.length
+  is_sub_ac: red.length ≤ ac.length
+
+def CommonReduction.push
+  { a b c d: Term ctx ty }:
+  (x: d ⤳ a) ->
+  (ab: a ~~> b) ->
+  (ac: a ~~> c) ->
+  (red: CommonReduction ab ac) ->
+  CommonReduction (ReductionStepList.Cons x ab) (ReductionStepList.Cons x ac) := by
+  intro da ab ac comm
+  apply CommonReduction.mk comm.term (ReductionStepList.Cons da comm.red)
+  exact comm.to_b
+  exact comm.to_c
+  exact comm.is_sub_ab
+  exact comm.is_sub_ac
+
+@[refl]
+def ReductionStepList.refl:
+  a ~~> a := Refl
+
+def ReductionStepList.commonSubseq
+  { a b c: Term ctx ty }
+  (x: a ~~> b) (y: a ~~> c):
+  CommonReduction x y := by
+  match x with
+  | .Refl =>
+    apply CommonReduction.mk a .Refl
+    rfl
+    assumption
+    apply nat.zero_le
+    apply nat.zero_le
+  | .Cons x xs =>
+    match y with
+    | .Refl =>
+      apply CommonReduction.mk a .Refl
+      apply ReductionStepList.Cons x xs
+      rfl
+      apply nat.zero_le
+      apply nat.zero_le
+    | .Cons y ys =>
+      rename_i b₀ b₁
+      have := ReductionStep.determanistic x y
+      subst b₁
+      have := Subsingleton.allEq x y
+      subst y
+      apply (commonSubseq xs ys).push
+
+#print axioms ReductionStepList.commonSubseq
