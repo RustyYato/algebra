@@ -71,3 +71,7 @@ def int.abs.neg_of_nat { a: nat } : int.abs (-a) = a := by
   cases a <;> rfl
 
 #print axioms int.abs.neg_of_nat
+
+def int.abs.neg { a: int } : int.abs (-a) = a.abs := by cases a <;> rfl
+
+#print axioms int.abs.neg
