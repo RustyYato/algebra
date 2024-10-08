@@ -30,7 +30,7 @@ def PrimeFactorization.mul { a b: nat } : PrimeFactorization a -> PrimeFactoriza
   {
     apply List.allP.of_contains
     intro x x_in_merge
-    cases sorted_merge.contains x_in_merge with 
+    cases sorted_merge.contains x_in_merge with
     | inl x_in_a =>
       apply List.allP.contains
       exact factors_a.all_primes
@@ -79,14 +79,14 @@ def PrimeFactorization.mul { a b: nat } : PrimeFactorization a -> PrimeFactoriza
 def PrimeFactorization.new (n: nat) : 0 < n -> PrimeFactorization n := by
   intro n_nz
   cases (inferInstance: Decidable (1 < n)) with
-  | isFalse h => 
+  | isFalse h =>
     have := TotalOrder.not_lt_implies_ge h
-    match n with 
-    | 1 => 
+    match n with
+    | 1 =>
     apply PrimeFactorization.mk (SortedList.mk [] True.intro)
     decide
     decide
-  | isTrue h => 
+  | isTrue h =>
   have is_prime := nat.first_factor.is_prime n h
   have is_factor := nat.first_factor.is_factor n h
   have := nat.dvd.def is_factor
@@ -114,7 +114,7 @@ decreasing_by
 def product.eq_zero : product list = 0 -> 0 ∈ list := by
   induction list with
   | nil => intro; contradiction
-  | cons x xs ih => 
+  | cons x xs ih =>
     unfold product
     intro eq_zero
     cases nat.mul.eq_zero eq_zero with
@@ -128,7 +128,7 @@ def product.eq_zero : product list = 0 -> 0 ∈ list := by
 def product.eq_one : product list = 1 -> ∀x, x ∈ list -> x = 1 := by
   intro eq_one y elem
   induction elem with
-  | head _ => 
+  | head _ =>
     have ⟨ _, _ ⟩ := nat.mul.eq_one eq_one
     assumption
   | tail _ _ ih =>
@@ -147,7 +147,7 @@ def PrimeFactorization.never_zero : PrimeFactorization 0 -> False := by
 #print axioms PrimeFactorization.never_zero
 
 def PrimeFactorization.is_factor (n p: nat) (f: PrimeFactorization n) : p ∈ f.factors.items -> p ∣ n := by
-  cases f with 
+  cases f with
   | mk factors is_prime product_eq =>
   cases factors with
   | mk factors sorted =>
@@ -155,7 +155,7 @@ def PrimeFactorization.is_factor (n p: nat) (f: PrimeFactorization n) : p ∈ f.
   simp only at elem
   induction elem generalizing n with
   | head factors => exists product factors
-  | tail head elem ih => 
+  | tail head _elem ih =>
     rename_i factors
     have ⟨ x, xprf ⟩ := ih (n / head) sorted.pop is_prime.right (by
       simp only
@@ -175,8 +175,8 @@ def PrimeFactorization.is_factor (n p: nat) (f: PrimeFactorization n) : p ∈ f.
 
 def PrimeFactorization.is_complete (n p: nat) (f: PrimeFactorization n) : p.prime -> p ∣ n -> p ∈ f.factors.items := by
   intro prime_p p_dvd_n
-  
-  cases f with 
+
+  cases f with
   | mk factors is_prime product_eq =>
   cases factors with
   | mk factors sorted =>
@@ -228,16 +228,16 @@ def PrimeFactorization.is_complete (n p: nat) (f: PrimeFactorization n) : p.prim
 def PrimeFactorization.unique (a b: PrimeFactorization n) : a = b := by
   have a_is_factor := a.is_factor
   have b_is_factor := b.is_factor
-  
+
   have a_is_complete := a.is_complete
   have b_is_complete := b.is_complete
 
-  cases a with 
+  cases a with
   | mk a_factors a_is_prime a_product_eq =>
   cases a_factors with
   | mk a_factors a_sorted =>
-  
-  cases b with 
+
+  cases b with
   | mk b_factors b_is_prime b_product_eq =>
   cases b_factors with
   | mk b_factors b_sorted =>
@@ -259,7 +259,7 @@ def PrimeFactorization.unique (a b: PrimeFactorization n) : a = b := by
       have b_prime := this (.head _)
       rw [b_eq_one] at b_prime
       contradiction
-  | cons a a_factors ih => 
+  | cons a a_factors ih =>
     have n_gt_1 : 1 < n := by
       cases (inferInstance: Decidable (1 < n)) with
       | isTrue => assumption
@@ -269,11 +269,11 @@ def PrimeFactorization.unique (a b: PrimeFactorization n) : a = b := by
           have := product.eq_zero a_product_eq
           have := (a_is_prime.contains) 0 this
           contradiction
-        | 1 => 
+        | 1 =>
           cases product.eq_one a_product_eq a (.head _)
           have := (a_is_prime.contains) 1 (.head _)
           contradiction
-          
+
     cases b_factors with
     | nil =>
       unfold product at b_product_eq
@@ -317,7 +317,7 @@ def PrimeFactorization.unique (a b: PrimeFactorization n) : a = b := by
         apply TotalOrder.lt_trans
         apply nat.lt_succ_self
         exact a_is_prime.left.left)
-      
+
       let nfb: PrimeFactorization (n / first_factor) := PrimeFactorization.mk (SortedList.mk b_factors b_sorted.pop) b_is_prime.right (by
         simp only at b_product_eq
         simp only at *
