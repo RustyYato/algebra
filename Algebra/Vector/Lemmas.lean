@@ -6,6 +6,18 @@ def Vector.nil_append
 
 #print axioms Vector.nil_append
 
+def Vector.append_nil
+  (vs: Vector α n):
+  vs ++ (nil: Vector α 0) =v vs := by
+  induction vs with
+  | nil => rfl
+  | cons v vs ih =>
+    apply cons.congrEq
+    apply And.intro rfl
+    exact ih
+
+#print axioms Vector.nil_append
+
 def Vector.cons_append
   (v: α)
   (vs: Vector α n) (ws: Vector α m):
@@ -193,7 +205,7 @@ def Vector.to_list_from_list { vs: Vector α n }
   | cons v vs ih =>
     rw [Vector.cons_to_list]
     unfold Vector.from_list
-    apply Vec.cons.congrEq
+    apply Vector.cons.congrEq
     apply And.intro rfl
     exact ih
 
@@ -314,3 +326,47 @@ def Vector.flatten_veq
   rfl
 
 #print axioms Vector.flatten_veq
+
+def Vector.nil_reverse : (Vector.nil : Vector α 0).reverse = .nil := rfl
+
+def Vector.append_assoc (as: Vector α n) (bs: Vector α m) (cs: Vector α o) :
+  as ++ bs ++ cs =v as ++ (bs ++ cs) := by
+  induction as with
+  | nil => rfl
+  | cons a as =>
+    repeat rw [cons_append]
+    apply cons.congrEq
+    apply And.intro
+    rfl
+    assumption
+
+-- reverse vs then append ws to it
+def Vector.reverse_append (vs: Vector α n) (ws: Vector α m) :
+  Vector α (n + m) :=
+  match vs with
+  | nil => ws
+  | cons v vs =>
+    Vector.cast (vs.reverse_append (cons v ws)) (by
+      rw [nat.add_succ, nat.succ_add])
+
+def Vector.reverseAux_cons (vs: Vector α n) (ws: Vector α m) :
+  vs.reverseAux ws =v vs.reverse ++ ws := by
+  induction vs generalizing m with
+  | nil => apply Vector.cast_eqv
+  | cons v vs ih =>
+  unfold reverseAux
+  apply NatEq.trans (Vector.cast_eqv _ _)
+  apply NatEq.trans (ih (cons v ws))
+  conv => {
+    rhs
+    unfold reverse reverseAux
+  }
+  apply NatEq.trans _ (Vector.append_veq (Vector.cast_eqv _ _).symm (NatEq.refl _))
+  apply NatEq.trans _ (Vector.append_veq (ih (cons v nil)).symm (NatEq.refl _))
+  apply NatEq.trans _  (append_assoc _ _ _).symm
+  rfl
+
+def Vector.reverse_cons (v: α) (vs: Vector α n) :
+  (Vector.cons v vs).reverse =v vs.reverse ++ (Vector.cons v .nil) := by
+  apply NatEq.trans _ (Vector.reverseAux_cons vs (cons v nil))
+  rfl

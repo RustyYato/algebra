@@ -11,21 +11,21 @@ inductive Vector.Mem.{u} {α: Type u} : α -> Vector α n -> Prop where
 
 instance Vector.MemInst : Membership α (Vector α n) := ⟨ Vector.Mem ⟩
 
-def Vec.cons.injEq : (Vector.cons v vs) =v (Vector.cons w ws) -> v = w ∧ vs =v ws := by
+def Vector.cons.injVEq : (Vector.cons v vs) =v (Vector.cons w ws) -> v = w ∧ vs =v ws := by
   intro h
   cases h
   apply And.intro <;> rfl
 
-#print axioms Vec.cons.injEq
+#print axioms Vector.cons.injEq
 
-def Vec.cons.congrEq : v = w ∧ vs =v ws -> (Vector.cons v vs) =v (Vector.cons w ws) := by
+def Vector.cons.congrEq : v = w ∧ vs =v ws -> (Vector.cons v vs) =v (Vector.cons w ws) := by
   intro h
   have ⟨ h, g ⟩ := h
   subst w
   cases g
   rfl
 
-#print axioms Vec.cons.congrEq
+#print axioms Vector.cons.congrEq
 
 def Vector.mem_cons { elem v: α } { vs: Vector α n }:
   elem ∈ cons v vs -> elem = v ∨ elem ∈ vs := by

@@ -54,7 +54,7 @@ def Vector.remove (vs: Vector α n.succ) (idx: fin n.succ) : Vector α n :=
   | .succ idx => match vs with
     | .cons v vs =>
     match n with
-    | .succ n => .cons v (vs.remove idx)
+    | .succ _ => .cons v (vs.remove idx)
 
 @[simp]
 def Vector.insert_at (vs: Vector α n) (idx: fin n.succ) (value: α) : Vector α n.succ :=
@@ -196,3 +196,23 @@ def Vector.remove_get_ge { n: nat } (vs: Vector α n.succ) (a: fin n.succ) (b: f
 
 def Vector.swap (vs: Vector α n) (a b: fin n) : Vector α n := by
   exact (vs.set b (vs.get a)).set a (vs.get b)
+
+def Vector.cast (vs: Vector α n) (h: n = m) : Vector α m := h ▸ vs
+
+def Vector.cast_eqv (vs: Vector α n) (h: n = m) : vs.cast h =v vs
+ := by
+ subst m
+ rfl
+
+def Vector.reverseAux (vs: Vector α n) (out: Vector α m) :
+  Vector α (m + n) :=
+  match vs with
+  | .nil => Vector.cast out (nat.add_zero m).symm
+  | .cons v vs => Vector.cast (vs.reverseAux <| .cons v out) (by
+    rw [nat.add_succ, ←nat.succ_add])
+
+#print axioms Vector.reverseAux
+
+def Vector.reverse (vs: Vector α n) : Vector α n := Vector.reverseAux vs .nil
+
+#print axioms Vector.reverse
