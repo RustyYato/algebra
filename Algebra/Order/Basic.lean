@@ -394,3 +394,13 @@ def TotalOrder.decide [Ord α] [TotalOrder α] (a b: α) : DecidableOrder a b :=
   | .lt => .Lt h
   | .eq => .Eq <| eq_of_compare_eq h
   | .gt => .Gt <| gt_of_compare h
+
+def TotalOrder.compare_or_eq_of_le
+  [Ord α] [TotalOrder α] (a b: α):
+  a ≤ b ->
+  compare a b = Ordering.lt ∨ a = b := by
+  intro h
+  cases lt_or_eq_of_le h
+  apply Or.inl; assumption
+  apply Or.inr
+  assumption

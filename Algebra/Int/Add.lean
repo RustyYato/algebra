@@ -613,6 +613,33 @@ def int.dec_inc_cmp { a b: int } : cmp a.dec b = cmp a b.inc := by
 
 #print axioms int.dec_inc_cmp
 
+def int.add.compare_left { a b k: int } : compare a b = compare (a + k) (b + k) := by
+  cases k with
+  | zero => rfl
+  | pos_succ k =>
+    induction k with
+    | zero =>
+      rw [int.one_eq, int.add.one_right, int.add.one_right]
+      rw [int.inc.compare]
+    | succ k ih =>
+      rw [int.pos_succ.succ, int.add.inc_right, int.add.inc_right]
+      rw [int.inc.compare, ih]
+  | neg_succ k =>
+    induction k with
+    | zero =>
+      rw [int.neg_one_eq, int.add.neg_one_right, int.add.neg_one_right]
+      rw [int.dec.compare]
+    | succ k ih =>
+      rw [int.neg_succ.succ, int.add.dec_right, int.add.dec_right]
+      rw [int.dec.compare, ih]
+
+#print axioms int.add.compare_left
+
+def int.add.compare_right { a b k: int } : compare a b = compare (k + a) (k + b) := by
+  rw [@comm k, @comm k, compare_left]
+
+#print axioms int.add.compare_right
+
 def int.add.compare_swap { a b k: int } : compare (a + k) b = compare a (b - k) := by
   cases k with
   | zero => rw [zero_eq, add_zero]; rfl
@@ -850,12 +877,12 @@ def int.add.sign_mul { s: int.Sign } { a b: nat } :  s * (a + b) = s * a + s * b
 
 def int.sub.sign_mul { s: int.Sign } { a b: nat } : b ≤ a -> s * (a - b) = s * a - s * b := by
   intro b_le_a
-  induction a generalizing s b with
+  cases a with
   | zero =>
     cases nat.le_zero b_le_a
     rw [nat.zero_eq, nat.sub_zero, int.Sign.int_zero_nat]
     rfl
-  | succ a ih =>
+  | succ a =>
     cases b with
     | zero => rw [nat.zero_eq, nat.sub_zero, int.Sign.int_zero_nat, sub.def, neg.zero, add.zero_right]
     | succ b =>
@@ -1028,3 +1055,134 @@ def int.dec.inj (a b: int) : a.dec = b.dec -> a = b := by
   assumption
 
 #print axioms int.dec.inj
+
+def int.add.compare_strict { a b c d: int } { o: Ordering } :
+   compare a b = o ->
+   compare c d = o ->
+   compare (a + c) (b + d) = o := by
+    intro ab
+    intro cd
+    revert cd
+    induction c using int.induction generalizing d
+    · intro cd
+      rw [int.add_zero, TotalOrder.compare_transitive ab]
+      clear ab a
+      induction b using int.induction
+      · rw [int.zero_add]
+        assumption
+      · rename_i b ih
+        rw [int.add.inc_left, int.inc.compare] at ih
+        assumption
+      · rename_i b ih
+        rw [int.add.dec_left, int.dec.compare] at ih
+        assumption
+    · rename_i c ih
+      have := @ih d.inc
+      rw [int.add.inc_right, int.add.inc_right, int.inc.compare, int.inc.compare] at this
+      assumption
+    · rename_i c ih
+      have := @ih d.dec
+      rw [int.add.dec_right, int.add.dec_right, int.dec.compare, int.dec.compare] at this
+      assumption
+
+#print axioms int.add.compare_strict
+
+def int.add.compare' { a b c d: int } { o: Ordering } :
+   compare a b = o ∨ a = b ->
+   compare c d = o ∨ c = d ->
+   ¬((a = b) ∧ (c = d)) ->
+   compare (a + c) (b + d) = o := by
+    intro ab cd not_ab_and_cd
+    cases ab <;> rename_i ab <;> cases cd <;> rename_i cd
+    apply int.add.compare_strict <;> assumption
+    subst d
+    rw [←int.add.compare_left]
+    assumption
+    subst b
+    rw [←int.add.compare_right]
+    assumption
+    have := not_ab_and_cd ⟨ ab, cd ⟩
+    contradiction
+
+#print axioms int.add.compare'
+
+def int.add.lt { a b c d: int } :
+   a < b -> c < d -> (a + c) < (b + d) := by
+    intro ab cd
+    apply int.add.compare_strict <;> assumption
+
+#print axioms int.add.lt
+
+def int.add.lt_of_lt_of_le { a b c d: int } :
+   a < b -> c ≤ d -> (a + c) < (b + d) := by
+    intro ab cd
+    apply int.add.compare'
+    apply Or.inl; assumption
+    apply TotalOrder.compare_or_eq_of_le _ _ cd
+    intro h
+    cases h.left
+    exact TotalOrder.lt_irrefl ab
+
+#print axioms int.add.lt_of_lt_of_le
+
+def int.add.lt_of_le_of_lt { a b c d: int } :
+   a ≤ b -> c < d -> (a + c) < (b + d) := by
+    intro ab cd
+    apply int.add.compare'
+    apply TotalOrder.compare_or_eq_of_le _ _ ab
+    apply Or.inl; assumption
+    intro h
+    cases h.right
+    exact TotalOrder.lt_irrefl cd
+
+#print axioms int.add.lt_of_le_of_lt
+
+def int.add.le { a b c d: int } :
+   a ≤ b -> c ≤ d -> (a + c) ≤ (b + d) := by
+    intro ab cd
+    cases TotalOrder.lt_or_eq_of_le ab
+    apply TotalOrder.le_of_lt
+    apply lt_of_lt_of_le <;> assumption
+    subst b
+    cases TotalOrder.lt_or_eq_of_le cd
+    apply TotalOrder.le_of_lt
+    apply lt_of_le_of_lt <;> assumption
+    subst d
+    apply TotalOrder.le_refl
+
+#print axioms int.add.le
+
+def int.sub.lt { a b c d: int } :
+   a < b -> c > d -> (a - c) < (b - d) := by
+    intro ab cd
+    have := int.neg.swap_lt.mp cd
+    apply int.add.compare_strict <;> assumption
+
+#print axioms int.sub.lt
+
+def int.sub.lt_of_lt_of_le { a b c d: int } :
+   a < b -> c ≥ d -> (a - c) < (b - d) := by
+    intro ab cd
+    apply int.add.lt_of_lt_of_le
+    assumption
+    exact int.neg.swap_le.mp cd
+
+#print axioms int.sub.lt_of_lt_of_le
+
+def int.sub.lt_of_le_of_lt { a b c d: int } :
+   a ≤ b -> c > d -> (a - c) < (b - d) := by
+    intro ab cd
+    apply int.add.lt_of_le_of_lt
+    assumption
+    exact int.neg.swap_lt.mp cd
+
+#print axioms int.sub.lt_of_le_of_lt
+
+def int.sub.le { a b c d: int } :
+   a ≤ b -> c ≥ d -> (a - c) ≤ (b - d) := by
+    intro ab cd
+    apply int.add.le
+    assumption
+    exact int.neg.swap_le.mp cd
+
+#print axioms int.sub.le

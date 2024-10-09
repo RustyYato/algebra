@@ -2,6 +2,7 @@ import Algebra.Order.Basic
 import Algebra.Int.Basic
 import Algebra.Nat.Cmp
 
+@[simp]
 def int.cmp (a b: int): Ordering := match a, b with
   | .zero, .zero => .eq
   | .pos_succ _, .zero => .gt
@@ -23,7 +24,7 @@ instance int.instTotalOrder : TotalOrder int where
     intro a b c o a_cmp_b b_cmp_c
     cases a <;> cases b
     any_goals assumption
-    any_goals (simp at a_cmp_b) 
+    any_goals (simp at a_cmp_b)
     any_goals try (
       cases a_cmp_b
       match c with
