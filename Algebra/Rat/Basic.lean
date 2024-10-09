@@ -536,6 +536,8 @@ def rat.neg.def (r: rat) : -r = rat.mk (-r.num) r.den r.den_nz (by
 
 #print axioms rat.neg.def
 
+def rat.add.to_simple (a b : rat) : (a + b).to_simple ≈ a.to_simple + b.to_simple := fract.to_rat_to_simple _
+
 def fract.add.comm (a b : fract ) : (a + b) ≈ (b + a) := by
   cases a with
   | mk anum aden aden_nz =>
@@ -556,7 +558,7 @@ def rat.add.comm (a b : rat ) : a + b = b + a := by
 
 #print axioms rat.add.comm
 
-def fract.add.cancel_left (a b k: fract) : fract.equiv a k -> fract.equiv (a + b) (k + b) := by
+def fract.add.equiv_left (a b k: fract) : fract.equiv a k -> fract.equiv (a + b) (k + b) := by
   intro a_eq_k
   unfold equiv
   rw [fract.add.def, fract.add.def]
@@ -578,42 +580,24 @@ def fract.add.cancel_left (a b k: fract) : fract.equiv a k -> fract.equiv (a + b
   congr 2
   rw [int.mul.comm]
 
-#print axioms fract.add.cancel_left
+#print axioms fract.add.equiv_left
 
-def fract.add.cancel_right (a b k: fract) : a ≈ k -> (b + a) ≈ (b + k) := by
+def fract.add.equiv_right (a b k: fract) : a ≈ k -> (b + a) ≈ (b + k) := by
   intro a_eq_k
   apply equiv.instEquiv.trans (fract.add.comm b a)
   apply equiv.instEquiv.trans _ (fract.add.comm k b)
-  apply fract.add.cancel_left
+  apply fract.add.equiv_left
   assumption
 
-#print axioms fract.add.cancel_right
+#print axioms fract.add.equiv_right
 
 def fract.add.of_equiv (a b c d: fract) : a ≈ c -> b ≈ d -> (a + b) ≈ (c + d) := by
   intro a_eq_c b_eq_d
   exact equiv.instEquiv.trans
-    (fract.add.cancel_left a b c a_eq_c)
-    (fract.add.cancel_right b c d b_eq_d)
+    (fract.add.equiv_left a b c a_eq_c)
+    (fract.add.equiv_right b c d b_eq_d)
 
 #print axioms fract.add.of_equiv
-
-def fract.add.rewrite_left (a b k: fract) : a ≈ b -> a + k ≈ b + k := by
-  intro h
-  apply fract.add.of_equiv
-  assumption
-  rfl
-
-class fract.equiv.Resp (f: fract -> fract) : Prop where
-  resp : ∀a b, a ≈ b -> f a ≈ f b
-
-def fract.equiv.rewrite {c d: fract -> fract} [dr: fract.equiv.Resp d] (a b: fract) :
-  (∀x, (c x) ≈ (d x)) ->
-  a ≈ b ->
-  c a ≈ d b := by
-  intro f a_equiv_b
-  apply fract.equiv.trans (f _)
-  apply dr.resp
-  assumption
 
 def fract.add.assoc (a b c: fract) : (a + b) + c ≈ a + (b + c) := by
   repeat rw [fract.add.def]
@@ -674,10 +658,62 @@ def rat.add.assoc (a b c: rat) : (a + b) + c = a + (b + c) := by
   apply fract.equiv.symm (fract.to_rat_to_simple _)
   apply fract.add.assoc
 
+def fract.add.cancel_left (a b k: fract) : a + k ≈ b + k -> a ≈ b := by
+  intro h
+  cases a with | mk an ad adnz =>
+  cases b with | mk bn bd bdnz =>
+  cases k with | mk kn kd kdnz =>
+  rw [equiv.def, equiv, add.def, add.def] at h
+  rw [equiv.def, equiv]
+  dsimp at *
+  have : ∀x y,
+    x * int.of_nat kd * (y * int.of_nat kd) =
+    x * y * (int.of_nat kd * int.of_nat kd) := by
+    intro x y
+    clear h
+    rw [int.mul.assoc, ←@int.mul.assoc _ y, @int.mul.comm _ y, ←int.mul.assoc, ←int.mul.assoc, ←int.mul.assoc]
+  have this2 : ∀x y,
+    x * kn * (y * int.of_nat kd) =
+    x * y * (kn * int.of_nat kd) := by
+    intro x y
+    clear h
+    rw [int.mul.assoc, ←@int.mul.assoc _ y, @int.mul.comm _ y, ←int.mul.assoc, ←int.mul.assoc, ←int.mul.assoc]
+  conv at h => {
+    repeat (
+      first|
+      rw [←int.mul.lift_nat]|
+      rw [int.mul.add_left]|
+      rw [this]|
+      rw [this2]
+    )
+  }
+  clear this this2
+  rw [@int.mul.comm (int.of_nat bd)] at h
+  replace h := int.add.right_iff_sub.mp h
+  rw [int.sub.def, int.add.assoc, ←int.sub.def, int.sub.refl, int.add.zero_right] at h
+  apply int.mul.of_eq _ _ _ _
+  assumption
+  intro h
+  cases int.mul.eq_zero h <;> rename_i h
+  cases kd <;> contradiction
+  cases kd <;> contradiction
+
 def rat.add.cancel_left (a b k: rat) : a + k = b + k -> a = b := by
   intro h
   have := equiv_of_eq _ _ h
-  -- have := add.
-  sorry
+  replace this := fract.equiv.trans this (add.to_simple _ _)
+  replace this := fract.equiv.trans (fract.equiv.symm (add.to_simple _ _)) this
+  replace this := fract.add.cancel_left _ _ _ this
+  replace this := eq_of_equiv _ _ this
+  rw [to_simple_to_rat, to_simple_to_rat] at this
+  exact this
 
-#print axioms rat.add.assoc
+#print axioms rat.add.cancel_left
+
+def rat.add.cancel_right (a b k: rat) : k + a = k + b -> a = b := by
+  intro h
+  rw [add.comm k, add.comm k] at h
+  apply add.cancel_left
+  assumption
+
+#print axioms rat.add.cancel_right
