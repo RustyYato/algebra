@@ -416,7 +416,7 @@ def TotalOrder.ne_of_gt [Ord α] [TotalOrder α] { a b: α } : a > b -> a ≠ b 
   rw [a_eq_b] at a_gt_b
   exact lt_irrefl a_gt_b
 
-def TotalOrder.lt_of_le_and_ne [Ord α] [TotalOrder α] { a b: α } : a ≤ b -> a ≠ b -> a < b := by
+def TotalOrder.lt_of_le_of_ne [Ord α] [TotalOrder α] { a b: α } : a ≤ b -> a ≠ b -> a < b := by
   intro a_le_b a_ne_b
   cases a_le_b with
   | inl h => exact h
@@ -424,7 +424,7 @@ def TotalOrder.lt_of_le_and_ne [Ord α] [TotalOrder α] { a b: α } : a ≤ b ->
     have := eq_of_compare_eq a_eq_b
     contradiction
 
-def TotalOrder.gt_of_ge_and_ne [Ord α] [TotalOrder α] { a b: α } : a ≥ b -> a ≠ b -> a > b := by
+def TotalOrder.gt_of_ge_of_ne [Ord α] [TotalOrder α] { a b: α } : a ≥ b -> a ≠ b -> a > b := by
   intro a_le_b a_ne_b
   cases a_le_b with
   | inl h => exact h
@@ -439,6 +439,20 @@ def TotalOrder.lt_or_eq_of_le [Ord α] [TotalOrder α] { a b: α } : a ≤ b -> 
   | inr a_eq_b => exact Or.inr <| eq_of_compare_eq a_eq_b
 
 #print axioms TotalOrder.lt_or_eq_of_le
+
+def TotalOrder.not_lt_of_le [Ord α] [TotalOrder α] { a b: α } : a ≤ b -> ¬b < a := by
+  intro h g
+  have := lt_of_le_of_lt h g
+  exact lt_irrefl this
+
+#print axioms TotalOrder.not_lt_of_le
+
+def TotalOrder.not_le_of_lt [Ord α] [TotalOrder α] { a b: α } : a < b -> ¬b ≤ a := by
+  intro g h
+  have := lt_of_le_of_lt h g
+  exact lt_irrefl this
+
+#print axioms TotalOrder.not_le_of_lt
 
 def TotalOrder.decide [Ord α] [TotalOrder α] (a b: α) : DecidableOrder a b := match h:compare a b with
   | .lt => .Lt h
