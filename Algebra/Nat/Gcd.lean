@@ -35,7 +35,7 @@ def nat.gcd.induction.fueled.termination
     unfold fueled
     simp only
     have := ih b.succ (a % b.succ) (by
-      apply TotalOrder.lt_of_lt_and_le
+      apply TotalOrder.lt_of_lt_of_le
       apply nat.mod.lt
       apply nat.zero_lt_succ
       exact nat.le_of_lt_succ b_lt_succ_fuel
@@ -76,12 +76,12 @@ def nat.gcd.induction.fueled.fuel_irr
           simp only
           rw [ih]
 
-          apply TotalOrder.lt_of_lt_and_le
+          apply TotalOrder.lt_of_lt_of_le
           apply nat.mod.lt
           apply nat.zero_lt_succ
           exact nat.le_of_lt_succ b_le_fuela
 
-          apply TotalOrder.lt_of_lt_and_le
+          apply TotalOrder.lt_of_lt_of_le
           apply nat.mod.lt
           apply nat.zero_lt_succ
           exact nat.le_of_lt_succ b_le_fuelb
@@ -321,7 +321,7 @@ def nat.gcd.common_right : ∀a b k, gcd (a * k) (b * k) = gcd a b * k := by
     rw [nat.mul_mod, ih c.succ]
     assumption
     rw [mul_succ]
-    apply TotalOrder.lt_of_lt_and_le
+    apply TotalOrder.lt_of_lt_of_le
     assumption
     apply nat.add.le_left
   }

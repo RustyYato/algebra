@@ -164,7 +164,7 @@ def nat.sub.lt_nz (a b: nat) : 0 < b -> b ≤ a -> a - b < a := by
   match a with
   | .succ a =>
   rw [succ_sub_succ]
-  apply lt_of_le_and_lt
+  apply lt_of_le_of_lt
   apply le
   apply lt_succ_self
 

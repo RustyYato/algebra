@@ -75,7 +75,7 @@ def is_sorted.pick_first
   [Ord α] [TotalOrder α]:
   ∀{a x: α} {xs: List α},
   is_sorted (x::xs) ->
-  a ∈ (x::xs) -> 
+  a ∈ (x::xs) ->
   (∀y, y ∈ (x::xs) -> a ≤ y) ->
   a = x := by
     intro a x xs sorted_xs elem all_less
@@ -83,7 +83,7 @@ def is_sorted.pick_first
     | head _ => rfl
     | tail _ elem =>
       induction elem with
-      | head _ => 
+      | head _ =>
         apply TotalOrder.le_antisymm
         exact all_less x (.head _)
         exact sorted_xs.left
@@ -102,7 +102,7 @@ def is_sorted.pick_first
 
 #print axioms is_sorted.pick_first
 
-instance is_sorted.dec [Ord α] [TotalOrder α] (xs: List α) : Decidable (is_sorted xs) := 
+instance is_sorted.dec [Ord α] [TotalOrder α] (xs: List α) : Decidable (is_sorted xs) :=
   match xs with
   | [] => Decidable.isTrue True.intro
   | x::xs => match xs with
@@ -171,10 +171,10 @@ def sorted_induction.fueled
 
 def enough_fuel_for_lt
   {x:α} {xs ys: List α} {fuel: nat}:
-  (x::xs).len + ys.len < fuel.succ -> 
+  (x::xs).len + ys.len < fuel.succ ->
   xs.len + ys.len < fuel := by
   intro enough_fuel
-  apply nat.lt_of_lt_and_le _ (nat.le_of_lt_succ enough_fuel)
+  apply nat.lt_of_lt_of_le _ (nat.le_of_lt_succ enough_fuel)
   have : List.len (x::xs) = xs.len.succ := rfl
   rw [this]
   rw [nat.succ_add]
@@ -182,10 +182,10 @@ def enough_fuel_for_lt
 
 def enough_fuel_for_eq
   {x y:α} {xs ys: List α} {fuel: nat}:
-  (x::xs).len + (y::ys).len < fuel.succ -> 
+  (x::xs).len + (y::ys).len < fuel.succ ->
   xs.len + ys.len < fuel := by
   intro enough_fuel
-  apply nat.lt_of_lt_and_le _ (nat.le_of_lt_succ enough_fuel)
+  apply nat.lt_of_lt_of_le _ (nat.le_of_lt_succ enough_fuel)
   have : List.len (x::xs) = xs.len.succ := rfl
   rw [this]
   have : List.len (y::ys) = ys.len.succ := rfl
@@ -196,10 +196,10 @@ def enough_fuel_for_eq
 
 def enough_fuel_for_gt
   {y:α} {xs ys: List α} {fuel: nat}:
-  xs.len + (y::ys).len < fuel.succ -> 
+  xs.len + (y::ys).len < fuel.succ ->
   xs.len + ys.len < fuel := by
   intro enough_fuel
-  apply nat.lt_of_lt_and_le _ (nat.le_of_lt_succ enough_fuel)
+  apply nat.lt_of_lt_of_le _ (nat.le_of_lt_succ enough_fuel)
   have : List.len (y::ys) = ys.len.succ := rfl
   rw [this]
   rw [nat.add_succ]
@@ -213,7 +213,7 @@ def sorted_induction.fueled.termination
     (sorted_induction.fueled ctx fuel xs ys) ≠ .none := by
     intro fuel xs ys enough_fuel
     induction fuel generalizing xs ys with
-    | zero => 
+    | zero =>
       unfold fueled
       have := nat.not_lt_zero enough_fuel
       contradiction
@@ -253,7 +253,7 @@ def sorted_induction.fueled.termination
           rw [heq] at this
           contradiction
           intro
-          trivial  
+          trivial
         | .Eq x_eq_y =>
           simp only
           rw [h]
@@ -279,13 +279,13 @@ def sorted_induction.fueled.fuel_irr
   sorted_induction.fueled ctx fuel_a xs ys = sorted_induction.fueled ctx fuel_b xs ys := by
     intro fuel_a fuel_b xs ys enough_fuel_a enough_fuel_b
     induction fuel_a generalizing fuel_b xs ys with
-    | zero => 
+    | zero =>
       unfold fueled
       have := nat.not_lt_zero enough_fuel_a
       contradiction
     | succ fuel_a ih =>
       cases fuel_b with
-      | zero => 
+      | zero =>
         unfold fueled
         have := nat.not_lt_zero enough_fuel_b
         contradiction
@@ -546,7 +546,7 @@ def sorted_induction.if_lt
       | Gt x_gt_y =>
         have := tle.lt_antisymm x_lt_y x_gt_y
         contradiction
-      | Eq x_eq_y => 
+      | Eq x_eq_y =>
         rw [x_eq_y] at x_lt_y
         have := tle.lt_irrefl x_lt_y
         contradiction
@@ -579,11 +579,11 @@ def sorted_induction.if_gt
     {
       exists x_gt_y
       cases h:tle.decide x y with
-      | Lt x_lt_y => 
+      | Lt x_lt_y =>
         have := tle.lt_antisymm x_lt_y x_gt_y
         contradiction
       | Gt x_gt_y => rfl
-      | Eq x_eq_y => 
+      | Eq x_eq_y =>
         rw [x_eq_y] at x_gt_y
         have := tle.lt_irrefl x_gt_y
         contradiction

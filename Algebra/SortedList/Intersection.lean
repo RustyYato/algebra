@@ -115,7 +115,7 @@ def sorted_intersection.if_eq
   unfold sorted_intersection
   rw [sorted_induction.if_eq]
   repeat assumption
- 
+
  def sorted_intersection.comm
   { α: Sort _ }
   [Ord α] [tle: TotalOrder α]:
@@ -159,7 +159,7 @@ def sorted_intersection.refl
   intro xs
   induction xs with
   | nil => rfl
-  | cons x xs ih => 
+  | cons x xs ih =>
     rw [if_eq]
     congr
     rfl
@@ -238,7 +238,7 @@ def sorted_intersection.of_contains
       | head _ =>
         have := TotalOrder.lt_irrefl  x_lt_y
         contradiction
-      | tail _ z_in_xs => 
+      | tail _ z_in_xs =>
         apply ih
         exact sorted_xs.pop
         assumption
@@ -253,7 +253,7 @@ def sorted_intersection.of_contains
         assumption
         apply List.Mem.tail
         assumption
-      | head _ => 
+      | head _ =>
         have x_ge_y := (sorted_ys.first) x z_in_ys
         have := TotalOrder.not_lt_and_ge x_lt_y x_ge_y
         contradiction
@@ -265,10 +265,10 @@ def sorted_intersection.of_contains
     cases z_in_xs with
     | head _ =>
       cases z_in_ys with
-      | head _ => 
+      | head _ =>
           have := TotalOrder.lt_irrefl x_gt_y
           contradiction
-      | tail _ z_in_ys => 
+      | tail _ z_in_ys =>
         apply ih
         assumption
         exact sorted_ys.pop
@@ -276,7 +276,7 @@ def sorted_intersection.of_contains
         assumption
     | tail _ z_in_xs =>
       cases z_in_ys with
-      | tail _ z_in_ys => 
+      | tail _ z_in_ys =>
         apply ih
         assumption
         exact sorted_ys.pop
@@ -339,7 +339,7 @@ def sorted_intersection.idempotent_left
     intro x' x_in_sorted_intersection
     have ⟨ x'_in_xs, _ ⟩  := contains x_in_sorted_intersection
     have := sorted_xs.contains x' x xs x'_in_xs
-    apply TotalOrder.lt_of_lt_and_le <;> assumption
+    apply TotalOrder.lt_of_lt_of_le <;> assumption
   }
   {
     intro x y xs ys x_eq_y ih sorted_xs
@@ -366,7 +366,7 @@ def sorted_intersection.idempotent_right
 def sorted_intersection.sorted
   { a: Sort _ }
   [Ord α] [TotalOrder α]:
-  (xs ys: List α) -> 
+  (xs ys: List α) ->
   is_sorted xs ->
   is_sorted ys ->
   is_sorted (sorted_intersection xs ys) := by
@@ -422,4 +422,3 @@ def SortedList.intersection
   exact ys.is_sorted
 
 #print axioms SortedList.intersection
-

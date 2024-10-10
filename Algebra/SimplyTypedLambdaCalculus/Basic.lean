@@ -88,6 +88,17 @@ def Term.weaken_ctx
 
 #print axioms Term.weaken_ctx
 
+def Term.extend_ctx
+  { n m:nat }
+  { ctx: Vector LamTy n }
+  (term: Term ctx ty) (ctx': Vector LamTy m) :
+  Term (ctx' ++ ctx) ty :=
+  match ctx' with
+  | .nil => term
+  | .cons ty ctx' => (term.extend_ctx ctx').weaken_ctx ty
+
+#print axioms Term.weaken_ctx
+
 def Term.size (term: Term ctx ty) : nat :=
   match term with
   | .Unit => 0
@@ -121,7 +132,7 @@ def Term.subst_at
       exact subst
     | .lt =>
       have : idx.val < n := by
-        apply nat.lt_of_lt_and_le (TotalOrder.lt_of_compare (h: compare idx.val pos.val = .lt))
+        apply nat.lt_of_lt_of_le (TotalOrder.lt_of_compare (h: compare idx.val pos.val = .lt))
         apply nat.le_of_lt_succ
         exact pos.valLt
       apply Term.Var (fin.mk idx.val this)
@@ -180,10 +191,16 @@ decreasing_by
 
 def Term.subst
   { n: nat }
-  { ctx: TypeCtx n.succ }
+  { ctx: TypeCtx n }
   (term: Term (Vector.cons arg_ty ctx) ty)
-  (subst: Term ctx arg_ty) : Term ctx ty :=
-  Term.subst_at term .zero subst
+  (subst: Term ctx arg_ty) : Term ctx ty := by
+    have := Term.subst_at term .zero (by
+      unfold Vector.remove Vector.get
+      dsimp
+      exact subst)
+    unfold Vector.remove at this
+    dsimp at this
+    exact this
 
 inductive ReductionStep : Term ctx ty -> Term ctx ty -> Type where
 | Abort : ∀(body body': Term ctx .Void) ty, ReductionStep body body' -> ReductionStep (.Abort body ty) (.Abort body' ty)
@@ -210,7 +227,11 @@ inductive ReductionStepList : Term ctx ty -> Term ctx ty -> Type where
 | Refl : ReductionStepList a a
 | Cons : ∀{a b c}, a ⤳ b -> ReductionStepList b c ->  ReductionStepList a c
 
-infix:60 " ~~> " => ReductionStepList
+infix:60 " ⤳* " => ReductionStepList
+
+@[refl]
+def ReductionStepList.refl:
+  a ⤳* a := Refl
 
 def ReductionStepList.length (red: ReductionStepList a b)  : nat :=
   match red with
@@ -332,7 +353,7 @@ instance ReductionStep.subsingleton: Subsingleton (a ⤳ b) where
 
 def ReductionStepList.determanistic (b c: Term ctx ty) :
   b.is_terminal -> c.is_terminal ->
-  a ~~> b -> a ~~> c -> b = c := by
+  a ⤳* b -> a ⤳* c -> b = c := by
   intro b_term c_term x y
   induction x with
   | Refl =>
@@ -356,7 +377,7 @@ def ReductionStepList.determanistic (b c: Term ctx ty) :
       repeat assumption
     }
 
-instance ReductionStepList.subsingleton (b: Term ctx ty) (b_term: b.is_terminal) : Subsingleton (a ~~> b) where
+instance ReductionStepList.subsingleton (b: Term ctx ty) (b_term: b.is_terminal) : Subsingleton (a ⤳* b) where
   allEq := by
     intro x y
     induction x with
@@ -390,11 +411,11 @@ def ReductionStep.allHEq
 
 #print axioms ReductionStep.allHEq
 
-structure CommonReduction { ctx: TypeCtx n } { a b c: Term ctx ty } (ab: a ~~> b) (ac: a ~~> c) where
+structure CommonReduction { ctx: TypeCtx n } { a b c: Term ctx ty } (ab: a ⤳* b) (ac: a ⤳* c) where
   term: Term ctx ty
-  red: a ~~> term
-  to_b: term ~~> b
-  to_c: term ~~> c
+  red: a ⤳* term
+  to_b: term ⤳* b
+  to_c: term ⤳* c
 
   is_sub_ab: red.length ≤ ab.length
   is_sub_ac: red.length ≤ ac.length
@@ -402,8 +423,8 @@ structure CommonReduction { ctx: TypeCtx n } { a b c: Term ctx ty } (ab: a ~~> b
 def CommonReduction.push
   { a b c d: Term ctx ty }:
   (x: d ⤳ a) ->
-  (ab: a ~~> b) ->
-  (ac: a ~~> c) ->
+  (ab: a ⤳* b) ->
+  (ac: a ⤳* c) ->
   (red: CommonReduction ab ac) ->
   CommonReduction (ReductionStepList.Cons x ab) (ReductionStepList.Cons x ac) := by
   intro da ab ac comm
@@ -413,13 +434,9 @@ def CommonReduction.push
   exact comm.is_sub_ab
   exact comm.is_sub_ac
 
-@[refl]
-def ReductionStepList.refl:
-  a ~~> a := Refl
-
 def ReductionStepList.commonSubseq
   { a b c: Term ctx ty }
-  (x: a ~~> b) (y: a ~~> c):
+  (x: a ⤳* b) (y: a ⤳* c):
   CommonReduction x y := by
   match x with
   | .Refl =>
@@ -445,3 +462,165 @@ def ReductionStepList.commonSubseq
       apply (commonSubseq xs ys).push
 
 #print axioms ReductionStepList.commonSubseq
+
+-- We want to prove that all terms halt
+def Term.halts (t: Term ctx ty) : Prop :=
+  ∃(t': Term ctx ty) (_red: t ⤳* t'), t'.is_terminal
+
+#print axioms Term.halts
+
+def ReductionStep.extend_left {t u: Term ctx ty} :
+  t ⤳ u -> u.halts -> t.halts := by
+  intro tu uhalts
+  have ⟨ x, r, u_term ⟩ := uhalts
+  exists x
+  exists (.Cons tu r)
+
+#print axioms ReductionStep.extend_left
+
+def ReductionStep.extend_right {t u: Term ctx ty} :
+  t ⤳ u -> t.halts -> u.halts := by
+  intro tu uhalts
+  have ⟨ x, r, u_term ⟩ := uhalts
+  cases r with
+  | Refl =>
+    have := tu.never_terminal
+    contradiction
+  | Cons tb bx =>
+    rename_i b
+    exists x
+    have := ReductionStep.determanistic tu tb
+    subst b
+    exists bx
+
+#print axioms ReductionStep.extend_right
+
+def Term.hered_halts (t: Term ctx ty) : Prop :=
+  match ty with
+  | .Void => False
+  | .Unit => t.halts
+  | .Func arg_ty ret_ty =>
+    t.halts ∧ (∀(arg: Term ctx arg_ty), arg.hered_halts -> (Term.App arg_ty ret_ty t arg).hered_halts)
+
+#print axioms Term.hered_halts
+
+def Term.hered_halt_iff
+  (e e': Term ctx ty) :
+  e ⤳ e' ->
+  (e.hered_halts ↔ e'.hered_halts) := by
+  intro red
+  induction ty with
+  | Void =>
+    apply Iff.intro
+    case mp => exact id
+    case mpr => exact id
+  | Unit =>
+    apply Iff.intro
+    case mp =>
+      intro e_halts
+      apply red.extend_right e_halts
+    case mpr =>
+      intro e'_halts
+      apply red.extend_left e'_halts
+  | Func arg_ty ret_ty _arg_ih ret_ih =>
+    apply Iff.intro
+    case mp =>
+      intro e_hered_halts
+      have ⟨ e_halts, preserve_halt ⟩ := e_hered_halts
+      apply And.intro
+      apply red.extend_right e_halts
+      intro arg arg_hered_halt
+      apply (ret_ih _ _ _).mp
+      apply preserve_halt
+      assumption
+      apply ReductionStep.AppFunc
+      assumption
+    case mpr =>
+      intro e'_hered_halts
+      have ⟨ e'_halts, preserve_halt ⟩ := e'_hered_halts
+      apply And.intro
+      apply red.extend_left e'_halts
+      intro arg arg_hered_halt
+      apply (ret_ih (.App arg_ty ret_ty e arg) (.App arg_ty ret_ty e' arg) _).mpr
+      apply preserve_halt
+      assumption
+      apply ReductionStep.AppFunc
+      assumption
+
+inductive BindingList : { n: nat } -> (ctx: TypeCtx n) -> Type where
+| nil : BindingList .nil
+| cons : (t: Term .nil ty) -> t.is_terminal -> t.hered_halts -> BindingList ctx -> BindingList (.cons ty ctx)
+
+def BindingList.get { ctx: TypeCtx n }  (bindings: BindingList ctx) (x: fin n) : Term .nil (ctx.get x) :=
+  match bindings, x with
+  | .cons t _ _ _, .zero => t
+  | .cons _ _ _ bindings, .succ x => bindings.get x
+
+def BindingList.get_is_terminal { ctx: TypeCtx n } (bindings: BindingList ctx) (x: fin n) :
+  (bindings.get x).is_terminal :=
+  match bindings, x with
+  | .cons _ t _ _, .zero => t
+  | .cons _ _ _ bindings, .succ x => bindings.get_is_terminal x
+
+def BindingList.get_halts { ctx: TypeCtx n } (bindings: BindingList ctx) (x: fin n) :
+  (bindings.get x).hered_halts :=
+  match bindings, x with
+  | .cons _ _ t _, .zero => t
+  | .cons _ _ _ bindings, .succ x => bindings.get_halts x
+
+def Term.void_not_hered_halt:
+  (t: Term ctx ty) -> ty = .Void -> ¬t.hered_halts := by
+  intro t _
+  subst ty
+  intro
+  contradiction
+
+def Term.cast_ctx
+  (ctx: Vector LamTy n)
+  (ctx': Vector LamTy m)
+  (h: ctx =v ctx')
+  (t: Term ctx ty):
+  Term ctx' ty := by
+  cases h
+  exact t
+
+def Term.subst_all { n: nat } { ctx: TypeCtx n } (e: Term ctx ty)
+  (bindings: BindingList ctx)
+  : Term .nil ty :=
+  match ctx with
+  | .nil => e
+  | .cons ty' ctx =>
+  match bindings with
+  | .cons t _ _ bindings' => by
+    apply (Term.subst e _).subst_all bindings'
+    apply Term.cast_ctx
+    exact Vector.append_nil ctx
+    exact t.extend_ctx ctx
+
+def Term.hered_halt
+  (e: Term ctx ty) :
+  (e.subst_all bindings).hered_halts := by
+  induction e with
+  | Unit =>
+    unfold subst_all
+    rename_i ctx
+    cases ctx
+    exists .Unit
+    exists .Refl
+    cases bindings
+    dsimp
+  | Var idx ty ty_correct =>
+    rename_i ctx
+    have := bindings.get_halts idx
+    cases ty with
+    | Void =>
+      have := Term.void_not_hered_halt _ ty_correct.symm this
+      contradiction
+    | Unit =>
+      exists .Var idx .Unit ty_correct
+      exists .Refl
+    | Func arg_ty ret_ty =>
+      unfold hered_halts
+      apply And.intro
+      admit
+      admit

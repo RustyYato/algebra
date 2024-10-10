@@ -7,7 +7,7 @@ def nat.fact (n: nat) : nat := match n with
 
 #print axioms nat.fact
 
-def nat.partial_fact (n m: nat) : nat := 
+def nat.partial_fact (n m: nat) : nat :=
   match m with
   | 0 => 1
   | .succ m =>
@@ -29,12 +29,12 @@ def nat.partial_fact.zero : partial_fact 0 m = 1 := by
 def nat.fact.nz : 0 < n ! := by
   induction n with
   | zero => rfl
-  | succ n ih =>  
+  | succ n ih =>
     rw [fact.succ, succ_mul]
-    apply TotalOrder.lt_of_lt_and_le
+    apply TotalOrder.lt_of_lt_of_le
     assumption
     apply add.le_left
-   
+
 
 def nat.dvd.fact {n m: nat} : 0 < m -> m ≤ n -> m ∣ n ! := by
   intro m_nz m_le_n
@@ -103,7 +103,7 @@ def nat.partial_fact.eq_fact_div : m ≤ n -> nat.partial_fact n m = n ! / (n - 
 
 -- TODO: revisit once there is a working theory of the rationals, since that will make this a whole lot easier
 -- to prove
--- 
+--
 -- def nat.dvd.partial_fact : m ≤ n -> m ! ∣ partial_fact n m := by
 --   intro m_le_n
 --   induction m generalizing n with
@@ -120,17 +120,17 @@ def nat.partial_fact.eq_fact_div : m ≤ n -> nat.partial_fact n m = n ! / (n - 
 --       simp
 --       rw [fact.succ]
 --       have := ih m_le_n
--- 
--- 
+--
+--
 --   sorry
--- 
+--
 -- def nat.dvd.for_combo {n m: nat} : m ≤ n -> (m !) * (n - m)! ∣ n ! := by
 --   intro m_le_n
 --   cases n with
---   | zero => 
+--   | zero =>
 --     cases le_zero m_le_n
 --     apply dvd.refl
---   | succ n => 
+--   | succ n =>
 --     cases m with
 --     | zero =>
 --       rw [zero_eq, sub_zero, fact.zero, one_mul]
@@ -139,12 +139,11 @@ def nat.partial_fact.eq_fact_div : m ≤ n -> nat.partial_fact n m = n ! / (n - 
 --       let n_m := @nat.dvd.for_combo n m
 --       let n_sm := @nat.dvd.for_combo n m.succ
 --       sorry
--- 
--- 
+--
+--
 -- #print axioms nat.dvd.fact
--- 
+--
 -- def nat.permutations (n r: nat): nat := n ! / (n - r)!
 -- def nat.combinations (n r: nat): nat := n ! / ((n - r)! * r !)
--- 
+--
 -- #print axioms nat.permutations
-

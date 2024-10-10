@@ -266,7 +266,7 @@ def rat.compare_of_fract { a b: fract } :
         rw [int.of_nat.compare]
         apply TotalOrder.compare_of_lt
         rw [nat.succ_mul]
-        apply nat.lt_of_lt_and_le _ (nat.add.le_left _ _)
+        apply nat.lt_of_lt_of_le _ (nat.add.le_left _ _)
         rw [nat.gcd.comm]
         apply gcd_pos <;> trivial
 
@@ -278,7 +278,7 @@ def rat.compare_of_fract { a b: fract } :
         rw [int.of_nat.compare]
         apply TotalOrder.compare_of_lt
         rw [nat.succ_mul]
-        apply nat.lt_of_lt_and_le _ (nat.add.le_left _ _)
+        apply nat.lt_of_lt_of_le _ (nat.add.le_left _ _)
         rw [nat.gcd.comm]
         apply gcd_pos <;> trivial
 

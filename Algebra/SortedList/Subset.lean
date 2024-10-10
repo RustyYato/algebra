@@ -9,7 +9,7 @@ def List.sorted_subset (as bs: List α) : Prop := match as with
 
 #print axioms List.sorted_subset
 
-instance List.sorted_subset.dec [DecidableEq α] (as bs: List α) : Decidable (as.sorted_subset bs) := 
+instance List.sorted_subset.dec [DecidableEq α] (as bs: List α) : Decidable (as.sorted_subset bs) :=
   match as with
   | [] => by
     apply Decidable.isTrue
@@ -25,10 +25,10 @@ instance List.sorted_subset.dec [DecidableEq α] (as bs: List α) : Decidable (a
       apply dec_or
       apply dec_and
       exact inferInstance
-      exact List.sorted_subset.dec as bs 
+      exact List.sorted_subset.dec as bs
       apply dec_and
       exact inferInstance
-      exact List.sorted_subset.dec (a::as) bs 
+      exact List.sorted_subset.dec (a::as) bs
 
 #print axioms List.sorted_subset.dec
 
@@ -98,9 +98,9 @@ def List.sorted_subset.push_pop
         intro b as_sub_bs
         cases as_sub_bs with
         | inl h =>
-          have ⟨ _, as_sub_bs ⟩ := h 
+          have ⟨ _, as_sub_bs ⟩ := h
           match decEq a' b with
-          | .isTrue h => 
+          | .isTrue h =>
             rw [h]
             apply Or.inl
             apply And.intro
@@ -191,7 +191,7 @@ def List.sorted_subset.proof
       apply List.Mem.head _
   | .tail _ x_in_as =>
     match as_sub_bs with
-    | .inl h => 
+    | .inl h =>
       have ⟨ _, as_sub_bs ⟩ := h
       apply List.Mem.tail
       exact ih _ sorted_bs.pop as_sub_bs x_in_as
@@ -222,7 +222,7 @@ def List.sorted_subset.first_not_picked
       apply False.elim
       unfold sorted_subset at as_sub_bs
       cases as_sub_bs with
-      | inl h => 
+      | inl h =>
         have ⟨ _, _ ⟩ := h
         contradiction
       | inr h =>
@@ -232,14 +232,14 @@ def List.sorted_subset.first_not_picked
           have := sorted_bs.first
           have := this y y_in_bs
           apply tle.ne_of_lt
-          apply tle.lt_of_lt_and_le <;> assumption
+          apply tle.lt_of_lt_of_le <;> assumption
         have a_in_bs := List.sorted_subset.proof (a::as) bs sorted_bs.pop aas_sub_bs a (.head _)
         have := this a a_in_bs
         contradiction
 
 #print axioms List.sorted_subset.first_not_picked
 
-def List.sorted_subset.trans 
+def List.sorted_subset.trans
   [Ord α] [tle: TotalOrder α]
   (as bs cs: List α) :
   is_sorted as ->
@@ -270,7 +270,7 @@ def List.sorted_subset.trans
       | inl h =>
         have ⟨ b_eq_c, bs_sub_cs ⟩ := h
         unfold sorted_subset at as_sub_bs
-        cases as_sub_bs with 
+        cases as_sub_bs with
         | inl h =>
           have ⟨ a_eq_b, as_sub_bs ⟩ := h
           apply Or.inl
@@ -364,4 +364,3 @@ def List.sorted_subset.antisymm
           contradiction
 
 #print axioms List.sorted_subset.antisymm
-

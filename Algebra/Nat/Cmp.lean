@@ -272,13 +272,13 @@ def nat.le_trans { a b c: nat } : a ≤ b -> b ≤ c -> a ≤ c := TotalOrder.le
 def nat.gt_trans { a b c: nat } : a > b -> b > c -> a > c := fun a b => TotalOrder.lt_trans b a
 def nat.ge_trans { a b c: nat } : a ≥ b -> b ≥ c -> a ≥ c := fun a b => TotalOrder.le_trans b a
 
-def nat.lt_of_lt_and_le { a b c: nat } : a < b -> b ≤ c -> a < c := TotalOrder.lt_of_lt_and_le
+def nat.lt_of_lt_of_le { a b c: nat } : a < b -> b ≤ c -> a < c := TotalOrder.lt_of_lt_of_le
 
-#print axioms nat.lt_of_lt_and_le
+#print axioms nat.lt_of_lt_of_le
 
-def nat.lt_of_le_and_lt { a b c: nat } : a ≤ b -> b < c -> a < c := TotalOrder.lt_of_le_and_lt
+def nat.lt_of_le_of_lt { a b c: nat } : a ≤ b -> b < c -> a < c := TotalOrder.lt_of_le_of_lt
 
-#print axioms nat.lt_of_le_and_lt
+#print axioms nat.lt_of_le_of_lt
 
 def nat.lt_or_ge_dec.pick_lt {a b: nat} : (a_lt_b: a < b) -> nat.lt_or_ge_dec a b = LtOrGe.Lt a_lt_b := by
   intro a_lt_b
@@ -300,7 +300,7 @@ def nat.lt_or_ge_dec.pick_ge {a b: nat} : (a_ge_b: a ≥ b) -> nat.lt_or_ge_dec 
 
 #print axioms nat.lt_or_ge_dec.pick_ge
 
-def nat.zero_lt_of_lt { a b: nat } (a_lt_b: a < b): 0 < b := TotalOrder.lt_of_le_and_lt (zero_le _) a_lt_b
+def nat.zero_lt_of_lt { a b: nat } (a_lt_b: a < b): 0 < b := TotalOrder.lt_of_le_of_lt (zero_le _) a_lt_b
 
 #print axioms nat.zero_lt_of_lt
 

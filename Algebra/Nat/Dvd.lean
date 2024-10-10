@@ -371,7 +371,7 @@ def nat.div.compare_strict (a b c: nat) :
   apply nat.div_mod.induction (fun a c _ => ∀b, c ∣ a -> c ∣ b -> compare (a / c) (b / c) = compare a b) _ _ a c c_pos
   all_goals clear a b c_pos c
   · intro a c a_lt_c b c_dvd_a c_dvd_b
-    have : 0 < c := nat.lt_of_le_and_lt (nat.zero_le _) a_lt_c
+    have : 0 < c := nat.lt_of_le_of_lt (nat.zero_le _) a_lt_c
     cases a with
     | succ a =>
       have := fun h => nat.dvd.le h c_dvd_a
@@ -392,7 +392,7 @@ def nat.div.compare_strict (a b c: nat) :
           rfl
       · rename_i b_ge_c
         have := TotalOrder.le_of_not_lt b_ge_c
-        have := TotalOrder.lt_of_lt_and_le (by assumption) this
+        have := TotalOrder.lt_of_lt_of_le (by assumption) this
         rw [nat.zero_eq] at this
         rw [this]
         rfl
@@ -406,7 +406,7 @@ def nat.div.compare_strict (a b c: nat) :
         dsimp
         apply Eq.symm
         apply TotalOrder.compare_of_gt
-        apply nat.lt_of_lt_and_le c_pos
+        apply nat.lt_of_lt_of_le c_pos
         assumption
       | succ b =>
         rw [nat.div.spec b.succ]
@@ -415,7 +415,7 @@ def nat.div.compare_strict (a b c: nat) :
         dsimp
         apply Eq.symm
         apply TotalOrder.compare_of_gt
-        apply nat.lt_of_lt_and_le <;> assumption
+        apply nat.lt_of_lt_of_le <;> assumption
         have c_le_bsucc := TotalOrder.le_of_not_lt (by assumption)
         rw [nat.compare.succ]
         rw [ih]

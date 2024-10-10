@@ -25,7 +25,7 @@ def range.increase_max { min max: nat } (r: range min max) (max': nat) : max ≤
   intro max'_le
   apply range.mk r.value
   exact r.min_le_value
-  exact nat.lt_of_lt_and_le r.value_lt_max max'_le
+  exact nat.lt_of_lt_of_le r.value_lt_max max'_le
 
 def range.try_update_min { min max: nat } (r: range min max) (min': nat) :
   Option (range min' max) :=

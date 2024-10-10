@@ -86,7 +86,7 @@ def nat.prime.search
       intro h
       apply current
       apply h
-    | isTrue current => 
+    | isTrue current =>
     apply nat.prime.search p limit p_gt_one
     intro k limit_lt_k k_dvd_p
     cases TotalOrder.lt_or_eq_of_le <| nat.succ_le_of_lt limit_lt_k with
@@ -119,10 +119,10 @@ instance nat.prime.instDec (a: nat) : Decidable a.prime := by
 
 #print axioms nat.prime.instDec
 
-def nat.first_factor.find (a: nat) (current: nat) (fuel: nat) : nat := 
+def nat.first_factor.find (a: nat) (current: nat) (fuel: nat) : nat :=
   match fuel with
   | .zero => current
-  | .succ fuel => 
+  | .succ fuel =>
     match (inferInstance : Decidable (current ∣ a)) with
     | .isTrue _ => current
     | .isFalse _ => find a current.succ fuel
@@ -139,7 +139,7 @@ def nat.first_factor.find.is_factor (a current fuel: nat) : a = fuel + current -
     unfold first_factor.find
     rw [enough_fuel]
     apply dvd.refl
-  | succ fuel ih => 
+  | succ fuel ih =>
     intros enough_fuel
     unfold first_factor.find
     split
@@ -154,7 +154,7 @@ def nat.first_factor.is_factor (a: nat) : 1 < a -> a.first_factor ∣ a := by
   intro one_lt_a
   match a with
   | 0 | 1 => contradiction
-  | .succ (.succ _) => 
+  | .succ (.succ _) =>
   apply nat.first_factor.find.is_factor
   have : 2 = nat.zero.succ.succ := rfl
   rw [this, succ_sub_succ, succ_sub_succ, zero_eq, sub_zero]
@@ -165,11 +165,11 @@ def nat.first_factor.is_factor (a: nat) : 1 < a -> a.first_factor ∣ a := by
 def nat.first_factor.find.lower_bound (a current fuel: nat) :
   current ≤ nat.first_factor.find a current fuel := by
   induction fuel generalizing current with
-  | zero => 
+  | zero =>
     apply le_refl
   | succ fuel ih =>
     unfold find
-    split 
+    split
     apply le_refl
     apply TotalOrder.le_trans _ (ih current.succ)
     apply TotalOrder.le_of_lt
@@ -187,16 +187,16 @@ def nat.first_factor.find.is_smallest_factor (a current fuel: nat) :
     rw [zero_eq, zero_add] at enough_fuel
     rw [enough_fuel] at k_dvd_current prev
     match current with
-    | .succ current => 
+    | .succ current =>
       cases TotalOrder.lt_or_eq_of_le (nat.dvd.le nat.zero_lt_succ k_dvd_current) with
       | inl h =>
-        have := prev k k_gt_1 h 
+        have := prev k k_gt_1 h
         contradiction
       | inr h =>
         unfold find
         rw [h]
         apply le_refl
-    | .zero => 
+    | .zero =>
     apply zero_le
   | succ fuel ih =>
     intro enough_fuel prev k k_gt_1 k_dvd_a
@@ -224,8 +224,8 @@ def nat.first_factor.find.is_smallest_factor (a current fuel: nat) :
         | inr b_eq_current =>
           rw [b_eq_current]
           assumption
-        | inl b_eq__current => 
-          apply prev 
+        | inl b_eq__current =>
+          apply prev
           any_goals assumption
       }
       assumption
@@ -262,7 +262,7 @@ def nat.first_factor.is_prime (a: nat) : 1 < a -> a.first_factor.prime := by
   apply And.intro
   unfold first_factor
   have := nat.first_factor.find.lower_bound a 2 (a - 2)
-  apply TotalOrder.lt_of_lt_and_le
+  apply TotalOrder.lt_of_lt_of_le
   apply nat.lt_succ_self
   exact this
   intro k k_dvd_fst
@@ -274,7 +274,7 @@ def nat.first_factor.is_prime (a: nat) : 1 < a -> a.first_factor.prime := by
     apply nat.dvd.eq_zero_of_by_zero
     assumption
   | 1 => exact Or.inl rfl
-  | .succ (.succ k) => 
+  | .succ (.succ k) =>
   have := smallest k.succ.succ (by
     apply nat.succ_lt_succ
     exact nat.zero_lt_succ) k_dvd_a

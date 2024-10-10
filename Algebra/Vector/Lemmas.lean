@@ -224,7 +224,7 @@ def Vector.to_list_of_veq
 -- def Vector.get_append_left
 --   (vs: Vector α n) (ws: Vector α m) (idx: { x: nat // x < n }):
 --   (vs ++ ws).get ⟨ idx.val, by
---     apply TotalOrder.lt_of_lt_and_le
+--     apply TotalOrder.lt_of_lt_of_le
 --     exact idx.property
 --     exact nat.add.le_left n m ⟩ = vs.get idx := by
 --     cases idx with

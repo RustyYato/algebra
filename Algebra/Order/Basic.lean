@@ -292,7 +292,7 @@ def TotalOrder.not_lt_and_ge
 
 #print axioms TotalOrder.not_lt_and_ge
 
-def TotalOrder.lt_of_lt_and_le
+def TotalOrder.lt_of_lt_of_le
   [Ord α] [TotalOrder α]:
   ∀{ a b c: α }, a < b -> b ≤ c -> a < c := by
   intro a b c a_lt_b b_le_c
@@ -300,9 +300,9 @@ def TotalOrder.lt_of_lt_and_le
   | inl h => apply lt_trans <;> assumption
   | inr h => rw [←eq_of_compare_eq h]; assumption
 
-#print axioms TotalOrder.lt_of_lt_and_le
+#print axioms TotalOrder.lt_of_lt_of_le
 
-def TotalOrder.lt_of_le_and_lt
+def TotalOrder.lt_of_le_of_lt
   [Ord α] [TotalOrder α]:
   ∀{ a b c: α }, a ≤ b -> b < c -> a < c := by
   intro a b c a_le_b b_lt_c
@@ -310,7 +310,7 @@ def TotalOrder.lt_of_le_and_lt
   | inl h => apply lt_trans <;> assumption
   | inr h => rw [eq_of_compare_eq h]; assumption
 
-#print axioms TotalOrder.lt_of_lt_and_le
+#print axioms TotalOrder.lt_of_lt_of_le
 
 def TotalOrder.le_antisymm
   [Ord α] [TotalOrder α]:

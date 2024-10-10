@@ -104,7 +104,7 @@ def nat.mul.gt (a b: nat) (a_nz: 0 < a) (b_nz: 1 < b) : a < a * b := by
     | .succ a =>
     rw [nat.succ_add, add.comm_left, succ_add]
     apply succ_lt_succ
-    apply lt_of_le_and_lt _ (lt_succ_self _)
+    apply lt_of_le_of_lt _ (lt_succ_self _)
     apply add.le_left
 
 #print axioms nat.mul.gt
@@ -268,7 +268,7 @@ def nat.mul.eq_one {a b: nat} : a * b = 1 -> a = 1 ∧ b = 1 := by
         | inr ih =>
           apply Or.inr
           rw [mul_succ]
-          apply TotalOrder.lt_of_lt_and_le
+          apply TotalOrder.lt_of_lt_of_le
           assumption
           apply nat.add.le_right
     have := this a b

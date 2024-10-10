@@ -34,7 +34,7 @@ def nat.div_mod.induction.fueled.termination
       exact my_option.noConfusion
       rename_i a_ge_b _
       have ih := @ih (a - b) <|
-        lt_of_lt_and_le
+        lt_of_lt_of_le
         (sub.lt_nz a b b_nz a_ge_b)
         (le_of_lt_succ a_lt_fuel)
       split
@@ -67,8 +67,8 @@ def nat.div_mod.induction.fueled.fuel_irr
       | Ge a_ge_b =>
         simp only
         rw [iha]
-        exact lt_of_lt_and_le (sub.lt_nz a b b_nz a_ge_b) (le_of_lt_succ a_lt_fuel_a)
-        exact lt_of_lt_and_le (sub.lt_nz a b b_nz a_ge_b) (le_of_lt_succ a_lt_fuel_b)
+        exact lt_of_lt_of_le (sub.lt_nz a b b_nz a_ge_b) (le_of_lt_succ a_lt_fuel_a)
+        exact lt_of_lt_of_le (sub.lt_nz a b b_nz a_ge_b) (le_of_lt_succ a_lt_fuel_b)
 
 #print axioms nat.div_mod.induction.fueled.fuel_irr
 
@@ -384,13 +384,13 @@ def nat.mul_mod :∀(a b k: nat), (a * k) % (b * k) = (a % b) * k := by
       rfl
     | succ k =>
     have : 0 < b := by
-      apply TotalOrder.lt_of_le_and_lt
+      apply TotalOrder.lt_of_le_of_lt
       apply nat.zero_le
       any_goals assumption
     rw [mod.if_lt, mod.if_lt]
     assumption
     assumption
-    apply TotalOrder.lt_of_lt_and_le
+    apply TotalOrder.lt_of_lt_of_le
     exact  this
     apply nat.mul.ge
     apply nat.zero_lt_succ
@@ -511,7 +511,7 @@ def nat.div.spec (a b: nat) (b_pos: 0 < b) :
   cases TotalOrder.lt_or_ge a b
   · rename_i a_lt_b
     rw [if_pos, nat.div.if_lt]
-    apply nat.lt_of_le_and_lt
+    apply nat.lt_of_le_of_lt
     apply nat.zero_le
     repeat assumption
   · rename_i a_ge_b
@@ -532,7 +532,7 @@ def nat.div.le_div_if_mul_le (a b: nat) (b_pos: 0 < b) : ∀c, b * c ≤ a -> c 
         have := nat.le_trans (nat.add.le_left _ _) h
         have := nat.not_lt_and_ge b_pos this
         contradiction
-    apply nat.lt_of_le_and_lt _ b_pos
+    apply nat.lt_of_le_of_lt _ b_pos
     apply nat.zero_le
     assumption
   · intro a b b_pos a_ge_b ih c h
