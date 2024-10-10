@@ -76,12 +76,52 @@ def TotalOrder.compare_or_eq_transitive
 
 #print axioms TotalOrder.compare_or_eq_transitive
 
+def TotalOrder.compare_of_cmp_or_eq_of_cmp
+  [Ord α] [TotalOrder α]:
+  ∀(a b c: α) (o: Ordering),
+    (compare a b = o ∨ compare a b = Ordering.eq) ->
+    compare b c = o ->
+    compare a c = o := by
+    intro a b c o
+    intro a_cmp_b b_cmp_c
+    cases a_cmp_b
+    apply compare_transitive <;> assumption
+    rename_i h
+    cases TotalOrder.eq_of_compare_eq h
+    assumption
+
+#print axioms TotalOrder.compare_of_cmp_or_eq_of_cmp
+
+def TotalOrder.compare_of_cmp_of_cmp_or_eq
+  [Ord α] [TotalOrder α]:
+  ∀(a b c: α) (o: Ordering),
+    compare a b = o ->
+    (compare b c = o ∨ compare b c = Ordering.eq) ->
+    compare a c = o := by
+    intro a b c o
+    intro a_cmp_b b_cmp_c
+    cases b_cmp_c
+    apply compare_transitive <;> assumption
+    rename_i h
+    cases TotalOrder.eq_of_compare_eq h
+    assumption
+
+#print axioms TotalOrder.compare_of_cmp_of_cmp_or_eq
+
 def TotalOrder.swap_compare
   [Ord α] [TotalOrder α]:
   ∀{ a b: α } { o: Ordering }, compare a b = o -> compare b a = o.swap := by
   intro a b o a_cmp_b
   rw [←a_cmp_b]
   apply compare_antisymm
+
+#print axioms TotalOrder.swap_compare
+
+def TotalOrder.swap_compare'
+  [Ord α] [TotalOrder α]:
+  ∀{ a b: α }, compare a b = (compare b a).swap := by
+  intro a b
+  rw [swap_compare rfl]
 
 #print axioms TotalOrder.swap_compare
 
@@ -328,6 +368,16 @@ def TotalOrder.le_of_lt [Ord α] [TotalOrder α] { a b: α } : a < b -> a ≤ b 
 #print axioms TotalOrder.le_of_lt
 
 def TotalOrder.le_of_not_gt [Ord α] [TotalOrder α] { a b: α } : ¬a > b -> a ≤ b := by
+  intro not_a_gt_b
+  cases h:compare a b
+  exact Or.inl h
+  exact Or.inr h
+  have := not_a_gt_b <| TotalOrder.gt_of_compare h
+  contradiction
+
+#print axioms TotalOrder.le_of_not_gt
+
+def TotalOrder.le_of_not_lt [Ord α] [TotalOrder α] { a b: α } : ¬b < a -> a ≤ b := by
   intro not_a_gt_b
   cases h:compare a b
   exact Or.inl h

@@ -364,3 +364,7 @@ def nat.ofNat_le { a b: Nat } : a ≤ b -> nat.ofNat a ≤ nat.ofNat b := by
     exact a_le_b
 
 #print axioms nat.toNat_le
+
+def nat.compare.succ (a b: nat) : compare a.succ b.succ = compare a b := rfl
+
+#print axioms nat.compare.succ

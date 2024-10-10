@@ -73,7 +73,7 @@ def nat.find_divisor (a b: nat) (n: nat) (prev: ∀k, n < k -> a * k ≠ b) : Fi
       exists n
     | .isFalse h =>
        match n with
-       | .zero => 
+       | .zero =>
          apply FindDivisor.NotFound
          intro k
          match k with
@@ -86,7 +86,7 @@ def nat.find_divisor (a b: nat) (n: nat) (prev: ∀k, n < k -> a * k ≠ b) : Fi
           apply nat.find_divisor a b n
           intro k n_lt_k
           match k with
-          | .zero => 
+          | .zero =>
             have := not_lt_zero n_lt_k
             contradiction
           | .succ k =>
@@ -112,7 +112,7 @@ instance nat.dvd.dec (a b: nat) : Decidable (a ∣ b) := by
       contradiction
     | .succ k =>
     match a with
-    | .zero => 
+    | .zero =>
       rw [zero_eq, zero_mul] at ak_eq_b
       contradiction
     | .succ a =>
@@ -123,7 +123,7 @@ instance nat.dvd.dec (a b: nat) : Decidable (a ∣ b) := by
     )
   match this with
   | .Found h => exact Decidable.isTrue h
-  | .NotFound h =>  
+  | .NotFound h =>
     apply Decidable.isFalse
     intro dvd
     have ⟨ k, prf ⟩ := dvd
@@ -162,7 +162,7 @@ def nat.dvd.antisymm { a b: nat } : a ∣ b -> b ∣ a -> a = b := by
     rfl
   | .succ b =>
   match a with
-  | .zero => 
+  | .zero =>
     have := eq_zero_of_by_zero a_dvd_b
     rw [this]
     rfl
@@ -226,7 +226,7 @@ def nat.dvd.mod_eq_zero: ∀{ a b: nat }, b ∣ a -> a % b = 0 := by
     intro a b b_nz a_ge_b ih b_dvd_a
     cases a with
       | zero => rw [zero_eq, nat.zero_mod]
-      | succ a => 
+      | succ a =>
       rw [nat.mod.if_ge]
       apply ih
       apply nat.dvd.sub
@@ -254,7 +254,7 @@ def nat.dvd.def { a b: nat } : b ∣ a -> a = (a / b) * b := by
     rw [eq_zero_of_by_zero zero_dvd_a]
     rfl
   | .succ b =>
-  intro b_dvd_a 
+  intro b_dvd_a
   have := nat.div_def a b.succ zero_lt_succ
   rw [nat.dvd.mod_eq_zero, add_zero] at this
   exact this
@@ -314,6 +314,13 @@ def nat.dvd.of_mul : ∀(a b k: nat), (k * a) ∣ b -> k ∣ b ∧ a ∣ b := by
 
 #print axioms nat.dvd.of_mul
 
+def nat.dvd.mul : ∀(a b c d: nat), a ∣ c -> b ∣ d -> a * b ∣ c * d := by
+  rintro a b c d ⟨ x, prfx ⟩ ⟨ y, prfy ⟩
+  exists x * y
+  rw [←prfx, ←prfy, mul.assoc, ←mul.assoc b, nat.mul.comm b, nat.mul.assoc, ←nat.mul.assoc]
+
+#print axioms nat.dvd.mul
+
 def nat.mul_div (a b: nat) : 0 < a -> (a * b) / a = b := by
   intro a_nz
   have := nat.div_def (a * b) a a_nz
@@ -342,7 +349,7 @@ def nat.dvd.of_div : ∀(a b k: nat), k ∣ a -> a ∣ b -> (a / k) ∣ (b / k) 
 #print axioms nat.dvd.of_div
 
 def nat.div.self { a: nat }: 0 < a -> a / a = 1 := by
-  intro a_nz 
+  intro a_nz
   have def_a := nat.dvd.def (dvd.refl a)
   conv at def_a => {
     lhs
@@ -354,3 +361,69 @@ def nat.div.self { a: nat }: 0 < a -> a / a = 1 := by
   assumption
 
 #print axioms nat.div.self
+
+def nat.div.compare_strict (a b c: nat) :
+  0 < c ->
+  c ∣ a ->
+  c ∣ b ->
+  compare (a / c) (b / c) = compare a b := by
+  intro c_pos
+  apply nat.div_mod.induction (fun a c _ => ∀b, c ∣ a -> c ∣ b -> compare (a / c) (b / c) = compare a b) _ _ a c c_pos
+  all_goals clear a b c_pos c
+  · intro a c a_lt_c b c_dvd_a c_dvd_b
+    have : 0 < c := nat.lt_of_le_and_lt (nat.zero_le _) a_lt_c
+    cases a with
+    | succ a =>
+      have := fun h => nat.dvd.le h c_dvd_a
+      have := this nat.zero_lt_succ
+      have := nat.not_lt_and_ge a_lt_c this
+      contradiction
+    | zero =>
+      rw [nat.zero_eq, nat.zero_div]
+      rw [nat.div.spec]
+      split
+      · cases b with
+        | succ b =>
+          have := fun h => nat.dvd.le h c_dvd_b
+          have := this nat.zero_lt_succ
+          have := nat.not_lt_and_ge (by assumption) this
+          contradiction
+        | zero =>
+          rfl
+      · rename_i b_ge_c
+        have := TotalOrder.le_of_not_lt b_ge_c
+        have := TotalOrder.lt_of_lt_and_le (by assumption) this
+        rw [nat.zero_eq] at this
+        rw [this]
+        rfl
+      · assumption
+  · intro a c c_pos a_ge_c ih b c_dvd_a c_dvd_b
+    rw [nat.div.if_ge]
+    · cases b with
+      | zero =>
+        rw [nat.zero_eq, nat.zero_div]
+        rw [TotalOrder.swap_compare rfl, nat.zero_lt_succ, Ordering.swap]
+        dsimp
+        apply Eq.symm
+        apply TotalOrder.compare_of_gt
+        apply nat.lt_of_lt_and_le c_pos
+        assumption
+      | succ b =>
+        rw [nat.div.spec b.succ]
+        split
+        rw [TotalOrder.swap_compare nat.zero_lt_succ, Ordering.swap]
+        dsimp
+        apply Eq.symm
+        apply TotalOrder.compare_of_gt
+        apply nat.lt_of_lt_and_le <;> assumption
+        have c_le_bsucc := TotalOrder.le_of_not_lt (by assumption)
+        rw [nat.compare.succ]
+        rw [ih]
+        · rw [nat.sub.compare_strict]
+          assumption
+          assumption
+        exact dvd.sub a_ge_c c_dvd_a
+        apply dvd.sub c_le_bsucc c_dvd_b
+        assumption
+    · assumption
+    · assumption

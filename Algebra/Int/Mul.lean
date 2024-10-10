@@ -6,7 +6,7 @@ def int.mul (a b: int) : int := a.sign * b.sign * (a.abs * b.abs)
 
 #print axioms int.mul
 
-instance int.mul.inst : Mul int := ⟨ int.mul ⟩ 
+instance int.mul.inst : Mul int := ⟨ int.mul ⟩
 
 def int.mul.def { a b: int } : a * b = int.mul a b := rfl
 
@@ -109,7 +109,29 @@ def int.mul.assoc { a b c: int } : a * b * c = a * (b * c) := by
   }
 
 #print axioms int.mul.assoc
-  
+
+def int.mul.right_comm (a b c: int) :
+  a * b * c = a * c * b := by rw [int.mul.assoc, @int.mul.comm b, int.mul.assoc]
+
+#print axioms int.mul.right_comm
+
+def int.mul.left_comm (a b c: int) :
+  a * b * c = c * b * a := by rw [@int.mul.comm _ c, @int.mul.comm a, int.mul.assoc]
+
+#print axioms int.mul.left_comm
+
+def int.mul.comm_left (a b c: int) :
+  a * (b * c) = b * (a * c) := by
+  rw [←int.mul.assoc, ←int.mul.assoc, @int.mul.comm a]
+
+#print axioms int.mul.right_comm
+
+def int.mul.comm_right (a b c: int) :
+  a * (b * c) = c * (b * a) := by
+  rw [@int.mul.comm _ c, @int.mul.comm a, int.mul.assoc]
+
+#print axioms int.mul.comm_right
+
 def int.mul.abs_sign_mul_pos : ∀(x: nat) (y: int), y.sign * (nat.succ x * y.abs) = (int.pos_succ x) * y := by intro x y; cases y <;> rfl
 def int.mul.abs_sign_mul_neg : ∀(x: nat) (y: int), y.sign.flip * (nat.succ x * y.abs) = (int.neg_succ x) * y := by intro x y; cases y <;> rfl
 
@@ -127,7 +149,7 @@ def int.mul.add_left { a b k: int } : (a + b) * k = a * k + b * k := by
       congr 1 <;> apply int.mul.abs_sign_mul_pos
     | neg_succ b =>
       cases h:compare a b with
-      | lt => 
+      | lt =>
         rw [int.add.lift_pos_neg_lt_to_nat]
         any_goals assumption
         rw [mul.def]
@@ -167,7 +189,7 @@ def int.mul.add_left { a b k: int } : (a + b) * k = a * k + b * k := by
       rw [add.comm, @add.comm (_ * k)]
 
       cases h:compare b a with
-      | lt => 
+      | lt =>
         rw [int.add.lift_pos_neg_lt_to_nat]
         any_goals assumption
         rw [mul.def]
@@ -295,7 +317,7 @@ def int.sign_mul.mul_of_nat { s: int.Sign } { a b: nat } : s * a * (b: int) = s 
     cases s <;> rfl
   | succ b =>
   cases a with
-  | zero => 
+  | zero =>
     cases s <;> rfl
   | succ a =>
     unfold of_nat
@@ -383,3 +405,23 @@ def int.mul.of_eq (a b: int) : ∀k, k ≠ 0 -> a * k = b * k -> a = b := by
   }
 
 #print axioms int.mul.of_eq
+
+def int.mul.compare_left_pos { a b k: int } :
+  0 < k ->
+  compare a b = compare (a * k) (b * k) := by
+  intro h
+  cases k with
+  | zero | neg_succ k => contradiction
+  | pos_succ k =>
+    induction k with
+    | zero => rw [int.one_eq, int.mul.one_right, int.mul.one_right]
+    | succ k ih =>
+      rw [int.pos_succ.succ, int.mul.inc_right, int.mul.inc_right]
+      rw [ih]
+      rw [int.add.compare_strict]
+      rfl
+      apply ih
+      trivial
+      trivial
+
+#print axioms int.add.compare_left

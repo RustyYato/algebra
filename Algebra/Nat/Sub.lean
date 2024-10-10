@@ -231,3 +231,12 @@ def nat.sub.eq_zero {a b: nat} : a - b = 0 ↔ a ≤ b := by
       exact ih.mpr h
 
 #print axioms nat.sub.eq_zero
+
+def nat.sub.compare_strict (a b c: nat) :
+  c ≤ a ->
+  c ≤ b ->
+  compare (a - c) (b - c) = compare a b := by
+  intro c_le_a c_le_b
+  rw [←nat.add.compare_right (a - c) (b - c) c, nat.sub_add_inv, nat.sub_add_inv]
+  assumption
+  assumption

@@ -532,7 +532,7 @@ def int.of_lt_zero { a: int } : 0 > a -> ∃x, a = int.neg_succ x := by
 def int.inc.compare { a b: int } : compare a.inc b.inc = compare a b := by
   cases a <;> cases b
   any_goals rfl
-  any_goals simp
+  any_goals simp [int.instOrd]
   any_goals (
     rename_i b
     cases b
@@ -548,7 +548,7 @@ def int.inc.compare { a b: int } : compare a.inc b.inc = compare a b := by
 def int.dec.compare { a b: int } : compare a.dec b.dec = compare a b := by
   cases a <;> cases b
   any_goals rfl
-  any_goals simp
+  any_goals simp [int.instOrd]
   any_goals (
     rename_i b
     cases b
@@ -564,7 +564,7 @@ def int.dec.compare { a b: int } : compare a.dec b.dec = compare a b := by
 def int.inc_dec_compare { a b: int } : compare a.inc b = compare a b.dec := by
   cases a <;> cases b
   any_goals rfl
-  any_goals simp
+  any_goals simp [int.instOrd]
   any_goals (
     rename_i b
     cases b
@@ -580,7 +580,7 @@ def int.inc_dec_compare { a b: int } : compare a.inc b = compare a b.dec := by
 def int.dec_inc_compare { a b: int } : compare a.dec b = compare a b.inc := by
   cases a <;> cases b
   any_goals rfl
-  any_goals simp
+  any_goals simp [int.instOrd]
   any_goals (
     rename_i b
     cases b

@@ -33,7 +33,7 @@ def nat.div_mod.induction.fueled.termination
       rename_i a_lt_b _
       exact my_option.noConfusion
       rename_i a_ge_b _
-      have ih := @ih (a - b) <| 
+      have ih := @ih (a - b) <|
         lt_of_lt_and_le
         (sub.lt_nz a b b_nz a_ge_b)
         (le_of_lt_succ a_lt_fuel)
@@ -52,12 +52,12 @@ def nat.div_mod.induction.fueled.fuel_irr
     := by
     intro a b b_nz a_lt_fuel_a a_lt_fuel_b
     induction fuel_a generalizing a fuel_b with
-    | zero => 
+    | zero =>
       have := nat.not_lt_zero a_lt_fuel_a
       contradiction
-    | succ fuel_a iha =>  
+    | succ fuel_a iha =>
     cases fuel_b with
-    | zero => 
+    | zero =>
       have := nat.not_lt_zero a_lt_fuel_b
       contradiction
     | succ fuel_b =>
@@ -108,7 +108,7 @@ def nat.div_mod.induction.remove_fuel
 #print axioms nat.div_mod.induction.remove_fuel
 
 def nat.div_mod.induction.if_lt:
-  ∀a b b_nz a_lt_b, 
+  ∀a b b_nz a_lt_b,
   induction motive is_lt is_ge a b b_nz = is_lt a b a_lt_b := by
   intro a b b_nz a_lt_b
   unfold induction
@@ -132,7 +132,7 @@ def nat.div_mod.induction.if_ge
   ( motive: nat -> (b: nat) -> 0 < b -> Sort α )
   ( is_lt: ∀(a b: nat), (a_lt_b: a < b) -> motive a b (nat.zero_lt_of_lt a_lt_b))
   ( is_ge: ∀(a b: nat), (b_nz: 0 < b) -> a ≥ b -> motive (a - b) b b_nz -> motive a b b_nz):
-  ∀a b b_nz a_ge_b, 
+  ∀a b b_nz a_ge_b,
   induction motive is_lt is_ge a b b_nz = is_ge a b b_nz a_ge_b (induction motive is_lt is_ge (a - b) b b_nz) := by
   intro a b b_nz a_ge_b
   conv => {
@@ -382,8 +382,8 @@ def nat.mul_mod :∀(a b k: nat), (a * k) % (b * k) = (a % b) * k := by
     | zero =>
       rw [zero_eq, mul_zero, mul_zero, mul_zero]
       rfl
-    | succ k => 
-    have : 0 < b := by 
+    | succ k =>
+    have : 0 < b := by
       apply TotalOrder.lt_of_le_and_lt
       apply nat.zero_le
       any_goals assumption
@@ -401,13 +401,13 @@ def nat.mul_mod :∀(a b k: nat), (a * k) % (b * k) = (a % b) * k := by
   }
   {
     intro a b _ a_ge_b ih k
-    cases k with  
+    cases k with
     | zero =>
       rw [zero_eq, mul_zero, mul_zero, mul_zero]; rfl
-    | succ k => 
-    cases b with  
+    | succ k =>
+    cases b with
     | zero => rw [zero_eq, zero_mul, mod_zero, mod_zero, zero_mul]
-    | succ b => 
+    | succ b =>
     rw [mod.if_ge, mod.if_ge a b.succ]
     rw [←ih]
     congr
@@ -487,7 +487,7 @@ def nat.div.lt (a b: nat) : 1 < b -> 0 < a -> a / b < a := by
   assumption
   apply nat.zero_lt_succ
   assumption
- 
+
 #print axioms nat.div.lt
 
 def nat.div.of_eq_zero { a b: nat } : a / b = 0 -> b = 0 ∨ a < b := by
@@ -498,7 +498,7 @@ def nat.div.of_eq_zero { a b: nat } : a / b = 0 -> b = 0 ∨ a < b := by
     apply Or.inr
     apply Decidable.byContradiction
     intro h
-    have a_ge_b_succ := TotalOrder.not_lt_implies_ge h 
+    have a_ge_b_succ := TotalOrder.not_lt_implies_ge h
     rw [if_ge] at div_eq_zero
     contradiction
     apply zero_lt_succ
@@ -506,3 +506,109 @@ def nat.div.of_eq_zero { a b: nat } : a / b = 0 -> b = 0 ∨ a < b := by
 
 #print axioms nat.div.of_eq_zero
 
+def nat.div.spec (a b: nat) (b_pos: 0 < b) :
+  a / b = if a < b then 0 else ((a - b) / b).succ := by
+  cases TotalOrder.lt_or_ge a b
+  · rename_i a_lt_b
+    rw [if_pos, nat.div.if_lt]
+    apply nat.lt_of_le_and_lt
+    apply nat.zero_le
+    repeat assumption
+  · rename_i a_ge_b
+    rw [if_neg, nat.div.if_ge]
+    repeat assumption
+    apply flip TotalOrder.not_lt_and_ge
+    assumption
+
+def nat.div.le_div_if_mul_le (a b: nat) (b_pos: 0 < b) : ∀c, b * c ≤ a -> c ≤ a / b := by
+  apply nat.div_mod.induction (fun a b _ => ∀c, b * c ≤ a -> c ≤ a / b) _ _ a b b_pos
+  <;> clear a b_pos b
+  · intro a b b_pos c h
+    rw [nat.div.if_lt]
+    · match c with
+      | nat.zero => apply nat.le_refl
+      | nat.succ c =>
+        rw [nat.mul_succ] at h
+        have := nat.le_trans (nat.add.le_left _ _) h
+        have := nat.not_lt_and_ge b_pos this
+        contradiction
+    apply nat.lt_of_le_and_lt _ b_pos
+    apply nat.zero_le
+    assumption
+  · intro a b b_pos a_ge_b ih c h
+    rw [nat.div.if_ge]
+    any_goals trivial
+    cases c with
+    | zero => apply nat.zero_le
+    | succ c =>
+    apply nat.succ_le_succ
+    apply ih
+    rw [nat.mul_succ] at h
+    generalize g:b * c = d
+    rw [g] at h
+    clear g c ih a_ge_b b_pos
+    induction b generalizing a with
+    | zero =>
+      rw [zero_eq, sub_zero]
+      rw [zero_eq, nat.zero_add] at h
+      assumption
+    | succ b ih =>
+      cases a with
+      | zero =>
+        rw [succ_add] at h
+        cases h <;> contradiction
+      | succ a =>
+      rw [succ_sub_succ]
+      rw [succ_add] at h
+      apply ih
+      exact nat.le_of_succ_le_succ h
+
+def nat.div.le { a b: nat } : a / b ≤ a := by
+  cases b
+  rw [zero_eq, div_zero]
+  apply zero_le
+  rename_i b
+  have := div_def a b.succ zero_lt_succ
+  conv => { rhs; rw [this] }
+  apply flip nat.le_trans
+  apply nat.add.le_left
+  exact mul.ge (a / b.succ) b.succ rfl
+
+def nat.div.mul_le { a b: nat } : b * (a / b) ≤ a := by
+  cases b
+  rw [zero_eq, div_zero]
+  apply zero_le
+  rename_i b
+  have := div_def a b.succ zero_lt_succ
+  conv => { rhs; rw [this] }
+  apply flip nat.le_trans
+  apply nat.add.le_left
+  rw [mul.comm]
+  apply nat.le_refl
+
+def nat.div_div { a b c: nat} : a / b / c = a / (b * c) := by
+  cases b with
+  | zero =>
+    rw [zero_eq, div_zero, zero_mul, div_zero, zero_div]
+  | succ b =>
+  cases c with
+  | zero =>
+    rw [zero_eq, div_zero, mul_zero, div_zero]
+  | succ c =>
+  apply nat.le_antisymm
+  · apply div.le_div_if_mul_le
+    exact zero_lt_succ
+    rw [mul.assoc _ c.succ]
+    apply nat.le_trans
+    apply nat.mul.le
+    apply nat.le_refl
+    apply nat.div.mul_le
+    apply nat.div.mul_le
+  · apply div.le_div_if_mul_le
+    exact zero_lt_succ
+    apply div.le_div_if_mul_le
+    exact zero_lt_succ
+    rw [←mul.assoc]
+    apply nat.div.mul_le
+
+#print axioms nat.div_div

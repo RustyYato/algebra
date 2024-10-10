@@ -7,7 +7,7 @@ def nat.gcd.induction.fueled
   (fuel: nat): ∀a b, my_option (motive a b) := fun a b =>
   match fuel with
   | .zero => .none
-  | .succ fuel => 
+  | .succ fuel =>
   match b with
   | .zero => .some <| right_zero a
   | .succ b => match fueled motive right_zero right_nz fuel b.succ (a % b.succ) with
@@ -28,12 +28,12 @@ def nat.gcd.induction.fueled.termination
   | succ fuel ih =>
   intro a b b_lt_succ_fuel
   cases b with
-  | zero => 
+  | zero =>
     intro
     contradiction
   | succ b =>
     unfold fueled
-    simp only 
+    simp only
     have := ih b.succ (a % b.succ) (by
       apply TotalOrder.lt_of_lt_and_le
       apply nat.mod.lt
@@ -42,7 +42,7 @@ def nat.gcd.induction.fueled.termination
     )
     split
     rename_i h
-    have := this h 
+    have := this h
     contradiction
     intro
     contradiction
@@ -61,9 +61,9 @@ def nat.gcd.induction.fueled.fuel_irr
       intro a b b_lt_zero
       have := nat.not_lt_zero b_lt_zero
       contradiction
-    | succ fuela ih =>  
+    | succ fuela ih =>
       cases fuelb with
-      | zero => 
+      | zero =>
         intro a b _ b_lt_zero
         have := nat.not_lt_zero b_lt_zero
         contradiction
@@ -75,12 +75,12 @@ def nat.gcd.induction.fueled.fuel_irr
           unfold fueled
           simp only
           rw [ih]
-          
+
           apply TotalOrder.lt_of_lt_and_le
           apply nat.mod.lt
           apply nat.zero_lt_succ
           exact nat.le_of_lt_succ b_le_fuela
-          
+
           apply TotalOrder.lt_of_lt_and_le
           apply nat.mod.lt
           apply nat.zero_lt_succ
@@ -93,7 +93,7 @@ def nat.gcd.induction
   (right_zero: ∀a, motive a 0)
   (right_nz: ∀a b, 0 < b -> motive b (a % b) -> motive a b):
   ∀a b, motive a b
-  := fun (a b: nat) => 
+  := fun (a b: nat) =>
     match h:nat.gcd.induction.fueled motive right_zero right_nz b.succ a b with
     | .some m => m
     | .none => by
@@ -128,7 +128,7 @@ def nat.gcd.induction.right_zero
     (motive: nat -> nat -> Sort _)
     (right_zero: ∀a, motive a 0)
     (right_nz: ∀a b, 0 < b -> motive b (a % b) -> motive a b):
-    ∀a, induction motive right_zero right_nz a 0 = right_zero a := fun _ => rfl 
+    ∀a, induction motive right_zero right_nz a 0 = right_zero a := fun _ => rfl
 
 #print axioms nat.gcd.induction.right_zero
 
@@ -313,7 +313,7 @@ def nat.gcd.common_right : ∀a b k, gcd (a * k) (b * k) = gcd a b * k := by
   {
     intro a b b_nz ih k
     cases k with
-    | zero => 
+    | zero =>
       rw [zero_eq, mul_zero, mul_zero, mul_zero]
       rfl
     | succ c =>
@@ -340,10 +340,10 @@ def nat.gcd.common_left : ∀a b k, gcd (k * a) (k * b) = k * gcd a b := by
 def nat.gcd.div_common : ∀a b k, k ∣ a -> k ∣ b -> gcd (a / k) (b / k) = gcd a b / k := by
   intros a b k k_dvd_a k_dvd_b
   cases k with
-  | zero => 
+  | zero =>
     rw [zero_eq, nat.div_zero, nat.div_zero, nat.div_zero]
     rfl
-  | succ k => 
+  | succ k =>
     have ⟨ x, xprf ⟩ := k_dvd_a
     have ⟨ y, yprf ⟩ := k_dvd_b
     cases xprf
@@ -367,10 +367,10 @@ def nat.dvd.mul_div (a b c: nat) : c ∣ b -> a * (b / c) = (a * b) / c := by
     apply nat.dvd.mul_right
 
   cases c with
-  | zero => 
+  | zero =>
     rw [zero_eq, nat.div_zero, nat.div_zero,  nat.mul_zero]
   | succ c =>
-  
+
   have ⟨ x, xprf ⟩ := nat.dvd.trans dvd₁ (nat.dvd.trans dvd₂ dvd₀)
   have ⟨ y, yprf ⟩ := c_dvd_b
   rw [←xprf, ←yprf, nat.mul_div, nat.mul_div]
@@ -401,6 +401,11 @@ def nat.gcd.eq_right_of_dvd : ∀(a b: nat), b ∣ a -> gcd a b = b := by
   apply dvd.refl
 
 #print axioms nat.gcd.eq_right_of_dvd
+
+def nat.gcd.left_zero { a: nat } : gcd 0 a = a := by
+  rw [gcd.comm, gcd.right_zero]
+
+#print axioms nat.gcd.left_zero
 
 def nat.gcd.one_right : gcd a 1 = 1 := by
   apply nat.dvd.antisymm

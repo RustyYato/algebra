@@ -20,7 +20,7 @@ def int.of_nat (n: nat) : int := match n with
   | .zero => .zero
   | .succ n => .pos_succ n
 
-def nat.to_int (n: nat) : int := int.of_nat n 
+def nat.to_int (n: nat) : int := int.of_nat n
 
 def int.toInt (n: int) : Int := match n with
   | .zero => .ofNat 0
@@ -114,3 +114,6 @@ def int.of_nat.inj { a b: nat } : int.of_nat a = int.of_nat b -> a = b := by
   rfl; rfl
 
 #print axioms int.of_nat.inj
+
+def int.of_nat.pos (a: nat) : int.pos_succ a = int.of_nat a.succ := rfl
+def int.of_nat.zero : 0 = int.of_nat 0 := rfl

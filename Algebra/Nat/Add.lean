@@ -93,6 +93,18 @@ def nat.add.eq_zero_of_cancel_right (a b: nat) : a = a + b -> b = 0 := by
 
 #print axioms nat.add.eq_zero_of_cancel_right
 
+def nat.add.compare_left (a b k: nat) : compare (k + a) (k + b) = compare a b := by
+  induction k with
+  | zero => rfl
+  | succ k ih => rw [succ_add, succ_add, compare.succ, ih]
+
+#print axioms nat.add.compare_left
+
+def nat.add.compare_right (a b k: nat) : compare (a + k) (b + k) = compare a b := by
+  rw [comm _ k, comm _ k, compare_left]
+
+#print axioms nat.add.compare_right
+
 def nat.add.lt_right_nz (a b: nat) : 0 < b -> a < a + b := by
   intro zero_lt_b
   induction b with
