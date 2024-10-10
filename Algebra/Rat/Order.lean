@@ -379,6 +379,44 @@ def fract.add.compare_strict { a b: fract } { o: Ordering } :
     assumption
     trivial
 
+def fract.add.compare_left { a b k: fract } { o: Ordering } :
+   compare a b = o ->
+   compare (k + a) (k + b) = o := by
+    intro ab
+    cases a with | mk anum aden aden_pos =>
+    cases b with | mk bnum bden bden_pos =>
+    cases k with | mk knum kden kden_pos =>
+    repeat rw [fract.add.def]
+    rw [compare_def, order]
+    dsimp
+    cases aden with
+    | zero => contradiction
+    | succ aden =>
+    cases bden with
+    | zero => contradiction
+    | succ bden =>
+    cases kden with
+    | zero => contradiction
+    | succ kden =>
+    repeat rw [←int.mul.lift_nat]
+    repeat rw [←int.of_nat.pos]
+    rw [compare_def, order] at ab
+    dsimp at ab
+    rw [int.mul.add_left, int.mul.add_left,
+      @int.mul.comm _ anum, @int.mul.comm _ bnum,
+      int.mul.assoc, int.mul.assoc, int.mul.assoc, int.mul.assoc,
+      int.mul.comm_right (int.pos_succ kden),
+      int.mul.comm_right (int.pos_succ kden),
+      @int.mul.comm (int.pos_succ kden) (int.pos_succ aden),
+      @int.mul.comm (int.pos_succ kden) (int.pos_succ bden),
+      int.mul.comm_left (int.pos_succ bden) (int.pos_succ aden)]
+    repeat rw [←int.mul.assoc]
+    rw [←int.add.compare_right]
+    rw [int.mul.assoc, @int.mul.assoc _ _ (int.pos_succ _)]
+    rw [←int.mul.compare_left_pos]
+    assumption
+    trivial
+
 def rat.add.compare_strict { a b c d: rat } { o: Ordering } :
    compare a b = o ->
    compare c d = o ->
@@ -390,3 +428,116 @@ def rat.add.compare_strict { a b c d: rat } { o: Ordering } :
    assumption
 
 #print axioms rat.add.compare_strict
+
+def rat.add.compare_left { a b k: rat } { o: Ordering } :
+   compare a b = o ->
+   compare (k + a) (k + b) = o := by
+   intro ab
+   erw [←rat.compare_of_fract]
+   apply fract.add.compare_left
+   assumption
+
+#print axioms rat.add.compare_strict
+
+def rat.add.compare_right { a b k: rat } { o: Ordering } :
+   compare a b = o ->
+   compare (a + k) (b + k) = o := by
+   intro ab
+   rw [rat.add.comm _ k, rat.add.comm _ k]
+   apply rat.add.compare_left
+   assumption
+
+#print axioms rat.add.compare_strict
+
+def rat.add.compare' { a b c d: rat } { o: Ordering } :
+   compare a b = o ∨ a = b ->
+   compare c d = o ∨ c = d ->
+   ¬((a = b) ∧ (c = d)) ->
+   compare (a + c) (b + d) = o := by
+    intro ab cd h
+    cases ab <;> rename_i ab <;> cases cd <;> rename_i cd
+    · apply rat.add.compare_strict <;> assumption
+    · subst d
+      apply rat.add.compare_right
+      assumption
+    · subst b
+      apply rat.add.compare_left
+      assumption
+    · have := h ⟨ ab, cd ⟩
+      contradiction
+
+#print axioms rat.add.compare'
+
+def rat.add.lt_of_add_left { a b k: rat } :
+  a < b ->
+  k + a < k + b := by
+  intro ab
+  apply rat.add.compare_left
+  assumption
+
+def rat.add.lt_of_add_right { a b k: rat } :
+  a < b ->
+  a + k < b + k := by
+  intro ab
+  rw [add.comm _ k, add.comm _ k]
+  apply rat.add.lt_of_add_left
+  assumption
+
+def rat.add.le_of_add_left { a b k: rat } :
+  a ≤ b ->
+  k + a ≤ k + b := by
+  intro ab
+  cases ab
+  apply Or.inl
+  apply rat.add.compare_left
+  assumption
+  cases TotalOrder.eq_of_compare_eq (by assumption)
+  apply TotalOrder.le_refl
+
+def rat.add.le_of_add_right { a b k: rat } :
+  a ≤ b ->
+  a + k ≤ b + k := by
+  intro ab
+  rw [add.comm _ k, add.comm _ k]
+  apply rat.add.le_of_add_left
+  assumption
+
+def rat.add.le_of_le { a b c d: rat } :
+  a ≤ b -> c ≤ d ->
+  a + c ≤ b + d := by
+  intro ab cd
+  apply TotalOrder.le_trans
+  apply rat.add.le_of_add_left
+  assumption
+  apply rat.add.le_of_add_right
+  assumption
+
+def rat.add.lt_of_lt { a b c d: rat } :
+  a < b -> c < d ->
+  a + c < b + d := by
+  intro ab cd
+  apply TotalOrder.lt_trans
+  apply rat.add.lt_of_add_left
+  assumption
+  apply rat.add.lt_of_add_right
+  assumption
+
+def rat.add.lt_of_le_of_lt { a b c d: rat } :
+  a ≤ b -> c < d ->
+  a + c < b + d := by
+  intro ab cd
+  apply TotalOrder.lt_of_le_of_lt
+  apply rat.add.le_of_add_right
+  assumption
+  apply rat.add.lt_of_add_left
+  assumption
+
+def rat.add.lt_of_lt_of_le { a b c d: rat } :
+  a < b -> c ≤ d ->
+  a + c < b + d := by
+  intro ab cd
+  apply TotalOrder.lt_of_lt_of_le
+  apply rat.add.lt_of_add_right
+  assumption
+  apply rat.add.le_of_add_left
+  assumption
