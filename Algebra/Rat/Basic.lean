@@ -1064,3 +1064,8 @@ def rat.mul.one_left (a: rat) : 1 * a = a := by
 def rat.mul.one_right (a: rat) : a * 1 = a := by
   rw [mul.comm]
   apply rat.mul.one_left
+
+def rat.mul_two (a: rat) : a * 2 = a + a := by
+  have : (2: rat) = 1 + 1 := rfl
+  rw [this]
+  rw [add.mul_left, mul.one_right]

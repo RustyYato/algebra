@@ -790,3 +790,62 @@ def rat.abs.nonneg (a: rat) :
   0 ≤ a.abs := by
   apply TotalOrder.le_of_not_gt
   apply rat.abs.not_gt
+
+def rat.div.pos_of_gt_one (a b: rat) :
+  1 < b -> 0 < a -> a / b < a := by
+  intro b_gt_one a_pos
+  rw [div.def]
+  conv => { rhs; rw [←mul.one_right a] }
+  apply TotalOrder.lt_of_compare
+  rw [mul.compare_pos_left]
+  rw [←mul.compare_pos_left b, mul.inv_right, mul.one_right]
+  any_goals assumption
+  intro h
+  cases h
+  contradiction
+  apply TotalOrder.lt_trans _ b_gt_one
+  trivial
+
+def rat.div.neg_of_gt_one (a b: rat) :
+  1 < b -> a < 0 -> a < a / b := by
+  intro b_gt_one a_pos
+  rw [div.def]
+  conv => { lhs; rw [←mul.one_right a] }
+  apply TotalOrder.lt_of_compare
+  rw [mul.compare_neg_left]
+  rw [←mul.compare_pos_left b, mul.inv_right, mul.one_right]
+  any_goals assumption
+  intro h
+  cases h
+  contradiction
+  apply TotalOrder.lt_trans _ b_gt_one
+  trivial
+
+def rat.add.midpoint (a b: rat) :
+  a < b ->
+  a < (a + b) / 2 ∧ (a + b) / 2 < b := by
+  intro a_lt_b
+  rw [div.def, add.mul_right, ←div.def, ←div.def]
+  apply And.intro
+  · apply flip TotalOrder.lt_of_le_of_lt
+    · apply add.lt_of_le_of_lt
+      · apply TotalOrder.le_refl
+      · rw [div.def]
+        apply TotalOrder.lt_of_compare
+        rw [mul.compare_pos_right]
+        assumption
+        trivial
+    · rw [div.def, ←add.mul_right, ←mul_two, mul.assoc, mul.inv_right, mul.one_right]
+      apply TotalOrder.le_refl
+      trivial
+  · apply TotalOrder.lt_of_lt_of_le
+    · apply add.lt_of_lt_of_le
+      · rw [div.def]
+        apply TotalOrder.lt_of_compare
+        rw [mul.compare_pos_right]
+        assumption
+        trivial
+      · apply TotalOrder.le_refl
+    · rw [div.def, ←add.mul_right, ←mul_two, mul.assoc, mul.inv_right, mul.one_right]
+      apply TotalOrder.le_refl
+      trivial
