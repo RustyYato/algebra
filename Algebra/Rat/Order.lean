@@ -6,6 +6,11 @@ def rat.order (a b: rat) : Ordering := compare (a.num * int.of_nat b.den) (b.num
 instance fract.OrdInst : Ord fract := ⟨ order ⟩
 instance rat.OrdInst : Ord rat := ⟨ order ⟩
 
+instance : LT fract where
+  lt a b := compare a b = Ordering.lt
+instance : LE fract where
+  le a b := compare a b = Ordering.lt ∨ compare a b = Ordering.eq
+
 instance rat.TotalOrderInst : TotalOrder rat where
   eq_of_compare_eq := by
     intro a b h
@@ -540,4 +545,106 @@ def rat.add.lt_of_lt_of_le { a b c d: rat } :
   apply rat.add.lt_of_add_right
   assumption
   apply rat.add.le_of_add_left
+  assumption
+
+def rat.neg.swap_cmp (a b: rat) :
+  compare (-a) (-b) = compare b a := by
+  rw [neg.def, neg.def]
+  unfold Ord.compare OrdInst order
+  dsimp
+  cases a with | mk anum aden aden_pos ared =>
+  cases b with | mk bnum bden bden_pos bred =>
+  dsimp
+  clear ared bred
+  have cmp_0_pos : ∀x n, 0 < n -> compare 0 (int.pos_succ x * int.of_nat n) = Ordering.lt := by
+    intros x n n_pos
+    cases n
+    contradiction
+    rfl
+  have cmp_pos_0 : ∀x n, 0 < n -> compare (int.pos_succ x * int.of_nat n) 0 = Ordering.gt := by
+    intros x n n_pos
+    cases n
+    contradiction
+    rfl
+  have cmp_0_neg : ∀x n, 0 < n -> compare 0 (int.neg_succ x * int.of_nat n) = Ordering.gt := by
+    intros x n n_pos
+    cases n
+    contradiction
+    rfl
+  have cmp_neg_0 : ∀x n, 0 < n -> compare (int.neg_succ x * int.of_nat n) 0 = Ordering.lt := by
+    intros x n n_pos
+    cases n
+    contradiction
+    rfl
+  have cmp_neg_pos : ∀x n y m, 0 < n -> 0 < m -> compare (int.neg_succ x * int.of_nat n) (int.pos_succ y * int.of_nat m) = Ordering.lt := by
+    intros x n y m n_pos m_pos
+    cases n
+    contradiction
+    cases m
+    contradiction
+    rfl
+  have cmp_pos_neg : ∀x n y m, 0 < n -> 0 < m -> compare (int.pos_succ y * int.of_nat m) (int.neg_succ x * int.of_nat n) = Ordering.gt := by
+    intros x n y m n_pos m_pos
+    cases n
+    contradiction
+    cases m
+    contradiction
+    rfl
+
+  cases anum <;> cases bnum
+  any_goals rw [int.zero_eq]
+  all_goals repeat first|rw [←int.neg.def]|rw[int.neg.zero]|rw[int.neg.pos_succ]|rw[int.neg.neg_succ]
+  all_goals repeat rw [int.mul.zero_left]
+  any_goals rw [cmp_0_pos]
+  any_goals rw [cmp_0_neg]
+  any_goals rw [cmp_neg_0]
+  any_goals rw [cmp_pos_0]
+  any_goals assumption
+  any_goals rw [cmp_pos_neg, cmp_pos_neg]
+  any_goals rw [cmp_neg_pos, cmp_neg_pos]
+  any_goals assumption
+  · rw [←int.neg.pos_succ, ←int.neg.pos_succ,
+      ←int.mul.neg_left, ←int.mul.neg_left,
+      int.neg.swap_cmp]
+  · rw [←int.neg.pos_succ, ←int.neg.pos_succ,
+      ←int.mul.neg_left, ←int.mul.neg_left,
+      int.neg.swap_cmp]
+
+def fract.mul.pos_left (k a b: fract) :
+  0 < k -> compare (k * a) (k * b) = compare a b := by
+  intro k_pos
+  rw [mul.def, mul.def]
+  unfold mul
+  rw [compare_def, compare_def]
+  unfold order
+  dsimp
+  rw [←int.mul.lift_nat, ←int.mul.lift_nat,
+      int.mul.comm k.num a.num, int.mul.comm k.num b.num,
+      int.mul.assoc, int.mul.assoc,
+      int.mul.comm_right k.num, int.mul.comm_right k.num,
+      ←int.mul.assoc a.num, ←int.mul.assoc b.num, ←int.mul.compare_left_pos]
+  dsimp
+  apply int.mul.pos_pos_is_pos
+  have : 0 = int.of_nat 0 := rfl
+  apply TotalOrder.lt_of_compare
+  erw [this, int.of_nat.compare 0 k.den]
+  exact k.den_nz
+  have cmp : compare 0 k = Ordering.lt := k_pos
+  unfold compare OrdInst order at cmp
+  dsimp at cmp
+  erw [int.mul.zero_left, int.mul.one_right] at cmp
+  assumption
+
+def rat.mul.pos_left (k a b: rat) :
+  0 < k -> compare (k * a) (k * b) = compare a b := by
+  intro k_pos
+  erw [←rat.compare_of_fract]
+  apply fract.mul.pos_left
+  assumption
+
+def rat.mul.pos_right (k a b: rat) :
+  0 < k -> compare (a * k) (b * k) = compare a b := by
+  intro k_pos
+  rw [mul.comm _ k, mul.comm _ k]
+  apply mul.pos_left
   assumption

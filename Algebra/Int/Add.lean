@@ -471,23 +471,19 @@ def int.add.neg_self { a: int } : a + -a = 0 := by
   cases a with
   | zero => rfl
   | pos_succ a =>
-    rw [add.def]
+    rw [add.def, int.neg.pos_succ]
     unfold add
     simp
     induction a with
     | zero => rfl
-    | succ a ih =>
-      rw [pos_succ.succ, inc_dec_inv, sub_nat]
-      assumption
+    | succ _ ih => assumption
   | neg_succ a =>
-    rw [add.def]
+    rw [add.def, int.neg.neg_succ]
     unfold add
     simp
     induction a with
     | zero => rfl
-    | succ a ih =>
-      rw [neg_succ.succ, dec_inc_inv, add_nat]
-      assumption
+    | succ _ ih => assumption
 
 #print axioms int.add.neg_self
 

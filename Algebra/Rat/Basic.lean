@@ -445,12 +445,15 @@ def fract.to_rat_to_simple (a: fract) : a.to_rat.to_simple.equiv a := by
 
 def rat.zero : rat := rat.mk 0 1 (by decide) (by decide)
 
+def fract.neg (a: fract) : fract := fract.mk (-a.num) a.den a.den_nz
+
 def rat.neg (a: rat) : rat := rat.mk (-a.num) a.den a.den_nz (by
   rw [int.abs.neg]
   exact a.is_reduced)
 
 #print axioms rat.neg
 
+instance fract.neg.inst : Neg fract := ⟨ fract.neg ⟩
 instance rat.neg.inst : Neg rat := ⟨ rat.neg ⟩
 
 def fract.add (a b: fract) : fract := fract.mk (
@@ -781,8 +784,7 @@ def fract.mul.inv_right (a: fract) : ¬(a ≈ 0) -> a * a.invert ≈ 1 := by
     erw [int.mul.one_right, int.mul.one_left, ←int.mul.lift_nat, int.mul.comm]
     cases d
     contradiction; rename_i d
-    rw [←int.of_nat.pos]
-    dsimp
+    rw [←int.of_nat.pos, int.neg.pos_succ]
     rw [←int.neg.pos_succ, ←int.neg.pos_succ, ←int.mul.neg_left, ←int.mul.neg_right, int.neg_neg]
     rfl
 
@@ -887,3 +889,9 @@ def rat.div.def (a b: rat) : a / b = a * b⁻¹ := rfl
 
 def rat.div.mul_left (a b c: rat) : a * b / c = a * (b / c) := by
   rw [div.def, div.def, rat.mul.assoc]
+
+def rat.neg_neg (a: rat) : - -a = a := by
+  rw [rat.neg.def, rat.neg.def]
+  dsimp
+  congr
+  rw [int.neg_neg]

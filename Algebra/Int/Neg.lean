@@ -1,6 +1,5 @@
 import Algebra.Int.Cmp
 
-@[simp]
 def int.neg (i: int): int := match i with
   | .zero => .zero
   | .pos_succ n => .neg_succ n
@@ -8,7 +7,6 @@ def int.neg (i: int): int := match i with
 
 #print axioms int.neg
 
-@[simp]
 instance int.instNeg : Neg int where
   neg := int.neg
 
@@ -81,6 +79,7 @@ def int.neg.swap_ge: ∀{ a b: int }, a ≥ b ↔ -b ≥ -a := by
 
 #print axioms int.neg.swap_ge
 
+def int.neg.def (a: int) : -a = a.neg := rfl
 def int.neg.zero : -(0: int) = 0 := rfl
 def int.neg.pos_succ : -int.pos_succ n = int.neg_succ n := rfl
 def int.neg.neg_succ : -int.neg_succ n = int.pos_succ n := rfl
@@ -92,4 +91,3 @@ def int.neg.sign_mul { s: int.Sign } { x: nat } : -(s * x) = s.flip * x := by
     cases x <;> rfl
 
 #print axioms int.neg.sign_mul
-    
