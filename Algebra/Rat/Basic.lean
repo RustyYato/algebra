@@ -757,6 +757,7 @@ instance : Div rat := ⟨ rat.div ⟩
 
 def rat.mul.def (a b: rat) : a * b = a.mul b := rfl
 def fract.mul.def (a b: fract) : a * b = a.mul b := rfl
+def rat.mul.to_simple (a b : rat) : (a * b).to_simple ≈ a.to_simple * b.to_simple := fract.to_rat_to_simple _
 
 def fract.mul.inv_right (a: fract) : ¬(a ≈ 0) -> a * a.invert ≈ 1 := by
   intro a_nz
@@ -795,7 +796,6 @@ def rat.mul.inv_right (a: rat) : a ≠ 0 -> a * a⁻¹ = 1 := by
   have : 1 = fract.to_rat 1 := rfl
   rw [this]
   apply eq_of_equiv
-  unfold to_simple
   dsimp
   unfold invert
   cases n <;> dsimp
@@ -838,6 +838,51 @@ def rat.mul.comm (a b: rat) : a * b = b * a := by
   rw [mul.def, mul, mul.def, mul]
   apply eq_of_equiv
   apply fract.mul.comm
+
+def fract.add.congr (a b c d: fract) :
+  a ≈ c ->
+  b ≈ d ->
+  a + b ≈ c + d := by
+  cases a with | mk anum aden aden_pos =>
+  cases b with | mk bnum bden bden_pos =>
+  cases c with | mk cnum cden cden_pos =>
+  cases d with | mk dnum dden dden_pos =>
+  repeat rw [add.def]
+  repeat rw [equiv.def, equiv]
+  dsimp
+  intro ac bd
+  have : ∀x, 0 < x -> 0 < int.of_nat x := by
+    intro x x_pos
+    have : 0 = int.of_nat 0 := rfl
+    apply TotalOrder.lt_of_compare
+    rw [this, int.of_nat.compare]
+    assumption
+  repeat rw [←int.mul.lift_nat]
+  rw [int.mul.add_left, int.mul.add_left]
+  repeat rw [int.mul.assoc]
+  congr 1
+  rw [int.mul.comm_left _ cden, int.mul.comm_left _ aden, int.mul.comm dden]
+  rw [←int.mul.assoc, ←int.mul.assoc cnum]
+  apply TotalOrder.eq_of_compare_eq
+  rw [←int.mul.compare_left_pos]
+  rw [ac]
+  apply TotalOrder.compare_eq_refl
+  apply TotalOrder.lt_of_compare
+  rw [int.mul.pos_pos_is_pos]
+  exact this _ bden_pos
+  exact this _ dden_pos
+  rw [int.mul.comm_left _ cden,
+    int.mul.comm_left _ aden]
+  rw [←int.mul.assoc, ←int.mul.assoc cden]
+  rw [int.mul.comm, int.mul.comm cden, int.mul.comm (aden * _)]
+  apply TotalOrder.eq_of_compare_eq
+  rw [←int.mul.compare_left_pos]
+  rw [bd]
+  apply TotalOrder.compare_eq_refl
+  apply TotalOrder.lt_of_compare
+  rw [int.mul.pos_pos_is_pos]
+  exact this _ aden_pos
+  exact this _ cden_pos
 
 def fract.mul.congr (a b c d: fract) :
   a ≈ c ->
@@ -895,3 +940,39 @@ def rat.neg_neg (a: rat) : - -a = a := by
   dsimp
   congr
   rw [int.neg_neg]
+
+def fract.add.mul_left (a b k: fract) :
+  k * (a + b) ≈ k * a + k * b := by
+  repeat first|rw [add.def]|rw [mul.def]|rw [mul]|rw [add]
+  rw [equiv.def, equiv]
+  dsimp
+  repeat rw [←int.mul.lift_nat]
+  repeat first|rw [int.mul.add_right]|rw [int.mul.add_left]
+  repeat rw [int.mul.assoc]
+  congr 1
+  congr 2
+  rw [int.mul.comm_left]
+  congr 2
+  rw [int.mul.comm_left]
+  repeat rw [int.mul.comm_left _ k.num]
+  congr 1
+  repeat rw [int.mul.comm_left _ k.den]
+
+def rat.add.mul_left (a b k: rat) :
+  k * (a + b) = k * a + k * b := by
+  apply eq_of_equiv
+  apply fract.equiv.trans
+  apply fract.mul.congr
+  rfl
+  apply rat.add.to_simple
+  apply flip fract.equiv.trans
+  apply fract.equiv.symm
+  apply fract.add.congr
+  apply rat.mul.to_simple
+  apply rat.mul.to_simple
+  apply fract.add.mul_left
+
+def rat.add.mul_right (a b k: rat) :
+  (a + b) * k = a * k + b * k := by
+  repeat rw [mul.comm _ k]
+  apply rat.add.mul_left
