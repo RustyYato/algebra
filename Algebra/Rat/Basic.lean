@@ -83,7 +83,7 @@ instance fract.equiv.instEquiv : Equivalence fract.equiv where
       }
       conv at y_eq_z' => {
         lhs
-        rw [int.mul.assoc, @int.mul.comm z.den, ←int.mul.assoc]
+        rw [int.mul.assoc, int.mul.comm z.den, ←int.mul.assoc]
       }
       have x_eq_z := Eq.trans x_eq_y' y_eq_z'
       apply int.mul.of_eq
@@ -92,8 +92,8 @@ instance fract.equiv.instEquiv : Equivalence fract.equiv where
       cases int.of_nat.inj this
       contradiction
       clear x_eq_y' y_eq_z' g y_eq_z x_eq_y ynum' yden_nz ynum
-      rw [int.mul.assoc, @int.mul.comm z.den, ←int.mul.assoc, x_eq_z]
-      rw [int.mul.assoc, @int.mul.comm yden, ←int.mul.assoc]
+      rw [int.mul.assoc, int.mul.comm z.den, ←int.mul.assoc, x_eq_z]
+      rw [int.mul.assoc, int.mul.comm yden, ←int.mul.assoc]
 
 instance fract.setoid : Setoid fract where
   r := fract.equiv
@@ -525,7 +525,7 @@ def fract.add.comm (a b : fract ) : (a + b) ≈ (b + a) := by
   rw [fract.equiv.def]
   unfold equiv
   simp only
-  rw [int.add.comm, @int.mul.comm bnum, @int.mul.comm anum, nat.mul.comm]
+  rw [int.add.comm, int.mul.comm bnum, int.mul.comm anum, nat.mul.comm]
 
 #print axioms fract.add.comm
 
@@ -543,13 +543,13 @@ def fract.add.equiv_left (a b k: fract) : fract.equiv a k -> fract.equiv (a + b)
   unfold equiv at a_eq_k
   repeat rw [←int.mul.lift_nat]
   repeat rw [int.mul.add_left, int.mul.add_left]
-  repeat rw [@int.mul.comm _ b.den]
-  repeat rw [@int.mul.comm _ b.num]
+  repeat rw [int.mul.comm _ b.den]
+  repeat rw [int.mul.comm _ b.num]
   repeat rw [int.mul.assoc]
-  repeat rw [←@int.mul.assoc _ b.den]
-  repeat rw [@int.mul.comm _ b.den]
+  repeat rw [←int.mul.assoc _ b.den]
+  repeat rw [int.mul.comm _ b.den]
   repeat rw [←int.mul.assoc]
-  repeat rw [@int.mul.comm b.num b.den]
+  repeat rw [int.mul.comm b.num b.den]
   repeat rw [int.mul.assoc]
   repeat rw [←int.mul.add_right]
   congr 1
@@ -648,13 +648,13 @@ def fract.add.cancel_left (a b k: fract) : a + k ≈ b + k -> a ≈ b := by
     x * y * (int.of_nat kd * int.of_nat kd) := by
     intro x y
     clear h
-    rw [int.mul.assoc, ←@int.mul.assoc _ y, @int.mul.comm _ y, ←int.mul.assoc, ←int.mul.assoc, ←int.mul.assoc]
+    rw [int.mul.assoc, ←int.mul.assoc _ y, int.mul.comm _ y, ←int.mul.assoc, ←int.mul.assoc, ←int.mul.assoc]
   have this2 : ∀x y,
     x * kn * (y * int.of_nat kd) =
     x * y * (kn * int.of_nat kd) := by
     intro x y
     clear h
-    rw [int.mul.assoc, ←@int.mul.assoc _ y, @int.mul.comm _ y, ←int.mul.assoc, ←int.mul.assoc, ←int.mul.assoc]
+    rw [int.mul.assoc, ←int.mul.assoc _ y, int.mul.comm _ y, ←int.mul.assoc, ←int.mul.assoc, ←int.mul.assoc]
   conv at h => {
     repeat (
       first|
@@ -665,7 +665,7 @@ def fract.add.cancel_left (a b k: fract) : a + k ≈ b + k -> a ≈ b := by
     )
   }
   clear this this2
-  rw [@int.mul.comm (int.of_nat bd)] at h
+  rw [int.mul.comm (int.of_nat bd)] at h
   replace h := int.add.right_iff_sub.mp h
   rw [int.sub.def, int.add.assoc, ←int.sub.def, int.sub.refl, int.add.zero_right] at h
   apply int.mul.of_eq _ _ _ _
@@ -851,7 +851,7 @@ def fract.mul.congr (a b c d: fract) :
   intro ac bd
   repeat rw [←int.mul.lift_nat]
   rw [int.mul.assoc, int.mul.assoc, int.mul.comm_left bnum, int.mul.comm_left dnum]
-  rw [←@int.mul.assoc anum, ←@int.mul.assoc cnum]
+  rw [←int.mul.assoc anum, ←int.mul.assoc cnum]
   congr 1
 
 def fract.mul.assoc (a b c: fract) : a * b * c ≈ a * (b * c) := by

@@ -56,7 +56,7 @@ def int.mul.neg_right { a b: int } : -(a * b) = a * -b := by
 
 #print axioms int.mul.neg_right
 
-def int.mul.comm { a b: int } : a * b = b * a := by
+def int.mul.comm (a b: int) : a * b = b * a := by
   rw [mul.def, mul.def]
   unfold mul
   rw [nat.mul.comm]
@@ -71,7 +71,7 @@ def int.mul.one_right { b: int } :  b * 1 = b := by
 def int.mul.neg_one_right { b: int } :  b * -1 = -b := by
   rw [int.mul.comm, int.mul.neg_one_left]
 
-def int.mul.assoc { a b c: int } : a * b * c = a * (b * c) := by
+def int.mul.assoc (a b c: int) : a * b * c = a * (b * c) := by
   repeat rw [mul.def]
   unfold mul
   rw [int.abs.sign_mul]
@@ -111,24 +111,24 @@ def int.mul.assoc { a b c: int } : a * b * c = a * (b * c) := by
 #print axioms int.mul.assoc
 
 def int.mul.right_comm (a b c: int) :
-  a * b * c = a * c * b := by rw [int.mul.assoc, @int.mul.comm b, int.mul.assoc]
+  a * b * c = a * c * b := by rw [int.mul.assoc, int.mul.comm b, int.mul.assoc]
 
 #print axioms int.mul.right_comm
 
 def int.mul.left_comm (a b c: int) :
-  a * b * c = c * b * a := by rw [@int.mul.comm _ c, @int.mul.comm a, int.mul.assoc]
+  a * b * c = c * b * a := by rw [int.mul.comm _ c, int.mul.comm a, int.mul.assoc]
 
 #print axioms int.mul.left_comm
 
 def int.mul.comm_left (a b c: int) :
   a * (b * c) = b * (a * c) := by
-  rw [←int.mul.assoc, ←int.mul.assoc, @int.mul.comm a]
+  rw [←int.mul.assoc, ←int.mul.assoc, int.mul.comm a]
 
 #print axioms int.mul.right_comm
 
 def int.mul.comm_right (a b c: int) :
   a * (b * c) = c * (b * a) := by
-  rw [@int.mul.comm _ c, @int.mul.comm a, int.mul.assoc]
+  rw [int.mul.comm _ c, int.mul.comm a, int.mul.assoc]
 
 #print axioms int.mul.comm_right
 
@@ -234,7 +234,7 @@ def int.mul.add_left { a b k: int } : (a + b) * k = a * k + b * k := by
 #print axioms int.mul.add_left
 
 def int.mul.add_right { a b k: int } : k * (a + b) = k * a + k * b := by
-  repeat rw [@int.mul.comm k]
+  repeat rw [int.mul.comm k]
   apply int.mul.add_left
 
 #print axioms int.mul.add_right

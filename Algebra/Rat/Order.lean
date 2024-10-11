@@ -47,7 +47,7 @@ instance rat.TotalOrderInst : TotalOrder rat where
       exact a.den_nz
     have : ∀a b c: int, a * b * c = a * c * b := by
       intros a b c
-      rw [int.mul.assoc, @int.mul.comm b, ←int.mul.assoc]
+      rw [int.mul.assoc, int.mul.comm b, ←int.mul.assoc]
     conv at bc in b.num * int.of_nat c.den * int.of_nat a.den => {
       rw [this]
     }
@@ -363,18 +363,18 @@ def fract.add.compare_strict { a b: fract } { o: Ordering } :
     clear aden_pos bden_pos cden_pos dden_pos
     repeat rw [←int.of_nat.pos]
     rw [int.mul.add_left, int.mul.add_left,
-      @int.mul.comm _ bnum, @int.mul.comm _ dnum]
+      int.mul.comm _ bnum, int.mul.comm _ dnum]
     repeat rw [int.mul.assoc]
     apply int.add.compare_strict
     rw [int.mul.comm_left (int.pos_succ bden), int.mul.comm_left (int.pos_succ dden),
-      @int.mul.comm (int.pos_succ dden)]
-    rw [←@int.mul.assoc anum, ←@int.mul.assoc cnum]
+      int.mul.comm (int.pos_succ dden)]
+    rw [←int.mul.assoc anum, ←int.mul.assoc cnum]
     rw [←int.mul.compare_left_pos]
     assumption
     trivial
     rw [int.mul.comm_right (int.pos_succ aden), int.mul.comm_right (int.pos_succ cden),
-      @int.mul.comm (int.pos_succ cden)]
-    rw [←@int.mul.assoc bnum, ←@int.mul.assoc dnum]
+      int.mul.comm (int.pos_succ cden)]
+    rw [←int.mul.assoc bnum, ←int.mul.assoc dnum]
     rw [←int.mul.compare_left_pos]
     assumption
     trivial
@@ -403,16 +403,16 @@ def fract.add.compare_left { a b k: fract } { o: Ordering } :
     rw [compare_def, order] at ab
     dsimp at ab
     rw [int.mul.add_left, int.mul.add_left,
-      @int.mul.comm _ anum, @int.mul.comm _ bnum,
+      int.mul.comm _ anum, int.mul.comm _ bnum,
       int.mul.assoc, int.mul.assoc, int.mul.assoc, int.mul.assoc,
       int.mul.comm_right (int.pos_succ kden),
       int.mul.comm_right (int.pos_succ kden),
-      @int.mul.comm (int.pos_succ kden) (int.pos_succ aden),
-      @int.mul.comm (int.pos_succ kden) (int.pos_succ bden),
+      int.mul.comm (int.pos_succ kden) (int.pos_succ aden),
+      int.mul.comm (int.pos_succ kden) (int.pos_succ bden),
       int.mul.comm_left (int.pos_succ bden) (int.pos_succ aden)]
     repeat rw [←int.mul.assoc]
     rw [←int.add.compare_right]
-    rw [int.mul.assoc, @int.mul.assoc _ _ (int.pos_succ _)]
+    rw [int.mul.assoc, int.mul.assoc _ _ (int.pos_succ _)]
     rw [←int.mul.compare_left_pos]
     assumption
     trivial
