@@ -512,7 +512,11 @@ instance rat.sub.inst : Sub rat := ⟨ rat.sub ⟩
 def rat.neg.def (r: rat) : -r = rat.mk (-r.num) r.den r.den_nz (by
   rw [int.abs.neg]
   exact r.is_reduced
-  ) := by rfl
+  ) := rfl
+
+#print axioms rat.neg.def
+
+def fract.neg.def (r: fract) : -r = fract.mk (-r.num) r.den r.den_nz := rfl
 
 #print axioms rat.neg.def
 
@@ -976,3 +980,87 @@ def rat.add.mul_right (a b k: rat) :
   (a + b) * k = a * k + b * k := by
   repeat rw [mul.comm _ k]
   apply rat.add.mul_left
+
+def fract.neg.congr (a b: fract) : a ≈ b -> -a ≈ -b := by
+  intro h
+  rw [neg.def, neg.def, equiv.def, equiv]
+  dsimp
+  rw [←int.mul.neg_left, ←int.mul.neg_left, h]
+
+def rat.neg.to_simple (a: rat) : (-a).to_simple = -a.to_simple := rfl
+def fract.neg.to_rat (a: fract) : (-a).to_rat = -a.to_rat := by
+  cases a with | mk n d d_pos =>
+  rw [rat.neg.def, neg.def]
+  unfold to_rat
+  dsimp
+  rw [int.neg.def]
+  unfold int.neg int.sign
+  cases n with
+  | zero => rfl
+  | pos_succ n =>
+    dsimp
+    congr 1
+    rw [int.abs.pos_succ, int.abs.neg_succ]
+    split <;> rfl
+  | neg_succ n =>
+    dsimp
+    congr 1
+    rw [int.abs.pos_succ, int.abs.neg_succ]
+    split <;> rfl
+
+def fract.neg.eq_mul_neg_one (a: fract) :
+  -a = -1 * a := by
+  rw [neg.def, mul.def, mul]
+  congr
+  have : num (-1) = -1 := rfl
+  rw [this, int.mul.neg_one_left]
+  erw [nat.one_mul]
+
+def rat.neg.eq_mul_neg_one (a: rat) :
+  -a = -1 * a := by
+  conv => {lhs; rw [←rat.to_simple_to_rat a]}
+  rw [←fract.neg.to_rat]
+  rw [fract.neg.eq_mul_neg_one]
+  rfl
+
+def rat.neg.to_simple_to_rat (a: rat) : -a = (-a.to_simple).to_rat := by
+  rw [←to_simple, rat.to_simple_to_rat]
+
+def rat.mul.neg_left (a b: rat) : (-a) * b = -(a * b) := by
+  rw [neg.eq_mul_neg_one, mul.assoc, ←neg.eq_mul_neg_one]
+
+def rat.mul.neg_right (a b: rat) : a * (-b) = -(a * b) := by
+  rw [mul.comm a, mul.comm a, neg_left]
+
+def rat.neg.zero : (-(0:rat)) = 0 := rfl
+
+def fract.mul.zero_left (a: fract) : 0 * a ≈ 0 := by
+  rw [mul.def, mul, equiv.def, equiv]
+  dsimp
+  erw [int.mul.zero_left, int.mul.zero_left, int.mul.zero_left]
+
+def rat.mul.zero_left (a: rat) : 0 * a = 0 := by
+  have : 0 = fract.to_rat 0 := rfl
+  rw [this]
+  apply eq_of_equiv
+  apply fract.mul.zero_left
+
+def rat.mul.zero_right (a: rat) : a * 0 = 0 := by
+  rw [mul.comm]
+  apply rat.mul.zero_left
+
+def fract.mul.one_left (a: fract) : 1 * a ≈ a := by
+  rw [mul.def, mul, equiv.def, equiv]
+  dsimp
+  erw [int.mul.one_left, nat.one_mul]
+
+def rat.mul.one_left (a: rat) : 1 * a = a := by
+  have : 1 = fract.to_rat 1 := rfl
+  rw [this]
+  conv => { rhs; rw [←to_simple_to_rat a] }
+  apply eq_of_equiv
+  apply fract.mul.one_left
+
+def rat.mul.one_right (a: rat) : a * 1 = a := by
+  rw [mul.comm]
+  apply rat.mul.one_left

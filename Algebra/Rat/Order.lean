@@ -64,6 +64,7 @@ instance rat.TotalOrderInst : TotalOrder rat where
     exact b.den_nz
 
 def fract.compare_def (a b: fract) : compare a b = order a b := rfl
+def rat.compare_def (a b: rat) : compare a b = order a b := rfl
 
 def rat.compare_of_fract { a b: fract } :
    compare a b = compare a.to_rat b.to_rat := by
@@ -635,16 +636,157 @@ def fract.mul.pos_left (k a b: fract) :
   erw [int.mul.zero_left, int.mul.one_right] at cmp
   assumption
 
-def rat.mul.pos_left (k a b: rat) :
+def rat.neg.swap_lt (a b: rat) :
+  a < b ->
+  -b < -a := by
+  intro h
+  apply TotalOrder.lt_of_compare
+  rw [neg.swap_cmp]
+  assumption
+
+def rat.mul.compare_pos_left (k a b: rat) :
   0 < k -> compare (k * a) (k * b) = compare a b := by
   intro k_pos
   erw [←rat.compare_of_fract]
   apply fract.mul.pos_left
   assumption
 
-def rat.mul.pos_right (k a b: rat) :
+def rat.mul.compare_pos_right (k a b: rat) :
   0 < k -> compare (a * k) (b * k) = compare a b := by
   intro k_pos
   rw [mul.comm _ k, mul.comm _ k]
-  apply mul.pos_left
+  apply mul.compare_pos_left
   assumption
+
+def rat.mul.compare_neg_left (k a b: rat) :
+  k < 0 -> compare (k * a) (k * b) = compare b a := by
+  intro k_neg
+  rw [←rat.neg_neg k]
+  repeat rw [neg_left (-_)]
+  rw [rat.neg.swap_cmp]
+  rw [rat.mul.compare_pos_left]
+  rw [←rat.neg.zero]
+  apply neg.swap_lt
+  assumption
+
+def rat.mul.compare_neg_right (k a b: rat) :
+  k < 0 -> compare (a * k) (b * k) = compare b a := by
+  intro k_neg
+  rw [mul.comm _ k, mul.comm _ k]
+  apply mul.compare_neg_left
+  assumption
+
+def rat.mul.pos_pos_is_pos (a b: rat) :
+  0 < a -> 0 < b -> 0 < a * b := by
+  intro a_pos b_pos
+  apply TotalOrder.lt_of_compare
+  rw [←mul.zero_left b, compare_pos_right]
+  assumption
+  assumption
+
+def rat.mul.neg_pos_is_neg (a b: rat) :
+  a < 0 -> 0 < b -> a * b < 0 := by
+  intro a_pos b_pos
+  apply TotalOrder.lt_of_compare
+  rw [←mul.zero_left b, compare_pos_right]
+  assumption
+  assumption
+
+def rat.mul.pos_neg_is_neg (a b: rat) :
+  0 < a -> b < 0 -> a * b < 0 := by
+  intro a_pos b_pos
+  apply TotalOrder.lt_of_compare
+  rw [←mul.zero_right a, compare_pos_left]
+  assumption
+  assumption
+
+def rat.mul.neg_neg_is_pos (a b: rat) :
+  a < 0 -> b < 0 -> 0 < a * b := by
+  intro a_neg b_neg
+  apply TotalOrder.lt_of_compare
+  rw [←mul.zero_right a, compare_neg_left]
+  assumption
+  assumption
+
+def rat.mul.lt_pos_left (a b k: rat) :
+  a < b -> 0 < k -> k * a < k * b := by
+  intro a_neg b_neg
+  apply TotalOrder.lt_of_compare
+  rw [compare_pos_left]
+  assumption
+  assumption
+
+def rat.mul.lt_neg_left (a b k: rat) :
+  a < b -> k < 0 -> k * b < k * a := by
+  intro a_neg b_neg
+  apply TotalOrder.lt_of_compare
+  rw [compare_neg_left]
+  assumption
+  assumption
+
+def rat.mul.le_pos_left (a b k: rat) :
+  a ≤ b -> 0 < k -> k * a ≤ k * b := by
+  intro a_neg b_neg
+  apply TotalOrder.le_of_compare
+  rw [compare_pos_left]
+  assumption
+  assumption
+
+def rat.mul.le_neg_left (a b k: rat) :
+  a ≤ b -> k < 0 -> k * b ≤ k * a := by
+  intro a_neg b_neg
+  apply TotalOrder.le_of_compare
+  rw [compare_neg_left]
+  assumption
+  assumption
+
+def rat.mul.lt_pos_right (a b k: rat) :
+  a < b -> 0 < k -> a * k < b * k := by
+  intro a_neg b_neg
+  apply TotalOrder.lt_of_compare
+  rw [compare_pos_right]
+  assumption
+  assumption
+
+def rat.mul.lt_neg_right (a b k: rat) :
+  a < b -> k < 0 -> b * k < a * k := by
+  intro a_neg b_neg
+  apply TotalOrder.lt_of_compare
+  rw [compare_neg_right]
+  assumption
+  assumption
+
+def rat.mul.le_pos_right (a b k: rat) :
+  a ≤ b -> 0 < k -> a * k ≤ b * k := by
+  intro a_neg b_neg
+  apply TotalOrder.le_of_compare
+  rw [compare_pos_right]
+  assumption
+  assumption
+
+def rat.mul.le_neg_right (a b k: rat) :
+  a ≤ b -> k < 0 -> b * k ≤ a * k := by
+  intro a_neg b_neg
+  apply TotalOrder.le_of_compare
+  rw [compare_neg_right]
+  assumption
+  assumption
+
+def rat.abs.not_gt (a: rat) :
+  ¬(0 > a.abs) := by
+  cases a with | mk n d d_pos red =>
+  rw [abs]
+  dsimp
+  intro h
+  replace h := TotalOrder.compare_of_gt h
+  rw [compare_def, order] at h
+  dsimp at h
+  erw [int.mul.zero_left, int.mul.one_right] at h
+  rw [int.of_nat.zero, int.of_nat.compare] at h
+  replace h := TotalOrder.gt_of_compare h
+  exact nat.not_lt_zero h
+
+def rat.abs.nonneg (a: rat) :
+  0 ≤ a.abs := by
+  apply TotalOrder.le_of_not_gt
+  apply rat.abs.not_gt
