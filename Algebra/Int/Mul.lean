@@ -425,3 +425,85 @@ def int.mul.compare_left_pos { a b k: int } :
       trivial
 
 #print axioms int.add.compare_left
+
+def int.abs.mul (a b: int) : int.abs (a * b) = int.abs a * int.abs b := by
+  cases a <;> cases b
+  any_goals rfl
+  all_goals rw [zero_eq, int.abs.zero, int.mul.zero_right, nat.mul_zero]
+  rfl; rfl
+
+def int.abs.inc_succ (a: int) : int.abs a.inc ≤ (int.abs a).succ := by
+  cases a
+  rfl
+  rfl
+  rename_i a
+  cases a
+  apply nat.zero_le
+  unfold inc
+  dsimp
+  rw [int.abs.neg_succ, int.abs.neg_succ]
+  apply nat.le_trans
+  apply nat.le_of_lt
+  apply nat.lt_succ_self
+  apply nat.le_of_lt
+  apply nat.lt_succ_self
+
+def int.abs.dec_succ (a: int) : int.abs a.dec ≤ (int.abs a).succ := by
+  rw [←int.abs.neg, int.neg.dec]
+  apply TotalOrder.le_trans
+  apply int.abs.inc_succ
+  rw [int.abs.neg]
+
+def int.abs.tri (a b: int) : int.abs (a + b) ≤ int.abs a + int.abs b := by
+  have : ∀a b: nat, (int.pos_succ a + int.neg_succ b).abs ≤ a.succ + b.succ := by
+    clear a b
+    intro a b
+    rw [int.add.def, add]
+    dsimp
+    rw [int.sub_nat.dec]
+    induction b generalizing a with
+    | zero =>
+      rw [int.sub_nat, nat.one_eq, nat.add_one]
+      cases a
+      decide
+      rename_i a
+      rw [int.dec]
+      dsimp
+      rw [int.abs.pos_succ]
+      apply nat.le_trans
+      apply nat.le_of_lt
+      apply nat.lt_succ_self
+      apply nat.le_of_lt
+      apply nat.lt_succ_self
+    | succ b ih =>
+      rw [sub_nat, sub_nat.dec]
+      apply TotalOrder.le_trans
+      apply int.abs.dec_succ
+      rw [nat.add_succ]
+      apply nat.succ_le_succ
+      apply ih
+
+  cases a <;> cases b
+  rfl
+  any_goals rw [int.zero_eq]
+  any_goals rw [int.abs.zero]
+  any_goals rw [int.add.zero_left]
+  any_goals rw [int.add.zero_right]
+  any_goals rw [nat.zero_add]
+  any_goals rw [nat.add_zero]
+  any_goals repeat rw [int.abs.pos_succ]
+  any_goals repeat rw [int.abs.neg_succ]
+  · rw [int.add.def, add]
+    dsimp
+    unfold inc
+    dsimp
+    rw [int.add_nat.pos_succ, int.abs.pos_succ, nat.add_succ]
+  · apply this
+  · rw [int.add.comm, nat.add.comm]
+    apply this
+  · rw [←int.abs.neg, int.add.neg, int.neg.neg_succ, int.neg.neg_succ]
+    rw [int.add.def, add]
+    dsimp
+    unfold inc
+    dsimp
+    rw [int.add_nat.pos_succ, int.abs.pos_succ, nat.add_succ]

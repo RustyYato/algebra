@@ -836,7 +836,6 @@ def rat.add.midpoint (a b: rat) :
         assumption
         trivial
     · rw [div.def, ←add.mul_right, ←mul_two, mul.assoc, mul.inv_right, mul.one_right]
-      apply TotalOrder.le_refl
       trivial
   · apply TotalOrder.lt_of_lt_of_le
     · apply add.lt_of_lt_of_le
@@ -847,5 +846,57 @@ def rat.add.midpoint (a b: rat) :
         trivial
       · apply TotalOrder.le_refl
     · rw [div.def, ←add.mul_right, ←mul_two, mul.assoc, mul.inv_right, mul.one_right]
-      apply TotalOrder.le_refl
       trivial
+
+def fract.abs.tri (a b: fract) : fract.abs (a + b) ≤ fract.abs a + fract.abs b := by
+  cases a with | mk anum aden aden_pos =>
+  cases b with | mk bnum bden bden_pos =>
+  repeat rw [add.def]
+  repeat rw [abs]
+  dsimp
+  unfold LE.le instLEFract compare OrdInst order
+  dsimp
+  have : 0 < int.of_nat aden := by cases aden; contradiction; rfl
+  have : 0 < int.of_nat bden := by cases bden; contradiction; rfl
+  suffices compare (int.of_nat (anum * int.of_nat bden + int.of_nat aden * bnum).abs * int.of_nat (aden * bden))
+      ((int.of_nat anum.abs * int.of_nat bden + int.of_nat aden * int.of_nat bnum.abs) * int.of_nat (aden * bden)) ≠ Ordering.gt from by
+        cases h:compare (int.of_nat (anum * int.of_nat bden + int.of_nat aden * bnum).abs * int.of_nat (aden * bden)) ((int.of_nat anum.abs * int.of_nat bden + int.of_nat aden * int.of_nat bnum.abs) * int.of_nat (aden * bden))
+        exact Or.inl rfl
+        exact Or.inr rfl
+        contradiction
+  intro h
+  rw [←int.mul.compare_left_pos] at h
+  · cases anum <;> cases bnum
+    all_goals repeat (
+      first|
+      erw [int.zero_eq] at h|
+      erw [int.mul.zero_left] at h|
+      erw [int.mul.zero_right] at h|
+      rw [int.add.zero_left] at h|
+      rw [int.add.zero_right] at h|
+      rw [int.abs.zero] at h
+    )
+    · contradiction
+    any_goals rw [int.abs.mul] at h
+    any_goals repeat rw [int.abs.of_nat] at h
+    any_goals repeat rw [int.abs.pos_succ] at h
+    any_goals repeat rw [int.abs.neg_succ] at h
+    any_goals rw [←int.mul.lift_nat] at h
+    any_goals rw [int.pos_succ.of_nat] at h
+    any_goals rw [TotalOrder.compare_eq_refl] at h
+    any_goals contradiction
+    all_goals rename_i a b
+    all_goals rw [int.pos_succ.of_nat] at h
+    ·
+      sorry
+    · sorry
+    · sorry
+    · sorry
+  · rw [←int.mul.lift_nat]
+    apply int.mul.pos_pos_is_pos <;> assumption
+
+def rat.abs.tri (a b: rat) : rat.abs (a + b) ≤ rat.abs a + rat.abs b := by
+  rw [add.def, add.def, fract.abs.to_rat]
+  apply TotalOrder.le_of_compare
+  erw [←compare_of_fract]
+  apply fract.abs.tri

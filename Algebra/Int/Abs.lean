@@ -62,7 +62,7 @@ def int.abs.zero : int.abs 0 = 0 := rfl
 def int.abs.pos_succ : int.abs (.pos_succ a) = a.succ := rfl
 def int.abs.neg_succ : int.abs (.neg_succ a) = a.succ := rfl
 
-def int.abs.of_nat { a: nat } : int.abs a = a := by
+def int.abs.of_nat (a: nat) : int.abs a = a := by
   cases a <;> rfl
 
 #print axioms int.abs.of_nat

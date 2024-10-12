@@ -357,6 +357,15 @@ def int.sub.dec_right { a b : int } : a - b.dec = (a - b).inc := by
 
 #print axioms int.sub.dec_right
 
+def int.add_nat.pos_succ { a b: nat } : (int.pos_succ a).add_nat b = int.pos_succ (a + b) := by
+  induction b generalizing a with
+  | zero => erw [nat.zero_eq, nat.add_zero]; rfl
+  | succ b ih =>
+    unfold add_nat
+    rw [add_nat.inc, ih, int.inc.pos_succ, nat.add_succ]
+
+#print axioms int.add_nat.pos_succ
+
 def int.add_nat.comm_pos { a b: nat } : (int.pos_succ a).add_nat b = (int.pos_succ b).add_nat a := by
   induction b generalizing a with
   | zero =>
@@ -1182,3 +1191,19 @@ def int.sub.le { a b c d: int } :
     exact int.neg.swap_le.mp cd
 
 #print axioms int.sub.le
+
+def int.neg.inc (a: int) : -a.inc = (-a).dec := by
+  cases a
+  rfl
+  rename_i a
+  cases a <;> rfl
+  rename_i a
+  cases a <;> rfl
+
+def int.neg.dec (a: int) : -a.dec = (-a).inc := by
+  cases a
+  rfl
+  rename_i a
+  cases a <;> rfl
+  rename_i a
+  cases a <;> rfl

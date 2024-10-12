@@ -702,6 +702,8 @@ def rat.add.cancel_right (a b k: rat) : k + a = k + b -> a = b := by
 
 #print axioms rat.add.cancel_right
 
+def fract.abs (a: fract) : fract := fract.mk a.num.abs a.den a.den_nz
+
 def rat.abs (a: rat) : rat := rat.mk a.num.abs a.den a.den_nz <| by
   rw [int.abs.of_nat]
   exact a.is_reduced
@@ -1069,3 +1071,151 @@ def rat.mul_two (a: rat) : a * 2 = a + a := by
   have : (2: rat) = 1 + 1 := rfl
   rw [this]
   rw [add.mul_left, mul.one_right]
+
+def rat.sub.def (a b: rat) : a - b = a + -b := rfl
+
+def fract.add.neg_self (a: fract) : a + -a ≈ 0 := by
+  cases a with | mk n d d_pos =>
+  rw [add.def, neg.def]
+  dsimp
+  rw [equiv.def, equiv]
+  dsimp
+  erw [int.mul.zero_left, int.mul.one_right, int.mul.comm, ←int.mul.neg_right, int.add.neg_self]
+
+def rat.add.neg_self (a: rat) : a + -a = 0 := by
+  have : 0 = fract.to_rat 0 := rfl
+  rw [this]
+  apply eq_of_equiv
+  rw [rat.neg.to_simple]
+  apply fract.add.neg_self
+
+def rat.sub.self (a: rat) : a - a = 0 := by rw [sub.def, add.neg_self]
+
+def rat.abs.zero : rat.abs 0 = 0 := rfl
+
+def rat.abs.neg (a: rat) : rat.abs (-a) = rat.abs a := by
+  unfold abs
+  rw [neg.def]
+  dsimp
+  congr 2
+  rw [int.abs.neg]
+
+def rat.neg.add (a b: rat) : -(a + b) = -a + -b := by
+  rw [neg.eq_mul_neg_one, add.mul_left]
+  repeat rw [←neg.eq_mul_neg_one]
+
+def rat.neg.sub (a b: rat) : -(a - b) = b - a := by
+  rw [sub.def, neg.add, neg_neg, add.comm]
+  rfl
+
+def rat.abs.sub_symm (a b: rat) : rat.abs (a - b) = rat.abs (b - a) := by
+  rw [←rat.abs.neg (a - b), neg.sub]
+
+def fract.abs.to_rat (a: fract) : a.to_rat.abs = a.abs.to_rat := by
+  cases a with | mk n d d_pos =>
+  unfold abs rat.abs to_rat
+  dsimp
+  cases n with
+  | zero => rfl
+  | pos_succ n =>
+    congr 1
+    rw [int.sign.pos]
+    dsimp
+    split
+    rename_i h
+    rw [int.abs.pos_succ] at h
+    cases nat.div.of_eq_zero h <;> rename_i h
+    · cases nat.gcd.eq_zero h
+      contradiction
+    · have := nat.dvd.le nat.zero_lt_succ (nat.gcd.dvd_left n.succ d)
+      have := TotalOrder.not_le_of_lt h
+      contradiction
+    rename_i m n' h
+    clear m
+    repeat first|rw [int.abs.pos_succ]|rw [int.pos_succ.of_nat]
+    rw [int.sign.pos]
+    dsimp
+    split
+    rename_i h
+    cases nat.div.of_eq_zero h <;> rename_i h
+    · cases nat.gcd.eq_zero h
+      contradiction
+    · have := nat.dvd.le nat.zero_lt_succ (nat.gcd.dvd_left n.succ d)
+      have := TotalOrder.not_le_of_lt h
+      contradiction
+    congr
+    rename_i m n'' g
+    clear m
+    apply nat.succ.inj
+    rw [←g, ←h]
+    rw [int.abs.pos_succ]
+  | neg_succ n =>
+    congr 1
+    rw [int.sign.neg]
+    dsimp
+    split
+    rename_i h
+    rw [int.abs.neg_succ] at h
+    cases nat.div.of_eq_zero h <;> rename_i h
+    · cases nat.gcd.eq_zero h
+      contradiction
+    · have := nat.dvd.le nat.zero_lt_succ (nat.gcd.dvd_left n.succ d)
+      have := TotalOrder.not_le_of_lt h
+      contradiction
+    rename_i m n' h
+    clear m
+    repeat first|rw [int.abs.pos_succ]|rw [int.pos_succ.of_nat]
+    repeat rw [int.abs.neg_succ]
+    repeat rw [int.pos_succ.of_nat]
+    rw [int.sign.pos]
+    dsimp
+    split
+    rename_i h
+    cases nat.div.of_eq_zero h <;> rename_i h
+    · cases nat.gcd.eq_zero h
+      contradiction
+    · have := nat.dvd.le nat.zero_lt_succ (nat.gcd.dvd_left n.succ d)
+      have := TotalOrder.not_le_of_lt h
+      contradiction
+    congr
+    rename_i m n'' g
+    clear m
+    apply nat.succ.inj
+    rw [←g, ←h]
+    rfl
+
+def fract.abs.mul (a b: fract) : fract.abs (a * b) = fract.abs a * fract.abs b := by
+  cases a with | mk anum aden aden_pos =>
+  cases b with | mk bnum bden bden_pos =>
+  unfold abs
+  rw [mul.def, mul.def]
+  unfold mul
+  dsimp
+  congr
+  rw [int.abs.mul, int.mul.lift_nat]
+
+def fract.abs.mul' (a b: fract) : fract.abs (a * b) ≈ fract.abs a * fract.abs b := by
+  cases a with | mk anum aden aden_pos =>
+  cases b with | mk bnum bden bden_pos =>
+  rw [fract.abs.mul]
+  rfl
+
+def fract.abs.congr (a b: fract) : a ≈ b -> fract.abs a ≈ fract.abs b := by
+  cases a with | mk anum aden aden_pos =>
+  cases b with | mk bnum bden bden_pos =>
+  rw [equiv.def, equiv.def]
+  unfold equiv abs
+  dsimp
+  intro h
+  rw [←int.abs.of_nat bden, int.mul.lift_nat, ←int.abs.mul]
+  rw [←int.abs.of_nat aden, int.mul.lift_nat, ←int.abs.mul]
+  rw [h]
+
+def rat.abs.mul (a b: rat) : rat.abs (a * b) = rat.abs a * rat.abs b := by
+  rw [←to_simple_to_rat (a * b)]
+  repeat rw [fract.abs.to_rat]
+  apply eq_of_equiv
+  apply fract.equiv.trans
+  apply fract.abs.congr
+  apply mul.to_simple a b
+  apply fract.abs.mul'
