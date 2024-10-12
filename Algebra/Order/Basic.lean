@@ -135,6 +135,7 @@ def TotalOrder.lt_irrefl
 
 #print axioms TotalOrder.lt_irrefl
 
+@[refl]
 def TotalOrder.le_refl
   [Ord α] [TotalOrder α]
   { a: α } : a ≤ a := Or.inr <| compare_eq_refl a

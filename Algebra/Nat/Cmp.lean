@@ -262,9 +262,9 @@ def nat.le_antisymm { a b: nat } : a ≤ b -> b ≤ a -> a = b := by intros; app
 
 #print axioms nat.le_antisymm
 
-def nat.not_lt_and_ge { a b: nat } : a < b -> a ≥ b -> False := by apply TotalOrder.not_lt_and_ge
+def nat.not_lt_of_ge { a b: nat } : a < b -> a ≥ b -> False := by apply TotalOrder.not_lt_and_ge
 
-#print axioms nat.not_lt_and_ge
+#print axioms nat.not_lt_of_ge
 
 def nat.lt_trans { a b c: nat } : a < b -> b < c -> a < c := TotalOrder.lt_trans
 def nat.le_trans { a b c: nat } : a ≤ b -> b ≤ c -> a ≤ c := TotalOrder.le_trans
@@ -285,7 +285,7 @@ def nat.lt_or_ge_dec.pick_lt {a b: nat} : (a_lt_b: a < b) -> nat.lt_or_ge_dec a 
   match a.lt_or_ge_dec b with
   | .Lt a_lt_b => rfl
   | .Ge a_ge_b =>
-    have := nat.not_lt_and_ge a_lt_b a_ge_b
+    have := nat.not_lt_of_ge a_lt_b a_ge_b
     contradiction
 
 #print axioms nat.lt_or_ge_dec.pick_lt
@@ -294,7 +294,7 @@ def nat.lt_or_ge_dec.pick_ge {a b: nat} : (a_ge_b: a ≥ b) -> nat.lt_or_ge_dec 
   intro a_ge_b
   match a.lt_or_ge_dec b with
   | .Lt a_lt_b =>
-    have := nat.not_lt_and_ge a_lt_b a_ge_b
+    have := nat.not_lt_of_ge a_lt_b a_ge_b
     contradiction
   | .Ge a_ge_b => rfl
 

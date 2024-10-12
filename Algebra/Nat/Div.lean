@@ -530,7 +530,7 @@ def nat.div.le_div_if_mul_le (a b: nat) (b_pos: 0 < b) : ∀c, b * c ≤ a -> c 
       | nat.succ c =>
         rw [nat.mul_succ] at h
         have := nat.le_trans (nat.add.le_left _ _) h
-        have := nat.not_lt_and_ge b_pos this
+        have := nat.not_lt_of_ge b_pos this
         contradiction
     apply nat.lt_of_le_of_lt _ b_pos
     apply nat.zero_le
@@ -584,7 +584,6 @@ def nat.div.mul_le { a b: nat } : b * (a / b) ≤ a := by
   apply flip nat.le_trans
   apply nat.add.le_left
   rw [mul.comm]
-  apply nat.le_refl
 
 def nat.div_div { a b c: nat} : a / b / c = a / (b * c) := by
   cases b with

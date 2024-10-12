@@ -54,9 +54,7 @@ def nat.add.assoc (a b c: nat) : (a + b) + c = a + (b + c) := by
 
 def nat.add.le_left (a b: nat) : a ≤ a + b := by
   induction b with
-  | zero =>
-    rw [zero_eq, add_zero]
-    apply nat.le_refl
+  | zero => rw [zero_eq, add_zero]
   | succ b ih =>
     rw [add_succ]
     apply nat.le_trans

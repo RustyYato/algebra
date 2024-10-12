@@ -7,7 +7,7 @@ structure range (min max: nat) where
 
 def range.empty : range a a -> False := by
   intro r
-  apply nat.not_lt_and_ge r.value_lt_max
+  apply nat.not_lt_of_ge r.value_lt_max
   exact r.min_le_value
 
 def range.for_value (value: nat) : range value value.succ := by

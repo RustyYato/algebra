@@ -119,7 +119,7 @@ instance nat.dvd.dec (a b: nat) : Decidable (a ∣ b) := by
     have := nat.mul.ge k.succ a.succ rfl
     rw [mul.comm] at this
     rw [←ak_eq_b] at b_lt_k
-    exact not_lt_and_ge b_lt_k this
+    exact nat.not_lt_of_ge b_lt_k this
     )
   match this with
   | .Found h => exact Decidable.isTrue h
@@ -286,7 +286,6 @@ def nat.dvd.mod { a b c: nat } : c ∣ a -> c ∣ b -> c ∣ (a % b) := by
     }
     rw [add.comm, ←add_sub, mul.comm, sub.refl, add_zero]
     rw [mul.comm]
-    apply TotalOrder.le_refl
 
 #print axioms nat.dvd.mod
 
@@ -376,7 +375,7 @@ def nat.div.compare_strict (a b c: nat) :
     | succ a =>
       have := fun h => nat.dvd.le h c_dvd_a
       have := this nat.zero_lt_succ
-      have := nat.not_lt_and_ge a_lt_c this
+      have := nat.not_lt_of_ge a_lt_c this
       contradiction
     | zero =>
       rw [nat.zero_eq, nat.zero_div]
@@ -386,7 +385,7 @@ def nat.div.compare_strict (a b c: nat) :
         | succ b =>
           have := fun h => nat.dvd.le h c_dvd_b
           have := this nat.zero_lt_succ
-          have := nat.not_lt_and_ge (by assumption) this
+          have := nat.not_lt_of_ge (by assumption) this
           contradiction
         | zero =>
           rfl
