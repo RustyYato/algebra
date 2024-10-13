@@ -492,3 +492,146 @@ instance : Max α where
   max a b := if a ≤ b then b else a
 instance : Min α where
   min a b := if a ≤ b then a else b
+
+def max.def (a b: α) : max a b = if a ≤ b then b else a := rfl
+def min.def (a b: α) : min a b = if a ≤ b then a else b := rfl
+
+def max.ge_left (a b: α) : a ≤ max a b := by
+  rw [max.def]
+  split
+  assumption
+  rfl
+
+def max.ge_right (a b: α) : b ≤ max a b := by
+  rw [max.def]
+  split
+  rfl
+  apply le_of_lt
+  apply lt_of_not_ge
+  assumption
+
+def min.le_left (a b: α) : min a b ≤ a := by
+  rw [min.def]
+  split
+  rfl
+  apply le_of_lt
+  apply lt_of_not_ge
+  assumption
+
+def min.le_right (a b: α) : min a b ≤ b := by
+  rw [min.def]
+  split
+  assumption
+  rfl
+
+def max.ge (a b k: α) : k ≤ a ∨ k ≤ b -> k ≤ max a b := by
+  intro kab
+  rw [max.def]
+  split
+  cases kab
+  apply le_trans <;> assumption
+  assumption
+  cases kab
+  assumption
+  apply le_trans
+  assumption
+  apply le_of_lt
+  apply lt_of_not_ge
+  assumption
+
+def max.le (a b k: α) : a ≤ k -> b ≤ k -> max a b ≤ k := by
+  intro ka kb
+  rw [max.def]
+  split <;> assumption
+
+def min.ge (a b k: α) : k ≤ a -> k ≤ b -> k ≤ min a b := by
+  intro ka kb
+  rw [min.def]
+  split <;> assumption
+
+def min.le (a b k: α) : a ≤ k ∨ b ≤ k -> min a b ≤ k := by
+  intro kab
+  rw [min.def]
+  split
+  cases kab
+  assumption
+  apply le_trans <;> assumption
+  cases kab
+  apply le_trans
+  apply le_of_lt
+  apply lt_of_not_ge
+  repeat assumption
+
+def max.eq_left_or_right (a b: α) : max a b = a ∨ max a b = b := by
+  rw [max.def]
+  split
+  exact Or.inr rfl
+  exact Or.inl rfl
+
+def min.eq_left_or_right (a b: α) : min a b = a ∨ min a b = b := by
+  rw [min.def]
+  split
+  exact Or.inl rfl
+  exact Or.inr rfl
+
+def min.le_max (a b: α) : min a b ≤ max a b := by
+  cases min.eq_left_or_right a b <;> (rename_i h; rw [h])
+  apply max.ge_left
+  apply max.ge_right
+
+def max.comm (a b: α) : max a b = max b a := by
+  apply le_antisymm
+  apply max.le
+  apply max.ge_right
+  apply max.ge_left
+  apply max.le
+  apply max.ge_right
+  apply max.ge_left
+
+def min.comm (a b: α) : min a b = min b a := by
+  apply le_antisymm
+  apply min.ge
+  apply min.le_right
+  apply min.le_left
+  apply min.ge
+  apply min.le_right
+  apply min.le_left
+
+def max.assoc (a b c: α) : max (max a b) c = max a (max b c) := by
+  apply le_antisymm
+  apply max.le
+  apply max.le
+  apply max.ge_left
+  apply max.ge
+  apply Or.inr
+  apply max.ge_left
+  apply max.ge
+  apply Or.inr
+  apply max.ge_right
+  apply max.le
+  apply max.ge
+  apply Or.inl
+  apply max.ge_left
+  apply max.le
+  apply max.ge
+  apply Or.inl
+  apply max.ge_right
+  apply max.ge_right
+
+def max.of_ge_right (a b: α) : a ≤ b -> max a b = b := by
+  intro h
+  rw [max.def, if_pos h]
+
+def max.of_ge_left (a b: α) : b ≤ a -> max a b = a := by
+  intro h
+  rw [max.comm]
+  exact max.of_ge_right _ _ h
+
+def min.of_le_left (a b: α) : a ≤ b -> min a b = a := by
+  intro h
+  rw [min.def, if_pos h]
+
+def min.of_le_right (a b: α) : b ≤ a -> min a b = b := by
+  intro h
+  rw [min.comm]
+  exact min.of_le_left _ _ h
