@@ -32,4 +32,12 @@ def CauchySeq.Equivalence : Equivalence Equiv where
   trans := by
     intro x y z xy yz
     intro ε ε_pos
+    have ε_half_pos : 0 < ε / 2 := by
+      rw [rat.div.def]
+      apply rat.mul.pos_pos_is_pos
+      assumption
+      trivial
+    have ⟨ nxy, prfxy ⟩  := xy (ε / 2) ε_half_pos
+    have ⟨ nyz, prfyz ⟩  := yz (ε / 2) ε_half_pos
+    exists max nxy nyz
     sorry

@@ -86,3 +86,7 @@ def int.of_nat.compare (a b: nat) : compare (int.of_nat a) (int.of_nat b) = comp
     | succ b =>
       rw [←int.of_nat.pos, ←int.of_nat.pos]
       rfl
+
+def int.lt.pos_nat (a: nat) : 0 < a -> 0 < int.of_nat a := by
+  intro h
+  cases a <;> trivial

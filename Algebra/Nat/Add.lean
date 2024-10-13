@@ -103,6 +103,19 @@ def nat.add.compare_right (a b k: nat) : compare (a + k) (b + k) = compare a b :
 
 #print axioms nat.add.compare_right
 
+def nat.add.compare_both (a b c d: nat) (o: Ordering) :
+  compare a c = o ->
+  compare b d = o ->
+  compare (a + b) (c + d) = o := by
+  intro h g
+  apply TotalOrder.compare_transitive
+  rw [compare_left]
+  assumption
+  rw [compare_right]
+  assumption
+
+#print axioms nat.add.compare_both
+
 def nat.add.lt_right_nz (a b: nat) : 0 < b -> a < a + b := by
   intro zero_lt_b
   induction b with

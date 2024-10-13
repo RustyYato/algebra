@@ -469,3 +469,8 @@ def TotalOrder.compare_or_eq_of_le
   apply Or.inl; assumption
   apply Or.inr
   assumption
+
+instance [Ord α] [TotalOrder α] : Max α where
+  max a b := if a ≤ b then b else a
+instance [Ord α] [TotalOrder α] : Min α where
+  min a b := if a ≤ b then a else b

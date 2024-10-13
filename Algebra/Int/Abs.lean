@@ -75,3 +75,10 @@ def int.abs.neg_of_nat { a: nat } : int.abs (-a) = a := by
 def int.abs.neg { a: int } : int.abs (-a) = a.abs := by cases a <;> rfl
 
 #print axioms int.abs.neg
+
+def int.abs.of_nonneg (a: int) : 0 ≤ a -> int.abs a = a := by
+  intro h
+  cases a
+  rfl
+  rfl
+  cases h <;> contradiction

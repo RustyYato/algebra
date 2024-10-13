@@ -342,3 +342,17 @@ def nat.mul.lt (a b c d: nat) : a < c -> b < d -> a * b < c * d := by
   assumption
 
 #print axioms nat.mul.lt
+
+def nat.mul.compare_left_pos (a b k: nat) : 0 < k -> compare (a * k) (b * k) = compare a b := by
+  intro h
+  induction k with
+  | zero => contradiction
+  | succ k ih =>
+    cases k
+    rw [nat.one_eq, mul_one, mul_one]
+    rename_i k
+    rw [mul_succ a, mul_succ b]
+    apply add.compare_both
+    rfl
+    apply ih
+    trivial

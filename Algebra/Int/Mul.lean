@@ -507,3 +507,46 @@ def int.abs.tri (a b: int) : int.abs (a + b) ≤ int.abs a + int.abs b := by
     unfold inc
     dsimp
     rw [int.add_nat.pos_succ, int.abs.pos_succ, nat.add_succ]
+
+def int.abs.tri_lt' (a b: nat) :
+(int.pos_succ a + int.neg_succ b).abs < (int.pos_succ a).abs + (int.neg_succ b).abs := by
+rw [int.add.def, int.add]
+dsimp
+rw [int.sub_nat.dec]
+induction b with
+| zero =>
+  rw [int.sub_nat]
+  cases a
+  trivial
+  rw [int.dec]
+  dsimp
+  rename_i a
+  rw [int.abs.pos_succ, int.abs.pos_succ, int.abs.neg_succ]
+  rw [nat.one_eq, nat.add_one]
+  apply nat.lt_trans
+  apply nat.lt_succ_self
+  apply nat.lt_succ_self
+| succ b ih =>
+  rw [int.sub_nat, int.sub_nat.dec]
+  apply TotalOrder.lt_of_le_of_lt
+  apply int.abs.dec_succ
+  apply TotalOrder.lt_of_lt_of_le
+  apply nat.succ_lt_succ
+  apply ih
+  clear ih
+  rw [int.abs.pos_succ, int.abs.neg_succ, int.abs.neg_succ, nat.add_succ _ b.succ]
+
+def int.abs.tri_lt (a b: int) :
+  (0 < a ∧ b < 0) ∨ (a < 0 ∧ 0 < b) ->
+  int.abs (a + b) < int.abs a + int.abs b := by
+  intro h
+  cases a <;> cases b
+  all_goals (
+    cases h <;> rename_i h
+    <;> cases h <;> rename_i l r
+  )
+  any_goals contradiction
+  all_goals (rename_i a b; clear l r)
+  apply int.abs.tri_lt'
+  rw [int.add.comm, nat.add.comm]
+  apply int.abs.tri_lt'
