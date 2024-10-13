@@ -310,8 +310,7 @@ def lt_of_lt_of_le
 
 #print axioms lt_of_lt_of_le
 
-def lt_of_le_of_lt
- :
+def lt_of_le_of_lt:
   ∀{ a b c: α }, a ≤ b -> b < c -> a < c := by
   intro a b c a_le_b b_lt_c
   cases a_le_b with
@@ -320,8 +319,7 @@ def lt_of_le_of_lt
 
 #print axioms lt_of_lt_of_le
 
-def le_antisymm
- :
+def le_antisymm:
   ∀{ a b: α }, a ≤ b -> b ≤ a -> a = b := by
   intro a b a_le_b b_le_a
   cases a_le_b with
@@ -334,8 +332,7 @@ def le_antisymm
 
 #print axioms le_antisymm
 
-def lt_antisymm
- :
+def lt_antisymm:
   ∀{ a b: α }, a < b -> b < a -> False := by
   intro a b a_lt_b b_lt_a
   exact lt_irrefl <| lt_trans a_lt_b b_lt_a

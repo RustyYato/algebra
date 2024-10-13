@@ -1247,3 +1247,51 @@ def rat.add.zero_left (a: rat) : 0 + a = a := by
 def rat.add.zero_right (a: rat) : a + 0 = a := by
   rw [add.comm]
   apply rat.add.zero_left
+
+def rat.add.right_comm (a b c: rat) :
+  a + b + c = a + c + b := by rw [rat.add.assoc, rat.add.comm b, rat.add.assoc]
+
+#print axioms rat.add.right_comm
+
+def rat.add.left_comm (a b c: rat) :
+  a + b + c = c + b + a := by rw [rat.add.comm _ c, rat.add.comm a, rat.add.assoc]
+
+#print axioms rat.add.left_comm
+
+def rat.add.comm_left (a b c: rat) :
+  a + (b + c) = b + (a + c) := by
+  rw [←rat.add.assoc, ←rat.add.assoc, rat.add.comm a]
+
+#print axioms rat.add.right_comm
+
+def rat.add.comm_right (a b c: rat) :
+  a + (b + c) = c + (b + a) := by
+  rw [rat.add.comm _ c, rat.add.comm a, rat.add.assoc]
+
+#print axioms rat.add.comm_right
+
+def rat.mul.right_comm (a b c: rat) :
+  a * b * c = a * c * b := by rw [rat.mul.assoc, rat.mul.comm b, rat.mul.assoc]
+
+#print axioms rat.mul.right_comm
+
+def rat.mul.left_comm (a b c: rat) :
+  a * b * c = c * b * a := by rw [rat.mul.comm _ c, rat.mul.comm a, rat.mul.assoc]
+
+#print axioms rat.mul.left_comm
+
+def rat.mul.comm_left (a b c: rat) :
+  a * (b * c) = b * (a * c) := by
+  rw [←rat.mul.assoc, ←rat.mul.assoc, rat.mul.comm a]
+
+#print axioms rat.mul.right_comm
+
+def rat.mul.comm_right (a b c: rat) :
+  a * (b * c) = c * (b * a) := by
+  rw [rat.mul.comm _ c, rat.mul.comm a, rat.mul.assoc]
+
+#print axioms rat.mul.comm_right
+
+def rat.sub.add_cancel (a b: rat) :
+  a - b + b = a := by
+  rw [rat.sub.def, rat.add.assoc, rat.add.comm _ b, ←rat.sub.def, rat.sub.self, rat.add.zero_right]

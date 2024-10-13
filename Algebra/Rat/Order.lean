@@ -647,6 +647,17 @@ def rat.neg.swap_lt (a b: rat) :
   rw [neg.swap_cmp]
   assumption
 
+def rat.neg.swap_le (a b: rat) :
+  a ≤ b ->
+  -b ≤ -a := by
+  intro h
+  cases lt_or_eq_of_le h
+  apply le_of_lt
+  apply rat.neg.swap_lt
+  assumption
+  subst b
+  rfl
+
 def rat.mul.compare_pos_left (k a b: rat) :
   0 < k -> compare (k * a) (k * b) = compare a b := by
   intro k_pos
@@ -1082,3 +1093,45 @@ def rat.mul.compare_left_pos (a b k: rat) : 0 < k ->
   assumption
   apply mul.to_simple
   apply mul.to_simple
+
+def rat.abs.def (a: rat) : a.abs = if 0 ≤ a then a else -a := by
+  cases a with | mk n d d_pos red =>
+  unfold abs int.abs
+  cases n <;> dsimp
+  rw [if_pos]
+  rfl
+  apply le_of_eq
+  apply eq_of_equiv'
+  unfold to_simple
+  rw [fract.equiv.def, fract.equiv]
+  dsimp
+  erw [int.mul.zero_left, int.mul.one_right]
+  rfl
+  rw [if_pos]
+  rfl
+  apply le_of_lt
+  apply lt_of_compare
+  rw [compare_def, order]
+  erw [int.mul.zero_left, int.mul.one_right]
+  trivial
+  rw [if_neg]
+  rfl
+  apply not_le_of_lt
+  apply lt_of_compare
+  rw [compare_def, order]
+  erw [int.mul.zero_left, int.mul.one_right]
+  trivial
+
+def rat.abs.eq_max (a: rat) : a.abs = max a (-a) := by
+  rw [abs.def]
+  split <;> rename_i h
+  rw [max.of_ge_left]
+  have := rat.neg.swap_le _ _ h
+  rw [rat.neg.zero] at this
+  apply le_trans <;> assumption
+  rw [max.of_ge_right]
+  have := le_of_lt (lt_of_not_ge h)
+  apply le_trans this
+  rw [←rat.neg.zero]
+  apply rat.neg.swap_le
+  assumption

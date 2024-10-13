@@ -140,7 +140,7 @@ def nat.succ_le_succ { a b: nat } : a ≤ b -> a.succ ≤ b.succ := id
 
 #print axioms nat.succ_le_succ
 
-def le_of_lt_succ { a b: nat } : a < b.succ -> a ≤ b := by
+def nat.le_of_lt_succ { a b: nat } : a < b.succ -> a ≤ b := by
   intro a_lt_b_succ
   induction a generalizing b with
   | zero => apply nat.zero_le
@@ -153,7 +153,7 @@ def le_of_lt_succ { a b: nat } : a < b.succ -> a ≤ b := by
       apply ih
       assumption
 
-#print axioms le_of_lt_succ
+#print axioms nat.le_of_lt_succ
 
 def nat.lt_succ_of_le { a b: nat } : a ≤ b -> a < b.succ := by
   intro a_le_b
@@ -168,7 +168,7 @@ def nat.lt_succ_of_le { a b: nat } : a ≤ b -> a < b.succ := by
       apply ih
       assumption
 
-#print axioms le_of_lt_succ
+#print axioms nat.lt_succ_of_le
 
 def nat.succ_le_of_lt { a b: nat } : a < b -> a.succ ≤ b := by
   intro a_lt_b_succ
