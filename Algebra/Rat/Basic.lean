@@ -778,6 +778,49 @@ def rat.mul.def (a b: rat) : a * b = a.mul b := rfl
 def fract.mul.def (a b: fract) : a * b = a.mul b := rfl
 def rat.mul.to_simple (a b : rat) : (a * b).to_simple ≈ a.to_simple * b.to_simple := fract.to_rat_to_simple _
 
+def rat.invert.to_simple (a: rat) : (a⁻¹).to_simple = a.to_simple.invert := by
+  cases a with | mk n d d_pos red =>
+  cases n <;> rfl
+
+def fract.invert.congr (a b: fract) : a ≈ b -> a.invert ≈ b.invert := by
+  cases a with | mk an ad ad_pos =>
+  cases b with | mk bn bd bd_pos =>
+  rw [equiv.def, equiv.def]
+  unfold equiv invert
+  cases an <;> cases bn <;> dsimp
+  any_goals rw [int.zero_eq]
+  any_goals repeat (
+    first|
+    erw [int.mul.zero_left]|
+    erw [int.mul.one_right]
+  )
+  intro
+  rfl
+  any_goals (intro h; cases ad <;> contradiction; done)
+  any_goals (intro h; cases bd <;> contradiction; done)
+  all_goals rename_i a b
+  intro h
+  rw [int.pos_succ.of_nat, int.pos_succ.of_nat]
+  rw [int.mul.comm, int.mul.comm bd]
+  exact h.symm
+  intro h
+  rw [int.pos_succ.of_nat, ←int.mul.neg_left, int.mul.neg_right, int.pos_succ.of_nat, int.neg.pos_succ]
+  rw [int.mul.comm, int.mul.comm _ (.neg_succ _)]
+  apply int.neg.inj
+  rw [int.mul.neg_left, int.mul.neg_left]
+  exact h.symm
+  intro h
+  rw [int.pos_succ.of_nat, ←int.mul.neg_left, int.mul.neg_right, int.pos_succ.of_nat, int.neg.pos_succ]
+  rw [int.mul.comm, int.mul.comm _ (.pos_succ _)]
+  apply int.neg.inj
+  rw [int.mul.neg_left, int.mul.neg_left]
+  exact h.symm
+  intro h
+  rw [int.pos_succ.of_nat, int.pos_succ.of_nat]
+  rw [int.mul.comm, int.mul.comm _ (.pos_succ a)]
+  rw [←int.mul.neg_right, ←int.mul.neg_right, int.mul.neg_left, int.mul.neg_left]
+  exact h.symm
+
 def fract.mul.inv_right (a: fract) : ¬(a ≈ 0) -> a * a.invert ≈ 1 := by
   intro a_nz
   cases a with | mk n d d_nz =>
@@ -1295,3 +1338,93 @@ def rat.mul.comm_right (a b c: rat) :
 def rat.sub.add_cancel (a b: rat) :
   a - b + b = a := by
   rw [rat.sub.def, rat.add.assoc, rat.add.comm _ b, ←rat.sub.def, rat.sub.self, rat.add.zero_right]
+
+def rat.sub.mul_left (a b k: rat) :
+  k * (a - b) = k * a - k * b := by
+  rw [rat.sub.def, rat.sub.def, ←rat.mul.neg_right, rat.add.mul_left]
+
+def rat.sub.mul_right (a b k: rat) :
+  (a - b) * k = a * k - b * k := by
+  repeat rw [rat.mul.comm _ k]
+  rw [rat.sub.mul_left]
+
+def int.mul.pos_succ_pos_succ (a b: nat) :
+  int.pos_succ a * int.pos_succ b = int.of_nat (a.succ * b.succ) := rfl
+
+def int.mul.pos_succ_neg_succ (a b: nat) :
+  int.pos_succ a * int.neg_succ b = -int.of_nat (a.succ * b.succ) := rfl
+
+def int.mul.neg_succ_pos_succ (a b: nat) :
+  int.neg_succ a * int.pos_succ b = -int.of_nat (a.succ * b.succ) := rfl
+
+def int.mul.neg_succ_neg_succ (a b: nat) :
+  int.neg_succ a * int.neg_succ b = int.of_nat (a.succ * b.succ) := rfl
+
+def fract.mul.inv (a b: fract) : (a * b).invert ≈ a.invert * b.invert := by
+  rw [mul.def, mul, mul.def, mul]
+  cases a with | mk an ad ad_pos =>
+  cases b with | mk bn bd bd_pos =>
+  dsimp
+  unfold invert
+  cases an
+  rw [int.zero_eq, int.mul.zero_left, ←int.zero_eq]
+  dsimp
+  rw [equiv.def, equiv]
+  dsimp
+  erw [int.mul.zero_left, int.mul.zero_left, int.mul.one_right]
+  rw [equiv.def, equiv]
+  cases bn
+  dsimp
+  rw [int.zero_eq, int.mul.zero_right, ←int.zero_eq]
+  dsimp
+  erw [int.mul.zero_left, int.mul.zero_right, int.mul.one_right]
+  dsimp
+  rw [int.mul.pos_succ_pos_succ, nat.succ_mul, nat.succ_add, int.pos_succ.of_nat]
+  dsimp
+  rename_i a b
+  rw [int.mul.lift_nat]
+  rfl
+  dsimp
+  rw [int.mul.pos_succ_neg_succ, nat.succ_mul, nat.succ_add, int.pos_succ.of_nat, int.neg.pos_succ]
+  dsimp
+  rw [←int.mul.neg_right, int.mul.lift_nat]
+  rfl
+  cases bn
+  dsimp
+  rw [int.zero_eq, int.mul.zero_right, ←int.zero_eq]
+  dsimp
+  erw [int.mul.zero_right]
+  rfl
+  dsimp
+  rw [equiv.def, equiv]
+  dsimp
+  rw [int.mul.neg_succ_pos_succ, nat.succ_mul, nat.succ_add, int.pos_succ.of_nat, int.neg.pos_succ]
+  dsimp
+  rw [←@int.mul.neg_left ad, int.mul.lift_nat]
+  rfl
+  rw [equiv.def, equiv]
+  dsimp
+  rw [int.mul.neg_succ_neg_succ, nat.succ_mul, nat.succ_add, int.pos_succ.of_nat]
+  dsimp
+  rw [←int.mul.neg_left, ←int.mul.neg_right, int.mul.lift_nat, int.neg_neg]
+  rfl
+
+def rat.mul.inv (a b: rat) : (a * b)⁻¹ = a⁻¹ * b⁻¹ := by
+  apply eq_of_equiv'
+  rw [rat.invert.to_simple]
+  apply flip fract.equiv.trans
+  apply fract.equiv.symm
+  apply rat.mul.to_simple
+  apply fract.equiv.trans
+  apply fract.invert.congr
+  apply rat.mul.to_simple
+  rw [rat.invert.to_simple, rat.invert.to_simple]
+  apply fract.mul.inv
+
+def rat.div_div (a b c: rat) : a / b / c = a / (b * c) := by
+  rw [rat.div.def, rat.div.def, rat.div.def, rat.mul.inv, rat.mul.assoc]
+
+def rat.mul.div_cancel (a b: rat) : a ≠ 0 -> a * (b / a) = b := by
+  intro h
+  rw [rat.div.def, rat.mul.comm_left, rat.mul.inv_right, mul.one_right]
+  assumption

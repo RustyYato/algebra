@@ -746,6 +746,14 @@ def rat.mul.le_pos_left (a b k: rat) :
   assumption
   assumption
 
+def rat.mul.le_nonneg_left (a b k: rat) :
+  a ≤ b -> 0 ≤ k -> k * a ≤ k * b := by
+  intro a_neg k_nonneg
+  cases lt_or_eq_of_le k_nonneg
+  apply rat.mul.le_pos_left <;> assumption
+  subst k
+  rw [mul.zero_left, mul.zero_left]
+
 def rat.mul.le_neg_left (a b k: rat) :
   a ≤ b -> k < 0 -> k * b ≤ k * a := by
   intro a_neg b_neg
@@ -777,6 +785,14 @@ def rat.mul.le_pos_right (a b k: rat) :
   rw [compare_pos_right]
   assumption
   assumption
+
+def rat.mul.le_nonneg_right (a b k: rat) :
+  a ≤ b -> 0 ≤ k -> a * k ≤ b * k := by
+  intro a_neg k_nonneg
+  cases lt_or_eq_of_le k_nonneg
+  apply rat.mul.le_pos_right <;> assumption
+  subst k
+  rw [mul.zero_right, mul.zero_right]
 
 def rat.mul.le_neg_right (a b k: rat) :
   a ≤ b -> k < 0 -> b * k ≤ a * k := by

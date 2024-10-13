@@ -1,10 +1,15 @@
 import Algebra.Rat.Order
 
-def half_pos {ε: rat} : 0 < ε -> 0 < ε / 2 := by
-  intro h
+def div_pos {ε k: rat} : 0 < ε -> 0 < k -> 0 < ε / k := by
+  intro hε hk
   rw [rat.div.def]
   apply rat.mul.pos_pos_is_pos
   assumption
+  apply rat.inv.pos
+  trivial
+def half_pos {ε: rat} : 0 < ε -> 0 < ε / 2 := by
+  intro h
+  apply div_pos h
   trivial
 def half_sum (ε: rat) : ε = ε / 2 + ε / 2 := by
     rw [←rat.mul_two (ε / 2)]
@@ -104,6 +109,20 @@ def CauchySeq.bounded (s: CauchySeq) : ∃r: rat, ∀k, s k < r := by
     apply rat.add_lt_of_lt_of_le
     trivial
     rfl
+
+def CauchySeq.bounded' (s: CauchySeq) (x: rat) : ∃r > x, ∀k, s k < r := by
+  have ⟨ r, prf ⟩  := s.bounded
+  exists max r (x + 1)
+  apply And.intro
+  apply flip lt_of_lt_of_le
+  apply max.ge_right
+  conv => { lhs; rw [←rat.add.zero_right x] }
+  apply rat.add.lt_of_add_left
+  trivial
+  intro k
+  apply lt_of_lt_of_le
+  apply prf
+  apply max.ge_left
 
 def CauchySeq.Equiv (a b: CauchySeq) := is_cauchy_equiv a.seq b.seq
 
@@ -352,3 +371,116 @@ def real.abs : real -> real := by
   apply sound
   apply CauchySeq.Equiv.abs
   assumption
+
+def CauchySeq.Equiv.mul (a b c d: CauchySeq):
+  a ≈ c -> b ≈ d ->
+  is_cauchy_equiv (fun n => a n * b n) (fun n => c n * d n) := by
+  intro ac bd ε ε_pos
+
+  have ⟨ amax, amax_gt_one, amaxprf ⟩ := a.abs.bounded' 1
+  have ⟨ dmax, dmax_gt_one, dmaxprf ⟩ := d.abs.bounded' 1
+
+  let L := max amax dmax
+  have : 0 < L := by
+    apply flip lt_of_le_of_lt
+    apply max.gt
+    apply Or.inl amax_gt_one
+    trivial
+  let ε₀: rat := ε / (2 * dmax)
+  let ε₁: rat := ε / (2 * amax)
+
+  have ε₀_pos : 0 < ε₀ := by
+    apply div_pos ε_pos
+    apply rat.mul.pos_pos_is_pos
+    trivial
+    apply lt_trans _ dmax_gt_one
+    trivial
+  have ε₁_pos : 0 < ε₁ := by
+    apply div_pos ε_pos
+    apply rat.mul.pos_pos_is_pos
+    trivial
+    apply lt_trans _ amax_gt_one
+    trivial
+
+  have ⟨ n, nprf ⟩ := ac ε₀ ε₀_pos
+  have ⟨ m, mprf ⟩ := bd ε₁ ε₁_pos
+
+  exists max n m
+  intro x y max_le_x max_le_y
+  dsimp
+
+  -- = |a b - c d + a d - a d|
+  -- = |a b - a d - c d + a d|
+  -- = |a b - a d + a d - c d|
+  -- = |a (b - d) + (a - c) d|
+  -- ≤ |a (b - d)| + |(a - c) d|
+  -- = |a| |(b - d)| + |(a - c)| |d|
+  -- < amax ε/(2 amax) + (ε/(2 dmax)) dmax
+  -- = ε/2 + ε/2
+  -- = ε
+
+  rw [←rat.add.zero_right (_ - _), ←rat.sub.self (a x * d y),
+    rat.sub.def, rat.sub.def, rat.add.assoc,
+    rat.add.comm_right (-_),
+    ←rat.add.assoc,
+    ←rat.sub.def, ←rat.sub.def,
+    ←rat.sub.mul_left, ←rat.sub.mul_right]
+  apply lt_of_le_of_lt
+  apply rat.abs.tri
+  rw [half_sum ε]
+  apply rat.add.lt_of_lt
+  · rw [rat.abs.mul]
+    apply lt_of_le_of_lt
+    apply rat.mul.le_nonneg_left
+    apply le_of_lt
+    apply mprf
+    apply le_trans _ max_le_x
+    apply max.ge_right
+    apply le_trans _ max_le_y
+    apply max.ge_right
+    apply rat.abs.nonneg
+    apply lt_of_lt_of_le (_: _ < amax * ε₁) _
+    apply flip (rat.mul.lt_pos_right _ _ _)
+    assumption
+    apply amaxprf
+    dsimp [ε₁]
+    rw [←rat.div_div ε, rat.mul.div_cancel]
+    intro
+    subst amax
+    contradiction
+  · rw [rat.abs.mul]
+    apply lt_of_le_of_lt
+    apply rat.mul.le_nonneg_right
+    apply le_of_lt
+    apply nprf
+    apply le_trans _ max_le_x
+    apply max.ge_left
+    apply le_trans _ max_le_y
+    apply max.ge_left
+    apply rat.abs.nonneg
+    apply lt_of_lt_of_le (_: _ < ε₀ * dmax) _
+    apply flip (rat.mul.lt_pos_left _ _ _)
+    assumption
+    apply dmaxprf
+    dsimp [ε₀]
+    rw [←rat.div_div ε, rat.mul.comm, rat.mul.div_cancel]
+    intro
+    subst dmax
+    contradiction
+
+def CauchySeq.mul (a b: CauchySeq) : CauchySeq := by
+  apply CauchySeq.mk (fun n => a n * b n) _
+  apply is_cauchy_iff_is_cauchy_equiv.mpr
+  apply CauchySeq.Equiv.mul <;> rfl
+
+def real.mul : real -> real -> real := by
+  apply lift₂ (fun _ _ => mk _) _
+  exact CauchySeq.mul
+  intro a b c d ab cd
+  apply sound
+  apply CauchySeq.Equiv.mul <;> assumption
+
+instance CauchySeq.MulInst : Mul CauchySeq := ⟨ mul ⟩
+instance real.MulInst : Mul real := ⟨ mul ⟩
+
+def real.of_rat.mul (a b: rat) : of_rat a * of_rat b = of_rat (a * b) := rfl

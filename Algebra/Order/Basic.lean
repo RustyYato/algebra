@@ -541,6 +541,26 @@ def max.le (a b k: α) : a ≤ k -> b ≤ k -> max a b ≤ k := by
   rw [max.def]
   split <;> assumption
 
+def max.gt (a b k: α) : k < a ∨ k < b -> k < max a b := by
+  intro kab
+  rw [max.def]
+  split
+  cases kab
+  apply lt_of_lt_of_le <;> assumption
+  assumption
+  cases kab
+  assumption
+  apply lt_of_lt_of_le
+  assumption
+  apply le_of_lt
+  apply lt_of_not_ge
+  assumption
+
+def max.lt (a b k: α) : a < k -> b < k -> max a b < k := by
+  intro ka kb
+  rw [max.def]
+  split <;> assumption
+
 def min.ge (a b k: α) : k ≤ a -> k ≤ b -> k ≤ min a b := by
   intro ka kb
   rw [min.def]
@@ -555,6 +575,24 @@ def min.le (a b k: α) : a ≤ k ∨ b ≤ k -> min a b ≤ k := by
   apply le_trans <;> assumption
   cases kab
   apply le_trans
+  apply le_of_lt
+  apply lt_of_not_ge
+  repeat assumption
+
+def min.gt (a b k: α) : k < a -> k < b -> k < min a b := by
+  intro ka kb
+  rw [min.def]
+  split <;> assumption
+
+def min.lt (a b k: α) : a < k ∨ b < k -> min a b < k := by
+  intro kab
+  rw [min.def]
+  split
+  cases kab
+  assumption
+  apply lt_of_le_of_lt <;> assumption
+  cases kab
+  apply lt_of_le_of_lt
   apply le_of_lt
   apply lt_of_not_ge
   repeat assumption
