@@ -278,3 +278,77 @@ instance real.SubInst : Sub real where
   sub a b := a + -b
 
 def real.of_rat.sub (a b: rat) : of_rat a - of_rat b = of_rat (a - b) := rfl
+
+def CauchySeq.Equiv.abs.helper_1 (a b: CauchySeq) :
+  0 ≤ a.seq x ->
+  b.seq y < 0 ->
+  (a.seq x - b.seq y).abs < ε ->
+  (a.seq x + b.seq y).abs < ε := by
+  intro a_nonneg b_neg h
+  rw [rat.abs.def] at *
+  have b_lt_a := lt_of_lt_of_le b_neg a_nonneg
+  split at h <;> rename_i h'
+  · apply lt_of_le_of_lt _ h
+    split <;> rename_i g
+    · apply rat.add.le_of_add_left
+      apply le_trans
+      exact le_of_lt b_neg
+      rw [←rat.neg.zero]
+      apply rat.neg.swap_le
+      exact le_of_lt b_neg
+    · rw [←rat.neg.sub]
+      apply rat.neg.swap_le
+      rw [rat.add.comm, rat.sub.def]
+      apply rat.add.le_of_add_left
+      apply flip le_trans
+      assumption
+      rw [←rat.neg.zero]
+      apply rat.neg.swap_le
+      assumption
+  · replace h' := lt_of_not_ge h'
+    have : a x - b y + b y < 0 + b y := rat.add.lt_of_add_right h'
+    rw [rat.sub.add_cancel, rat.add.zero_left] at this
+    have := lt_antisymm b_lt_a this
+    contradiction
+
+def CauchySeq.Equiv.abs (a b: CauchySeq) :
+  a ≈ b -> is_cauchy_equiv (fun n => (a n).abs) (fun n => (b n).abs) := by
+  intro ab ε ε_pos
+  dsimp
+  have ⟨ n, prf ⟩ := ab ε ε_pos
+  exists n
+  intro x y n_le_x n_le_y
+  rw [rat.abs.def (a x), rat.abs.def (b y)]
+  have := prf x y n_le_x n_le_y
+  split <;> rename_i ah <;> split <;> rename_i bh
+  · assumption
+  · rw [rat.sub.def, rat.neg_neg]
+    apply abs.helper_1
+    assumption
+    apply lt_of_not_ge
+    assumption
+    assumption
+  · rw [rat.sub.def, ←rat.neg.add, rat.abs.neg]
+    rw [rat.add.comm]
+    apply abs.helper_1
+    assumption
+    apply lt_of_not_ge
+    assumption
+    rw [rat.abs.sub_symm]
+    assumption
+  · rw [←rat.abs.neg, rat.sub.def, rat.neg.add, rat.neg_neg, rat.neg_neg, ←rat.sub.def]
+    assumption
+
+def CauchySeq.abs (a: CauchySeq) : CauchySeq := by
+  apply CauchySeq.mk (fun n => (a n).abs)
+  apply is_cauchy_iff_is_cauchy_equiv.mpr
+  apply CauchySeq.Equiv.abs
+  rfl
+
+def real.abs : real -> real := by
+  apply lift (fun _ => mk _) _
+  exact CauchySeq.abs
+  intro a b ab
+  apply sound
+  apply CauchySeq.Equiv.abs
+  assumption
