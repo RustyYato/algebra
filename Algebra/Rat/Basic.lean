@@ -443,6 +443,17 @@ def fract.to_rat_to_simple (a: fract) : a.to_rat.to_simple.equiv a := by
 
 #print axioms fract.to_rat_to_simple
 
+def rat.eq_of_equiv' (a b: rat) : a.to_simple ≈ b.to_simple -> a = b := by
+  rw [←to_simple_to_rat a, ←to_simple_to_rat b]
+  intro h
+  apply eq_of_equiv a.to_simple b.to_simple
+  apply fract.equiv.trans
+  apply fract.equiv.symm
+  apply fract.to_rat_to_simple
+  apply flip fract.equiv.trans
+  apply fract.to_rat_to_simple
+  assumption
+
 def rat.zero : rat := rat.mk 0 1 (by decide) (by decide)
 
 def fract.neg (a: fract) : fract := fract.mk (-a.num) a.den a.den_nz
@@ -1219,3 +1230,18 @@ def rat.abs.mul (a b: rat) : rat.abs (a * b) = rat.abs a * rat.abs b := by
   apply fract.abs.congr
   apply mul.to_simple a b
   apply fract.abs.mul'
+
+def fract.add.zero_left (a: fract) : 0 + a ≈ a := by
+  rw [add.def, equiv.def, equiv]
+  dsimp
+  erw [int.mul.zero_left, int.mul.one_left, nat.one_mul, int.add.zero_left]
+
+def rat.add.zero_left (a: rat) : 0 + a = a := by
+  apply eq_of_equiv'
+  apply fract.equiv.trans
+  apply add.to_simple
+  apply fract.add.zero_left
+
+def rat.add.zero_right (a: rat) : a + 0 = a := by
+  rw [add.comm]
+  apply rat.add.zero_left

@@ -4,7 +4,7 @@ def is_cauchy (f: nat -> rat) : Prop :=
   ∀ε: rat, 0 < ε -> ∃n: nat, ∀m ≥ n, (f n - f m).abs < ε
 
 def is_zero (f: nat -> rat) : Prop :=
-  ∀ε: rat, 0 < ε -> ∃n: nat, ∀m ≥ n, (f n).abs < ε
+  ∀ε: rat, 0 < ε -> ∃n: nat, ∀m ≥ n, (f m).abs < ε
 
 structure CauchySeq where
   seq: nat -> rat
@@ -17,7 +17,7 @@ def CauchySeq.Equivalence : Equivalence Equiv where
   refl := by
     intro x ε ε_pos
     exists 0
-    intro m m_ge
+    intro m _
     dsimp
     rw [rat.sub.self, rat.abs.zero]
     assumption
@@ -40,4 +40,37 @@ def CauchySeq.Equivalence : Equivalence Equiv where
     have ⟨ nxy, prfxy ⟩  := xy (ε / 2) ε_half_pos
     have ⟨ nyz, prfyz ⟩  := yz (ε / 2) ε_half_pos
     exists max nxy nyz
-    sorry
+    intro m m_ge_max
+    dsimp
+    rw [←rat.add.zero_right (_ - _)]
+    rw [←rat.sub.self (y.seq m)]
+    rw [rat.sub.def, rat.sub.def, rat.add.assoc,
+      rat.add.comm _ (-_),
+      ←rat.add.assoc (-_),
+      rat.add.comm _ (-_),
+      ←rat.add.assoc,
+      ←rat.add.assoc,
+      rat.add.assoc _ (-_),
+      rat.add.comm (-_)]
+    rw [←rat.sub.def, ←rat.sub.def]
+    apply lt_of_le_of_lt
+    apply rat.abs.tri
+    have : ε = ε / 2 + ε / 2 := by
+      rw [←rat.mul_two (ε / 2)]
+      rw [rat.div.def, rat.mul.assoc, rat.mul.comm _ 2, rat.mul.inv_right, rat.mul.one_right]
+      trivial
+    rw [this]
+    dsimp at prfxy prfyz
+    apply rat.add.lt_of_lt
+    apply prfxy
+    apply flip le_trans
+    assumption
+    apply max.ge_left
+    apply prfyz
+    apply flip le_trans
+    assumption
+    apply max.ge_right
+
+instance CauchySeq.setoid : Setoid CauchySeq where
+  r := Equiv
+  iseqv := CauchySeq.Equivalence
