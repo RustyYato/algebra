@@ -48,10 +48,10 @@ def is_sorted.contains [Ord α] [tle: TotalOrder α] (z x: α) (xs: List α) :
   z ∈ (x::xs) -> x ≤ z:= by
   intro sorted_xs z_in_xs
   cases z_in_xs with
-  | head _ => apply TotalOrder.le_refl
+  | head _ => apply le_refl
   | tail _ tail_mem => match xs with
     | .cons x' xs' =>
-      apply TotalOrder.le_trans
+      apply le_trans
       exact sorted_xs.left
       apply is_sorted.contains
       exact sorted_xs.pop
@@ -67,7 +67,7 @@ def is_sorted.pop_snd [Ord α] [tle: TotalOrder α] (x x': α) (xs: List α) :
   exact (sorted_xs.pop).pop
   intro y y_in_xs
   have x'_le_y := lower_x' y y_in_xs
-  apply TotalOrder.le_trans sorted_xs.left x'_le_y
+  apply le_trans sorted_xs.left x'_le_y
 
 #print axioms is_sorted.pop_snd
 
@@ -84,7 +84,7 @@ def is_sorted.pick_first
     | tail _ elem =>
       induction elem with
       | head _ =>
-        apply TotalOrder.le_antisymm
+        apply le_antisymm
         exact all_less x (.head _)
         exact sorted_xs.left
       | tail head _ ih =>
@@ -150,7 +150,7 @@ def sorted_induction.fueled
       | .nil => exact .some <| ctx.right_empty _ _
       | .cons y ys =>
         have ih := sorted_induction.fueled ctx fuel
-        match TotalOrder.decide x y with
+        match decide x y with
         | .Lt x_lt_y =>
           apply (ih xs (y::ys)).map
           intro ih
@@ -174,7 +174,7 @@ def enough_fuel_for_lt
   (x::xs).len + ys.len < fuel.succ ->
   xs.len + ys.len < fuel := by
   intro enough_fuel
-  apply nat.lt_of_lt_of_le _ (nat.le_of_lt_succ enough_fuel)
+  apply lt_of_lt_of_le _ (le_of_lt_succ enough_fuel)
   have : List.len (x::xs) = xs.len.succ := rfl
   rw [this]
   rw [nat.succ_add]
@@ -185,13 +185,13 @@ def enough_fuel_for_eq
   (x::xs).len + (y::ys).len < fuel.succ ->
   xs.len + ys.len < fuel := by
   intro enough_fuel
-  apply nat.lt_of_lt_of_le _ (nat.le_of_lt_succ enough_fuel)
+  apply lt_of_lt_of_le _ (le_of_lt_succ enough_fuel)
   have : List.len (x::xs) = xs.len.succ := rfl
   rw [this]
   have : List.len (y::ys) = ys.len.succ := rfl
   rw [this]
   rw [nat.add_succ, nat.succ_add]
-  apply nat.lt_trans
+  apply lt_trans
   repeat apply nat.lt_succ_self
 
 def enough_fuel_for_gt
@@ -199,7 +199,7 @@ def enough_fuel_for_gt
   xs.len + (y::ys).len < fuel.succ ->
   xs.len + ys.len < fuel := by
   intro enough_fuel
-  apply nat.lt_of_lt_of_le _ (nat.le_of_lt_succ enough_fuel)
+  apply lt_of_lt_of_le _ (le_of_lt_succ enough_fuel)
   have : List.len (y::ys) = ys.len.succ := rfl
   rw [this]
   rw [nat.add_succ]

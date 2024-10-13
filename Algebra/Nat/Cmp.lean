@@ -82,60 +82,6 @@ instance nat.totalOrdInst : TotalOrder nat where
   compare_eq_refl := by intros; apply cmp.refl
   compare_antisymm := by intros; apply cmp.swap
 
-def nat.beq_symm { a b: nat } : a == b -> b == a := TotalOrder.beq_symm
-
-#print axioms nat.beq_symm
-
-def nat.le_of_lt { a b: nat } : a < b -> a ≤ b := Or.inl
-
-#print axioms nat.le_of_lt
-
-def nat.le_refl (a: nat) : a ≤ a := TotalOrder.le_refl
-
-#print axioms nat.le_refl
-
-def nat.lt_irrefl (a: nat) : ¬a < a := TotalOrder.lt_irrefl
-
-#print axioms nat.lt_irrefl
-
-def nat.le_of_beq { a b: nat } : a == b -> a ≤ b := TotalOrder.le_of_beq
-
-#print axioms nat.le_of_beq
-
-def nat.le_of_eq { a b: nat } : a = b -> a ≤ b := TotalOrder.le_of_eq
-
-#print axioms nat.le_of_eq
-
-def nat.ge_of_gt { a b: nat } : a > b -> a ≥ b := TotalOrder.le_of_lt
-
-#print axioms nat.ge_of_gt
-
-def nat.ge_refl (a: nat) : a ≥ a := TotalOrder.le_refl
-
-#print axioms nat.ge_refl
-
-def nat.ge_of_beq { a b: nat } : a == b -> a ≥ b := fun a_eq_b => nat.le_of_beq (nat.beq_symm a_eq_b)
-
-#print axioms nat.ge_of_beq
-
-def nat.ge_of_eq { a b: nat } : a = b -> a ≥ b := fun a_eq_b => nat.le_of_eq a_eq_b.symm
-
-#print axioms nat.ge_of_eq
-
-def nat.eq_of_cmp { a b: nat } : a.cmp b = Ordering.eq -> a = b := by intros; apply TotalOrder.eq_of_compare_eq; assumption
-
-#print axioms nat.eq_of_cmp
-
-def nat.gt_of_cmp { a b: nat } : a.cmp b = Ordering.gt -> a > b := by intros; apply TotalOrder.gt_of_compare; assumption
-
-#print axioms nat.gt_of_cmp
-
-def nat.lt_or_eq_of_le { a b: nat } : a ≤ b -> a < b ∨ a = b := by intros; apply TotalOrder.lt_or_eq_of_le; assumption
-
-#print axioms nat.lt_or_eq_of_le
-
-def nat.lt_or_ge (a b: nat) : a < b ∨ a ≥ b := by intros; apply TotalOrder.lt_or_ge
-
 inductive LtOrGe (a b: nat): Type where
   | Lt : a < b -> LtOrGe a b
   | Ge : a ≥ b -> LtOrGe a b
@@ -143,15 +89,15 @@ inductive LtOrGe (a b: nat): Type where
 def nat.lt_or_ge_dec (a b: nat) : LtOrGe a b :=
   match  h:nat.cmp a b with
   | .lt =>.Lt h
-  | .eq => .Ge <| nat.ge_of_eq (nat.eq_of_cmp h)
-  | .gt => .Ge <| nat.ge_of_gt (nat.gt_of_cmp h)
+  | .eq => .Ge <| ge_of_eq (eq_of_compare_eq h)
+  | .gt => .Ge <| ge_of_gt (gt_of_compare h)
 
 #print axioms nat.lt_or_ge_dec
 
 def nat.zero_le (a: nat) : 0 ≤ a := by
   cases a
-  exact nat.le_of_eq rfl
-  exact nat.le_of_lt rfl
+  exact le_of_eq rfl
+  exact le_of_lt rfl
 
 #print axioms nat.zero_le
 
@@ -194,7 +140,7 @@ def nat.succ_le_succ { a b: nat } : a ≤ b -> a.succ ≤ b.succ := id
 
 #print axioms nat.succ_le_succ
 
-def nat.le_of_lt_succ { a b: nat } : a < b.succ -> a ≤ b := by
+def le_of_lt_succ { a b: nat } : a < b.succ -> a ≤ b := by
   intro a_lt_b_succ
   induction a generalizing b with
   | zero => apply nat.zero_le
@@ -207,7 +153,7 @@ def nat.le_of_lt_succ { a b: nat } : a < b.succ -> a ≤ b := by
       apply ih
       assumption
 
-#print axioms nat.le_of_lt_succ
+#print axioms le_of_lt_succ
 
 def nat.lt_succ_of_le { a b: nat } : a ≤ b -> a < b.succ := by
   intro a_le_b
@@ -222,7 +168,7 @@ def nat.lt_succ_of_le { a b: nat } : a ≤ b -> a < b.succ := by
       apply ih
       assumption
 
-#print axioms nat.le_of_lt_succ
+#print axioms le_of_lt_succ
 
 def nat.succ_le_of_lt { a b: nat } : a < b -> a.succ ≤ b := by
   intro a_lt_b_succ
@@ -258,34 +204,12 @@ def nat.lt_of_succ_le { a b: nat } : a.succ ≤ b -> a < b := by
 
 #print axioms nat.succ_le_of_lt
 
-def nat.le_antisymm { a b: nat } : a ≤ b -> b ≤ a -> a = b := by intros; apply TotalOrder.le_antisymm <;> assumption
-
-#print axioms nat.le_antisymm
-
-def nat.not_lt_of_ge { a b: nat } : a < b -> a ≥ b -> False := by apply TotalOrder.not_lt_and_ge
-
-#print axioms nat.not_lt_of_ge
-
-def nat.lt_trans { a b c: nat } : a < b -> b < c -> a < c := TotalOrder.lt_trans
-def nat.le_trans { a b c: nat } : a ≤ b -> b ≤ c -> a ≤ c := TotalOrder.le_trans
-
-def nat.gt_trans { a b c: nat } : a > b -> b > c -> a > c := fun a b => TotalOrder.lt_trans b a
-def nat.ge_trans { a b c: nat } : a ≥ b -> b ≥ c -> a ≥ c := fun a b => TotalOrder.le_trans b a
-
-def nat.lt_of_lt_of_le { a b c: nat } : a < b -> b ≤ c -> a < c := TotalOrder.lt_of_lt_of_le
-
-#print axioms nat.lt_of_lt_of_le
-
-def nat.lt_of_le_of_lt { a b c: nat } : a ≤ b -> b < c -> a < c := TotalOrder.lt_of_le_of_lt
-
-#print axioms nat.lt_of_le_of_lt
-
 def nat.lt_or_ge_dec.pick_lt {a b: nat} : (a_lt_b: a < b) -> nat.lt_or_ge_dec a b = LtOrGe.Lt a_lt_b := by
   intro a_lt_b
   match a.lt_or_ge_dec b with
   | .Lt a_lt_b => rfl
   | .Ge a_ge_b =>
-    have := nat.not_lt_of_ge a_lt_b a_ge_b
+    have := not_lt_of_ge a_ge_b a_lt_b
     contradiction
 
 #print axioms nat.lt_or_ge_dec.pick_lt
@@ -294,13 +218,13 @@ def nat.lt_or_ge_dec.pick_ge {a b: nat} : (a_ge_b: a ≥ b) -> nat.lt_or_ge_dec 
   intro a_ge_b
   match a.lt_or_ge_dec b with
   | .Lt a_lt_b =>
-    have := nat.not_lt_of_ge a_lt_b a_ge_b
+    have := not_lt_of_ge a_ge_b a_lt_b
     contradiction
   | .Ge a_ge_b => rfl
 
 #print axioms nat.lt_or_ge_dec.pick_ge
 
-def nat.zero_lt_of_lt { a b: nat } (a_lt_b: a < b): 0 < b := TotalOrder.lt_of_le_of_lt (zero_le _) a_lt_b
+def nat.zero_lt_of_lt { a b: nat } (a_lt_b: a < b): 0 < b := lt_of_le_of_lt (zero_le _) a_lt_b
 
 #print axioms nat.zero_lt_of_lt
 

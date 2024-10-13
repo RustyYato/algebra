@@ -670,15 +670,15 @@ def int.add.compare_swap { a b k: int } : compare (a + k) b = compare a (b - k) 
 def int.add.right_iff_sub { a b k: int }: a + k = b ↔ a = b - k := by
   apply Iff.intro
   intros h
-  apply TotalOrder.eq_of_compare_eq
+  apply eq_of_compare_eq
   rw [←int.add.compare_swap]
   cases h
-  apply TotalOrder.compare_eq_refl
+  apply compare_eq_refl
   intros h
-  apply TotalOrder.eq_of_compare_eq
+  apply eq_of_compare_eq
   rw [int.add.compare_swap]
   cases h
-  apply TotalOrder.compare_eq_refl
+  apply compare_eq_refl
 
 #print axioms int.add.right_iff_sub
 
@@ -729,14 +729,14 @@ def int.add.le_left_iff_sub { a b k: int }: k + a ≤ b ↔ a ≤ b - k := by
 def int.add.gt_right_iff_sub { a b k: int }: a + k > b ↔ a > b - k := by
   apply Iff.intro
   intros h
-  apply TotalOrder.gt_of_compare
+  apply gt_of_compare
   rw [←int.add.compare_swap]
-  apply TotalOrder.compare_of_gt
+  apply compare_of_gt
   assumption
   intros h
-  apply TotalOrder.gt_of_compare
+  apply gt_of_compare
   rw [int.add.compare_swap]
-  apply TotalOrder.compare_of_gt
+  apply compare_of_gt
   assumption
 
 #print axioms int.add.gt_right_iff_sub
@@ -750,14 +750,14 @@ def int.add.gt_left_iff_sub { a b k: int }: k + a > b ↔ a > b - k := by
 def int.add.ge_right_iff_sub { a b k: int }: a + k ≥ b ↔ a ≥ b - k := by
   apply Iff.intro
   intros h
-  apply TotalOrder.ge_of_compare
+  apply ge_of_compare
   rw [←int.add.compare_swap]
-  apply TotalOrder.compare_of_ge
+  apply compare_of_ge
   assumption
   intros h
-  apply TotalOrder.ge_of_compare
+  apply ge_of_compare
   rw [int.add.compare_swap]
-  apply TotalOrder.compare_of_ge
+  apply compare_of_ge
   assumption
 
 #print axioms int.add.ge_right_iff_sub
@@ -771,14 +771,14 @@ def int.add.ge_left_iff_sub { a b k: int }: k + a ≥ b ↔ a ≥ b - k := by
 def int.add.ne_right_iff_sub { a b k: int }: a + k ≠ b ↔ a ≠ b - k := by
   apply Iff.intro
   intros h
-  apply TotalOrder.ne_of_compare
+  apply ne_of_compare
   rw [←int.add.compare_swap]
-  apply TotalOrder.compare_of_ne
+  apply compare_of_ne
   assumption
   intros h
-  apply TotalOrder.ne_of_compare
+  apply ne_of_compare
   rw [int.add.compare_swap]
-  apply TotalOrder.compare_of_ne
+  apply compare_of_ne
   assumption
 
 #print axioms int.add.ge_right_iff_sub
@@ -1070,7 +1070,7 @@ def int.add.compare_strict { a b c d: int } { o: Ordering } :
     revert cd
     induction c using int.induction generalizing d
     · intro cd
-      rw [int.add_zero, TotalOrder.compare_transitive ab]
+      rw [int.add_zero, compare_transitive ab]
       clear ab a
       induction b using int.induction
       · rw [int.zero_add]
@@ -1123,10 +1123,10 @@ def int.add.lt_of_lt_of_le { a b c d: int } :
     intro ab cd
     apply int.add.compare'
     apply Or.inl; assumption
-    apply TotalOrder.compare_or_eq_of_le _ _ cd
+    apply compare_or_eq_of_le _ _ cd
     intro h
     cases h.left
-    exact TotalOrder.lt_irrefl ab
+    exact lt_irrefl ab
 
 #print axioms int.add.lt_of_lt_of_le
 
@@ -1134,26 +1134,26 @@ def int.add.lt_of_le_of_lt { a b c d: int } :
    a ≤ b -> c < d -> (a + c) < (b + d) := by
     intro ab cd
     apply int.add.compare'
-    apply TotalOrder.compare_or_eq_of_le _ _ ab
+    apply compare_or_eq_of_le _ _ ab
     apply Or.inl; assumption
     intro h
     cases h.right
-    exact TotalOrder.lt_irrefl cd
+    exact lt_irrefl cd
 
 #print axioms int.add.lt_of_le_of_lt
 
 def int.add.le { a b c d: int } :
    a ≤ b -> c ≤ d -> (a + c) ≤ (b + d) := by
     intro ab cd
-    cases TotalOrder.lt_or_eq_of_le ab
-    apply TotalOrder.le_of_lt
+    cases lt_or_eq_of_le ab
+    apply le_of_lt
     apply lt_of_lt_of_le <;> assumption
     subst b
-    cases TotalOrder.lt_or_eq_of_le cd
-    apply TotalOrder.le_of_lt
+    cases lt_or_eq_of_le cd
+    apply le_of_lt
     apply lt_of_le_of_lt <;> assumption
     subst d
-    apply TotalOrder.le_refl
+    apply le_refl
 
 #print axioms int.add.le
 

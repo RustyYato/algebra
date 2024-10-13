@@ -234,7 +234,7 @@ def nat.mul_sub (a b c: nat) : a * (b - c) = a * b - a * c := by
     | succ c =>
       rw [succ_sub_succ, mul_succ, mul_succ, sub_add, add.comm, ←add_sub, sub.refl, add_zero]
       apply ih
-      apply TotalOrder.le_refl
+      apply le_refl
 
 #print axioms nat.mul_sub
 
@@ -268,7 +268,7 @@ def nat.mul.eq_one {a b: nat} : a * b = 1 -> a = 1 ∧ b = 1 := by
         | inr ih =>
           apply Or.inr
           rw [mul_succ]
-          apply TotalOrder.lt_of_lt_of_le
+          apply lt_of_lt_of_le
           assumption
           apply nat.add.le_right
     have := this a b
@@ -312,7 +312,8 @@ def nat.eq_of_mul_eq { a b k: nat } : 0 < k -> k * a = k * b -> a = b := by
 
 def nat.mul.le (a b c d: nat) : a ≤ c -> b ≤ d -> a * b ≤ c * d := by
   intro a_le_c b_le_d
-  apply nat.le_trans (nat.mul.of_le_cancel_left _ _ _ b_le_d)
+  apply le_trans
+  exact (nat.mul.of_le_cancel_left _ _ _ b_le_d)
   exact (nat.mul.of_le_cancel_right _ _ _ a_le_c)
 
 #print axioms nat.mul.le
@@ -333,7 +334,7 @@ def nat.mul.lt (a b c d: nat) : a < c -> b < d -> a * b < c * d := by
       contradiction
     | .succ d => rfl
   | .succ b =>
-  apply @nat.lt_trans (a * b.succ) (c.succ * b.succ) (c.succ * d)
+  apply lt_trans
   apply of_lt_cancel_right
   rfl
   assumption

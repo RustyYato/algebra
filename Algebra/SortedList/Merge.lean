@@ -186,8 +186,8 @@ def sorted_merge.contains
         apply List.Mem.tail
         assumption
       | inr z_in_ys =>
-        apply TotalOrder.le_trans
-        apply TotalOrder.le_of_lt
+        apply le_trans
+        apply le_of_lt
         assumption
         apply is_sorted.contains <;> assumption
     }
@@ -202,8 +202,8 @@ def sorted_merge.contains
       intro z z_in_merge
       cases contains z_in_merge with
       | inl z_in_xs =>
-        apply TotalOrder.le_trans
-        apply TotalOrder.le_of_lt
+        apply le_trans
+        apply le_of_lt
         assumption
         apply is_sorted.contains <;> assumption
       | inr z_in_ys =>
@@ -218,7 +218,7 @@ def sorted_merge.contains
       any_goals assumption
       apply And.intro
       rw [x_eq_y]
-      apply TotalOrder.le_refl
+      apply le_refl
       apply is_sorted.push
       apply ih
       exact sorted_xs.pop

@@ -384,13 +384,13 @@ def nat.mul_mod :∀(a b k: nat), (a * k) % (b * k) = (a % b) * k := by
       rfl
     | succ k =>
     have : 0 < b := by
-      apply TotalOrder.lt_of_le_of_lt
+      apply lt_of_le_of_lt
       apply nat.zero_le
       any_goals assumption
     rw [mod.if_lt, mod.if_lt]
     assumption
     assumption
-    apply TotalOrder.lt_of_lt_of_le
+    apply lt_of_lt_of_le
     exact  this
     apply nat.mul.ge
     apply nat.zero_lt_succ
@@ -434,7 +434,7 @@ def nat.div.lt (a b: nat) : 1 < b -> 0 < a -> a / b < a := by
   conv => {
     rhs
     rw [nat.div_def a b (by
-      apply TotalOrder.lt_trans
+      apply lt_trans
       apply nat.lt_succ_self
       exact b_gt_one)]
   }
@@ -498,7 +498,7 @@ def nat.div.of_eq_zero { a b: nat } : a / b = 0 -> b = 0 ∨ a < b := by
     apply Or.inr
     apply Decidable.byContradiction
     intro h
-    have a_ge_b_succ := TotalOrder.not_lt_implies_ge h
+    have a_ge_b_succ := not_lt_implies_ge h
     rw [if_ge] at div_eq_zero
     contradiction
     apply zero_lt_succ
@@ -508,16 +508,16 @@ def nat.div.of_eq_zero { a b: nat } : a / b = 0 -> b = 0 ∨ a < b := by
 
 def nat.div.spec (a b: nat) (b_pos: 0 < b) :
   a / b = if a < b then 0 else ((a - b) / b).succ := by
-  cases TotalOrder.lt_or_ge a b
+  cases lt_or_ge a b
   · rename_i a_lt_b
     rw [if_pos, nat.div.if_lt]
-    apply nat.lt_of_le_of_lt
+    apply lt_of_le_of_lt
     apply nat.zero_le
     repeat assumption
   · rename_i a_ge_b
     rw [if_neg, nat.div.if_ge]
     repeat assumption
-    apply flip TotalOrder.not_lt_and_ge
+    apply flip not_lt_and_ge
     assumption
 
 def nat.div.le_div_if_mul_le (a b: nat) (b_pos: 0 < b) : ∀c, b * c ≤ a -> c ≤ a / b := by
@@ -526,13 +526,13 @@ def nat.div.le_div_if_mul_le (a b: nat) (b_pos: 0 < b) : ∀c, b * c ≤ a -> c 
   · intro a b b_pos c h
     rw [nat.div.if_lt]
     · match c with
-      | nat.zero => apply nat.le_refl
+      | nat.zero => apply le_refl
       | nat.succ c =>
         rw [nat.mul_succ] at h
-        have := nat.le_trans (nat.add.le_left _ _) h
-        have := nat.not_lt_of_ge b_pos this
+        have := le_trans (nat.add.le_left _ _) h
+        have := not_lt_of_ge this b_pos
         contradiction
-    apply nat.lt_of_le_of_lt _ b_pos
+    apply lt_of_le_of_lt _ b_pos
     apply nat.zero_le
     assumption
   · intro a b b_pos a_ge_b ih c h
@@ -570,7 +570,7 @@ def nat.div.le { a b: nat } : a / b ≤ a := by
   rename_i b
   have := div_def a b.succ zero_lt_succ
   conv => { rhs; rw [this] }
-  apply flip nat.le_trans
+  apply flip le_trans
   apply nat.add.le_left
   exact mul.ge (a / b.succ) b.succ rfl
 
@@ -581,7 +581,7 @@ def nat.div.mul_le { a b: nat } : b * (a / b) ≤ a := by
   rename_i b
   have := div_def a b.succ zero_lt_succ
   conv => { rhs; rw [this] }
-  apply flip nat.le_trans
+  apply flip le_trans
   apply nat.add.le_left
   rw [mul.comm]
 
@@ -594,13 +594,13 @@ def nat.div_div { a b c: nat} : a / b / c = a / (b * c) := by
   | zero =>
     rw [zero_eq, div_zero, mul_zero, div_zero]
   | succ c =>
-  apply nat.le_antisymm
+  apply le_antisymm
   · apply div.le_div_if_mul_le
     exact zero_lt_succ
     rw [mul.assoc _ c.succ]
-    apply nat.le_trans
+    apply le_trans
     apply nat.mul.le
-    apply nat.le_refl
+    apply le_refl
     apply nat.div.mul_le
     apply nat.div.mul_le
   · apply div.le_div_if_mul_le

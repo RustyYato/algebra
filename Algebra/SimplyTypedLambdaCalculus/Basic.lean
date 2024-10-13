@@ -60,7 +60,7 @@ def Term.weaken
     subst ty
     if h:v.val < idx.val then
       apply Term.Var (fin.mk v.val _) _ _
-      apply nat.lt_trans v.valLt
+      apply lt_trans v.valLt
       apply nat.lt_succ_self
       rw [Vector.insert_at_get_lt]
       exact h
@@ -72,7 +72,7 @@ def Term.weaken
       rw [Vector.insert_at_get_ge]
       rw [fin.val_mk]
       rw [fin.val_mk]
-      exact TotalOrder.le_of_not_gt h
+      exact le_of_not_gt h
 
 #print axioms Term.weaken
 
@@ -125,15 +125,15 @@ def Term.subst_at
   | .Var idx ty' ty_correct => by
     match h:compare idx pos with
     | .eq =>
-      have := TotalOrder.eq_of_compare_eq h
+      have := eq_of_compare_eq h
       subst idx
       clear h
       subst ty'
       exact subst
     | .lt =>
       have : idx.val < n := by
-        apply nat.lt_of_lt_of_le (TotalOrder.lt_of_compare (h: compare idx.val pos.val = .lt))
-        apply nat.le_of_lt_succ
+        apply lt_of_lt_of_le (lt_of_compare (h: compare idx.val pos.val = .lt))
+        apply le_of_lt_succ
         exact pos.valLt
       apply Term.Var (fin.mk idx.val this)
       rw [Vector.remove_get_lt]
@@ -149,7 +149,7 @@ def Term.subst_at
       rw [fin.mk_val]
       exact h
     | .gt =>
-      have := TotalOrder.gt_of_compare h
+      have := gt_of_compare h
       cases idx with
       | zero =>
         have := nat.not_lt_zero this
@@ -173,7 +173,7 @@ def Term.subst_at
         unfold fin.val nat.pred
       }
       dsimp
-      apply nat.le_of_lt_succ
+      apply le_of_lt_succ
       exact this
       intros
       rename_i idx _ _ _

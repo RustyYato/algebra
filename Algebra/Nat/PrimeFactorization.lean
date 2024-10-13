@@ -80,7 +80,7 @@ def PrimeFactorization.new (n: nat) : 0 < n -> PrimeFactorization n := by
   intro n_nz
   cases (inferInstance: Decidable (1 < n)) with
   | isFalse h =>
-    have := TotalOrder.not_lt_implies_ge h
+    have := not_lt_implies_ge h
     match n with
     | 1 =>
     apply PrimeFactorization.mk (SortedList.mk [] True.intro)
@@ -95,7 +95,7 @@ def PrimeFactorization.new (n: nat) : 0 < n -> PrimeFactorization n := by
   apply PrimeFactorization.new
   {
     apply nat.div.gt_zero
-    apply TotalOrder.lt_trans
+    apply lt_trans
     apply nat.lt_succ_self
     exact is_prime.left
     apply nat.dvd.le _ is_factor
@@ -164,7 +164,7 @@ def PrimeFactorization.is_factor (n p: nat) (f: PrimeFactorization n) : p ∈ f.
       rw [product.cons]
       rw [nat.mul_div]
       have := is_prime.left.left
-      apply TotalOrder.lt_trans
+      apply lt_trans
       apply nat.lt_succ_self
       assumption)
     exists x * head
@@ -213,13 +213,13 @@ def PrimeFactorization.is_complete (n p: nat) (f: PrimeFactorization n) : p.prim
           | inr p_coprime_f => assumption
         }
         assumption
-        apply TotalOrder.lt_trans
+        apply lt_trans
         apply nat.lt_succ_self
         exact is_prime.left.left
       }
       exact is_prime.right
       rw [←product_eq, product.cons, nat.mul_div]
-      apply TotalOrder.lt_trans
+      apply lt_trans
       apply nat.lt_succ_self
       exact is_prime.left.left
 
@@ -314,7 +314,7 @@ def PrimeFactorization.unique (a b: PrimeFactorization n) : a = b := by
         simp only at a_product_eq
         simp only at *
         rw [←a_product_eq, product.cons, ff_eq_a, nat.mul_div]
-        apply TotalOrder.lt_trans
+        apply lt_trans
         apply nat.lt_succ_self
         exact a_is_prime.left.left)
 
@@ -322,7 +322,7 @@ def PrimeFactorization.unique (a b: PrimeFactorization n) : a = b := by
         simp only at b_product_eq
         simp only at *
         rw [←b_product_eq, product.cons, ff_eq_b, nat.mul_div]
-        apply TotalOrder.lt_trans
+        apply lt_trans
         apply nat.lt_succ_self
         exact b_is_prime.left.left)
 

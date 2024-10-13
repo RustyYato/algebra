@@ -57,10 +57,10 @@ def nat.add.le_left (a b: nat) : a ≤ a + b := by
   | zero => rw [zero_eq, add_zero]
   | succ b ih =>
     rw [add_succ]
-    apply nat.le_trans
+    apply le_trans
     exact ih
-    apply nat.le_of_lt
-    apply nat.lt_succ_self
+    apply le_of_lt
+    apply lt_succ_self
 
 #print axioms nat.add.le_left
 
@@ -108,7 +108,7 @@ def nat.add.compare_both (a b c d: nat) (o: Ordering) :
   compare b d = o ->
   compare (a + b) (c + d) = o := by
   intro h g
-  apply TotalOrder.compare_transitive
+  apply compare_transitive
   rw [compare_left]
   assumption
   rw [compare_right]
@@ -122,10 +122,10 @@ def nat.add.lt_right_nz (a b: nat) : 0 < b -> a < a + b := by
   | zero =>
     contradiction
   | succ b ih =>
-    cases nat.lt_or_eq_of_le <|nat.le_of_lt_succ zero_lt_b with
+    cases lt_or_eq_of_le <|le_of_lt_succ zero_lt_b with
     | inl zero_lt_b =>
       rw [add_succ]
-      apply nat.lt_trans
+      apply lt_trans
       apply ih
       assumption
       apply nat.lt_succ_self

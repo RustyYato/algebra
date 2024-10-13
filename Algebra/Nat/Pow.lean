@@ -44,7 +44,7 @@ def nat.pow.eq_zero { a b: nat } : a ^ b = 0 -> a = 0 ∧ 0 < b := by
   | zero => contradiction
   | succ b =>
     apply And.intro _ zero_lt_succ
-    cases a with 
+    cases a with
     | zero => rfl
     | succ a =>
       rw [pow.succ] at a_pow_b_eq_zero
@@ -65,8 +65,8 @@ def nat.pow.of_one { n: nat } : (1: nat) ^ n = 1 := by
 
 def nat.pow.eq_one { a b: nat } : a ^ b = 1 -> a = 1 ∨ b = 0 := by
   intro a_pow_b_eq_one
-  cases b with 
-  | zero => 
+  cases b with
+  | zero =>
     apply Or.inr
     rfl
   | succ b =>
@@ -94,7 +94,7 @@ def nat.pow.ge_of_nz_exp { a b: nat } : 0 < b -> a ^ b ≥ a := by
     have ⟨ _, _ ⟩ := eq_zero h
     contradiction
   | isFalse h =>
-    apply TotalOrder.lt_of_le_and_ne
+    apply lt_of_le_and_ne
     apply zero_le
     intro g
     exact h g.symm
@@ -103,9 +103,9 @@ def nat.pow.ge_of_nz_exp { a b: nat } : 0 < b -> a ^ b ≥ a := by
 
 def nat.pow.gt { a b: nat } : 1 < b -> 1 < a -> a ^ b > a := by
   intro one_lt_b one_lt_a
-  cases TotalOrder.lt_or_eq_of_le <| @nat.pow.ge_of_nz_exp a b (TotalOrder.lt_trans zero_lt_succ one_lt_b) with
+  cases lt_or_eq_of_le <| @nat.pow.ge_of_nz_exp a b (lt_trans zero_lt_succ one_lt_b) with
   | inl h => assumption
-  | inr h => 
+  | inr h =>
     match b with
     | .succ (.succ b) =>
     clear one_lt_b
@@ -115,11 +115,10 @@ def nat.pow.gt { a b: nat } : 1 < b -> 1 < a -> a ^ b > a := by
       lhs
       rw [←mul_one a]
     }
-    have h := nat.mul.cancel_left a 1 (a ^ b.succ) (TotalOrder.lt_trans zero_lt_succ one_lt_a) h
+    have h := nat.mul.cancel_left a 1 (a ^ b.succ) (lt_trans zero_lt_succ one_lt_a) h
     cases eq_one h.symm
     rename_i h; cases h
     contradiction
     contradiction
 
 #print axioms nat.pow.gt
-

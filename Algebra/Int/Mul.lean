@@ -159,28 +159,28 @@ def int.mul.add_left { a b k: int } : (a + b) * k = a * k + b * k := by
         rw [int.mul.abs_sign_mul_neg, int.mul.abs_sign_mul_pos]
         apply add.comm
         apply nat.mul.of_le_cancel_right
-        apply TotalOrder.le_of_lt
+        apply le_of_lt
         assumption
         apply nat.succ_le_of_lt h
       | eq =>
-        cases TotalOrder.eq_of_compare_eq h
+        cases eq_of_compare_eq h
         clear h
         rw [←neg_neg (.neg_succ a), ←sub.def, neg.neg_succ, sub.refl, zero_left]
         rw [←neg_left, add.neg_self]
       | gt =>
         rw [int.add.lift_pos_neg_gt_to_nat]
-        any_goals (apply TotalOrder.gt_of_compare; assumption)
+        any_goals (apply gt_of_compare; assumption)
         rw [mul.def]
         unfold mul
         rw [sign.pos, int.Sign.pos_left, abs.pos_succ, ←nat.succ_sub, nat.sub_mul, int.sub.sign_mul]
         rw [sub.def, neg.sign_mul]
         rw [int.mul.abs_sign_mul_neg, int.mul.abs_sign_mul_pos]
         apply nat.mul.of_le_cancel_right
-        apply TotalOrder.le_of_lt
-        apply TotalOrder.gt_of_compare
+        apply le_of_lt
+        apply gt_of_compare
         assumption
         apply nat.succ_le_of_lt
-        apply TotalOrder.gt_of_compare
+        apply gt_of_compare
         assumption
   | neg_succ a =>
     cases b with
@@ -199,28 +199,28 @@ def int.mul.add_left { a b k: int } : (a + b) * k = a * k + b * k := by
         rw [int.mul.abs_sign_mul_neg, int.mul.abs_sign_mul_pos]
         apply add.comm
         apply nat.mul.of_le_cancel_right
-        apply TotalOrder.le_of_lt
+        apply le_of_lt
         assumption
         apply nat.succ_le_of_lt h
       | eq =>
-        cases TotalOrder.eq_of_compare_eq h
+        cases eq_of_compare_eq h
         clear h
         rw [←neg_neg (.neg_succ a), ←sub.def, neg.neg_succ, sub.refl, zero_left]
         rw [←neg_left, add.neg_self]
       | gt =>
         rw [int.add.lift_pos_neg_gt_to_nat]
-        any_goals (apply TotalOrder.gt_of_compare; assumption)
+        any_goals (apply gt_of_compare; assumption)
         rw [mul.def]
         unfold mul
         rw [sign.pos, int.Sign.pos_left, abs.pos_succ, ←nat.succ_sub, nat.sub_mul, int.sub.sign_mul]
         rw [sub.def, neg.sign_mul]
         rw [int.mul.abs_sign_mul_neg, int.mul.abs_sign_mul_pos]
         apply nat.mul.of_le_cancel_right
-        apply TotalOrder.le_of_lt
-        apply TotalOrder.gt_of_compare
+        apply le_of_lt
+        apply gt_of_compare
         assumption
         apply nat.succ_le_of_lt
-        apply TotalOrder.gt_of_compare
+        apply gt_of_compare
         assumption
     | neg_succ b =>
       apply int.neg.inj
@@ -442,15 +442,15 @@ def int.abs.inc_succ (a: int) : int.abs a.inc ≤ (int.abs a).succ := by
   unfold inc
   dsimp
   rw [int.abs.neg_succ, int.abs.neg_succ]
-  apply nat.le_trans
-  apply nat.le_of_lt
+  apply le_trans
+  apply le_of_lt
   apply nat.lt_succ_self
-  apply nat.le_of_lt
+  apply le_of_lt
   apply nat.lt_succ_self
 
 def int.abs.dec_succ (a: int) : int.abs a.dec ≤ (int.abs a).succ := by
   rw [←int.abs.neg, int.neg.dec]
-  apply TotalOrder.le_trans
+  apply le_trans
   apply int.abs.inc_succ
   rw [int.abs.neg]
 
@@ -470,14 +470,14 @@ def int.abs.tri (a b: int) : int.abs (a + b) ≤ int.abs a + int.abs b := by
       rw [int.dec]
       dsimp
       rw [int.abs.pos_succ]
-      apply nat.le_trans
-      apply nat.le_of_lt
+      apply le_trans
+      apply le_of_lt
       apply nat.lt_succ_self
-      apply nat.le_of_lt
+      apply le_of_lt
       apply nat.lt_succ_self
     | succ b ih =>
       rw [sub_nat, sub_nat.dec]
-      apply TotalOrder.le_trans
+      apply le_trans
       apply int.abs.dec_succ
       rw [nat.add_succ]
       apply nat.succ_le_succ
@@ -523,14 +523,14 @@ induction b with
   rename_i a
   rw [int.abs.pos_succ, int.abs.pos_succ, int.abs.neg_succ]
   rw [nat.one_eq, nat.add_one]
-  apply nat.lt_trans
+  apply lt_trans
   apply nat.lt_succ_self
   apply nat.lt_succ_self
 | succ b ih =>
   rw [int.sub_nat, int.sub_nat.dec]
-  apply TotalOrder.lt_of_le_of_lt
+  apply lt_of_le_of_lt
   apply int.abs.dec_succ
-  apply TotalOrder.lt_of_lt_of_le
+  apply lt_of_lt_of_le
   apply nat.succ_lt_succ
   apply ih
   clear ih

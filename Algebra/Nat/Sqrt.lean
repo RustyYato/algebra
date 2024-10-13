@@ -31,7 +31,7 @@ def nat.sqrt.gt_one : ∀x > 1,
   rw [dif_neg]
   dsimp
   rw [←sqrt]
-  apply nat.not_lt_of_ge
+  apply not_lt_of_ge
   assumption
 
 def nat.sqrt.sq_le_self (n: nat): n.sqrt² ≤ n := by
@@ -55,15 +55,15 @@ def nat.sqrt.sq_le_self (n: nat): n.sqrt² ≤ n := by
     · match n with
       | nat.succ n => trivial
     apply nat.div.mul_le
-    replace h := TotalOrder.le_of_not_lt h
+    replace h := le_of_not_lt h
     exact h
   · match n with
     | 0 =>
       rw [nat.sqrt.zero]
-      apply nat.le_refl
+      apply le_refl
     | 1 =>
       rw [nat.sqrt.one]
-      apply nat.le_refl
+      apply le_refl
 
 def nat.mul_two (n: nat) : n + n = 2 * n := by
   have : (2: nat) = 1 + 1 := rfl
@@ -143,7 +143,7 @@ def nat.sqrt.spec (n x: nat): x * x ≤ n -> x ≤ n.sqrt := by
     · rename_i h
       apply Decidable.byContradiction
       intro g
-      replace g := TotalOrder.lt_of_not_ge g
+      replace g := lt_of_not_ge g
       replace g := nat.succ_le_of_lt g
       have := le_trans (mul.le _ _ _ _ g g) xsq_le_n
       have := lt_of_lt_of_le h this
@@ -191,7 +191,7 @@ def nat.sqrt.spec (n x: nat): x * x ≤ n -> x ≤ n.sqrt := by
         rw [mod_def] at this
         have := not_lt_zero <| lt_of_succ_lt_succ (lt_of_succ_lt_succ this)
         contradiction
-    apply TotalOrder.not_le_of_lt
+    apply not_le_of_lt
     assumption
   · rename_i h
     unfold sqrt induction

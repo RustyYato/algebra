@@ -39,36 +39,36 @@ instance int.instTotalOrder : TotalOrder int where
       cases c
       any_goals assumption
       simp [int.instOrd]
-      apply TotalOrder.compare_transitive <;> assumption
+      apply compare_transitive <;> assumption
     }
     {
       rename_i a b
       cases c
       any_goals assumption
       simp [int.instOrd]
-      apply TotalOrder.compare_transitive <;> assumption
+      apply compare_transitive <;> assumption
     }
   compare_eq_refl := by
     intro a
     cases a
     rfl
-    simp [int.instOrd]; apply TotalOrder.compare_eq_refl
-    simp [int.instOrd]; apply TotalOrder.compare_eq_refl
+    simp [int.instOrd]; apply compare_eq_refl
+    simp [int.instOrd]; apply compare_eq_refl
   eq_of_compare_eq := by
     intro a b a_eq_b
     cases a <;> cases b
     any_goals contradiction
     rfl
     congr
-    apply TotalOrder.eq_of_compare_eq <;> assumption
+    apply eq_of_compare_eq <;> assumption
     congr
     simp [int.instOrd] at a_eq_b
-    exact (TotalOrder.eq_of_compare_eq a_eq_b).symm
+    exact (eq_of_compare_eq a_eq_b).symm
   compare_antisymm := by
     intro a b
     cases a <;> cases b
     any_goals rfl
-    repeat (simp [int.instOrd]; apply TotalOrder.compare_antisymm)
+    repeat (simp [int.instOrd]; apply compare_antisymm)
 
 
 #print axioms int.instTotalOrder

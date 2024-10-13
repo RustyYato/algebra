@@ -117,7 +117,7 @@ def sorted_symm_difference.refl
   intro xs
   induction xs with
   | nil => rfl
-  | cons x xs ih => 
+  | cons x xs ih =>
     rw [if_eq]
     congr
     rfl
@@ -143,10 +143,10 @@ def sorted_symm_difference.contains
     rw [if_lt] at z_in_difference
     any_goals assumption
     cases z_in_difference with
-    | head _ => 
+    | head _ =>
       apply Or.inl
       apply List.Mem.head
-    | tail _ z_in_difference => 
+    | tail _ z_in_difference =>
     cases ih z_in_difference with
     | inl h =>  apply Or.inl; apply List.Mem.tail; assumption
     | inr h => apply Or.inr ; assumption
@@ -156,10 +156,10 @@ def sorted_symm_difference.contains
     rw [if_gt] at z_in_difference
     any_goals assumption
     cases z_in_difference with
-    | head _ => 
+    | head _ =>
       apply Or.inr
       apply List.Mem.head
-    | tail _ z_in_difference => 
+    | tail _ z_in_difference =>
     cases ih z_in_difference with
     | inl h =>  apply Or.inl; assumption
     | inr h => apply Or.inr ; apply List.Mem.tail; assumption
@@ -178,7 +178,7 @@ def sorted_symm_difference.contains
 def sorted_symm_difference.sorted
   { a: Sort _ }
   [Ord α] [TotalOrder α]:
-  (xs ys: List α) -> 
+  (xs ys: List α) ->
   is_sorted xs ->
   is_sorted ys ->
   is_sorted (sorted_symm_difference xs ys) := by
@@ -188,7 +188,7 @@ def sorted_symm_difference.sorted
     assumption
   }
   {
-    intros 
+    intros
     assumption
   }
   {
@@ -207,8 +207,8 @@ def sorted_symm_difference.sorted
       apply List.Mem.tail
       assumption
     | inr z_in_ys =>
-      apply TotalOrder.le_trans
-      apply TotalOrder.le_of_lt
+      apply le_trans
+      apply le_of_lt
       assumption
       apply is_sorted.contains
       assumption
@@ -225,8 +225,8 @@ def sorted_symm_difference.sorted
     intro z z_in_difference
     cases contains z_in_difference with
     | inl z_in_xs  =>
-      apply TotalOrder.le_trans
-      apply TotalOrder.le_of_lt
+      apply le_trans
+      apply le_of_lt
       assumption
       apply is_sorted.contains
       assumption

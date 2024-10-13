@@ -19,19 +19,19 @@ instance rat.TotalOrderInst : TotalOrder rat where
     intro a b h
     unfold compare OrdInst order at h
     dsimp only at h
-    have := rat.eq_of_equiv a.to_simple b.to_simple (TotalOrder.eq_of_compare_eq h)
+    have := rat.eq_of_equiv a.to_simple b.to_simple (eq_of_compare_eq h)
     rw [to_simple_to_rat, to_simple_to_rat] at this
     assumption
   compare_eq_refl := by
     intro a
     unfold compare OrdInst order
     dsimp only
-    rw [TotalOrder.compare_eq_refl]
+    rw [compare_eq_refl]
   compare_antisymm := by
     intro a b
     unfold compare OrdInst order
     dsimp only
-    rw [TotalOrder.compare_antisymm]
+    rw [compare_antisymm]
   compare_transitive := by
     intro a b c o  ab bc
     unfold compare OrdInst order at *
@@ -59,7 +59,7 @@ instance rat.TotalOrderInst : TotalOrder rat where
     conv at bc in b.num * int.of_nat c.den * int.of_nat a.den => {
       rw [this]
     }
-    have cmp := TotalOrder.compare_transitive ab bc
+    have cmp := compare_transitive ab bc
     rw [this _ b.den, this _ b.den] at cmp
     rw [←int.mul.compare_left_pos] at cmp
     assumption
@@ -91,7 +91,7 @@ def rat.compare_of_fract { a b: fract } :
       · cases nat.gcd.eq_zero h
         contradiction
       · have := nat.dvd.le nat.zero_lt_succ (nat.gcd.dvd_left x.succ y)
-        have := TotalOrder.not_lt_and_ge h this
+        have := not_lt_and_ge h this
         contradiction
 
     have gcd_pos : ∀x y: nat, 0 < y -> 0 < x -> 0 < x / x.gcd y := by
@@ -101,13 +101,13 @@ def rat.compare_of_fract { a b: fract } :
       have := gcd_ne_zero x y y_pos
       apply Decidable.byContradiction
       intro h
-      replace h := nat.le_zero (TotalOrder.le_of_not_lt h)
+      replace h := nat.le_zero (le_of_not_lt h)
       contradiction
 
     have neg_pos_compare : ∀a b: int, 0 < a -> b < 0 -> b < a := by
       intro a b
       intro h g
-      apply TotalOrder.lt_trans <;> assumption
+      apply lt_trans <;> assumption
 
     cases anum <;> rw [int.sign] <;> dsimp
     · rw [int.zero_eq, int.mul.zero_left, int.mul.zero_left]
@@ -147,9 +147,9 @@ def rat.compare_of_fract { a b: fract } :
           | nat.succ aden =>
           rw [int.of_nat]
           dsimp
-          rw [TotalOrder.compare_of_gt (int.mul.neg_pos_is_neg _ _)]
+          rw [compare_of_gt (int.mul.neg_pos_is_neg _ _)]
           any_goals trivial
-          rw [TotalOrder.compare_of_gt (int.mul.neg_pos_is_neg _ _)]
+          rw [compare_of_gt (int.mul.neg_pos_is_neg _ _)]
           any_goals trivial
           apply Decidable.byContradiction
           intro g
@@ -169,7 +169,7 @@ def rat.compare_of_fract { a b: fract } :
         dsimp
         rw [int.zero_eq, int.abs.zero, nat.gcd.left_zero, nat.div.self, of_nat_one,
           int.mul.one_right, int.mul.zero_left, int.mul.zero_left,
-          TotalOrder.swap_compare (int.mul.pos_pos_is_pos _ _),
+          swap_compare (int.mul.pos_pos_is_pos _ _),
           Ordering.swap]
         any_goals trivial
       · rename_i bnum
@@ -194,7 +194,7 @@ def rat.compare_of_fract { a b: fract } :
           nat.div.compare_strict, nat.mul.comm bden, nat.mul.comm bnum.succ]
         apply Decidable.byContradiction
         intro h
-        replace h := nat.le_zero (TotalOrder.le_of_not_lt h)
+        replace h := nat.le_zero (le_of_not_lt h)
         cases nat.mul.eq_zero h <;> rename_i h <;> cases nat.gcd.eq_zero h
         contradiction
         contradiction
@@ -214,33 +214,33 @@ def rat.compare_of_fract { a b: fract } :
         contradiction
         rename_i m n' _
         clear m
-        rw [TotalOrder.swap_compare rfl, neg_pos_compare]
-        rw [TotalOrder.swap_compare rfl, neg_pos_compare]
+        rw [swap_compare rfl, neg_pos_compare]
+        rw [swap_compare rfl, neg_pos_compare]
         apply int.mul.pos_pos_is_pos
         trivial
-        apply TotalOrder.lt_of_compare
+        apply lt_of_compare
         erw [int.of_nat.zero, int.of_nat.compare]
-        apply TotalOrder.compare_of_lt
+        apply compare_of_lt
         rw [nat.gcd.comm]
         apply gcd_pos <;> trivial
         apply int.mul.neg_pos_is_neg
         trivial
-        apply TotalOrder.lt_of_compare
+        apply lt_of_compare
         erw [int.of_nat.zero, int.of_nat.compare]
-        apply TotalOrder.compare_of_lt
+        apply compare_of_lt
         rw [nat.gcd.comm]
         apply gcd_pos <;> trivial
         apply int.mul.pos_pos_is_pos
         trivial
-        apply TotalOrder.lt_of_compare
+        apply lt_of_compare
         erw [int.of_nat.zero, int.of_nat.compare]
-        apply TotalOrder.compare_of_lt
+        apply compare_of_lt
         trivial
         apply int.mul.neg_pos_is_neg
         trivial
-        apply TotalOrder.lt_of_compare
+        apply lt_of_compare
         erw [int.of_nat.zero, int.of_nat.compare]
-        apply TotalOrder.compare_of_lt
+        apply compare_of_lt
         trivial
     · rename_i anum
       rw [int.abs.neg_succ]
@@ -271,11 +271,11 @@ def rat.compare_of_fract { a b: fract } :
         rw [neg_pos_compare, neg_pos_compare]
 
         rw [int.of_nat.zero]
-        apply TotalOrder.lt_of_compare
+        apply lt_of_compare
         rw [int.of_nat.compare]
-        apply TotalOrder.compare_of_lt
+        apply compare_of_lt
         rw [nat.succ_mul]
-        apply nat.lt_of_lt_of_le _ (nat.add.le_left _ _)
+        apply lt_of_lt_of_le _ (nat.add.le_left _ _)
         rw [nat.gcd.comm]
         apply gcd_pos <;> trivial
 
@@ -283,20 +283,20 @@ def rat.compare_of_fract { a b: fract } :
         apply int.neg.swap_lt.mp
 
         rw [int.of_nat.zero]
-        apply TotalOrder.lt_of_compare
+        apply lt_of_compare
         rw [int.of_nat.compare]
-        apply TotalOrder.compare_of_lt
+        apply compare_of_lt
         rw [nat.succ_mul]
-        apply nat.lt_of_lt_of_le _ (nat.add.le_left _ _)
+        apply lt_of_lt_of_le _ (nat.add.le_left _ _)
         rw [nat.gcd.comm]
         apply gcd_pos <;> trivial
 
-        apply TotalOrder.lt_of_compare
+        apply lt_of_compare
         rw [int.mul.pos_pos_is_pos _ _]
         trivial
         trivial
 
-        apply TotalOrder.lt_of_compare
+        apply lt_of_compare
         rw [int.mul.neg_pos_is_neg _ _]
         trivial
         trivial
@@ -328,7 +328,7 @@ def rat.compare_of_fract { a b: fract } :
           nat.div.compare_strict, nat.mul.comm bden, nat.mul.comm bnum.succ]
         apply Decidable.byContradiction
         intro h
-        replace h := nat.le_zero (TotalOrder.le_of_not_lt h)
+        replace h := nat.le_zero (le_of_not_lt h)
         cases nat.mul.eq_zero h <;> rename_i h <;> cases nat.gcd.eq_zero h
         contradiction
         contradiction
@@ -500,8 +500,8 @@ def rat.add.le_of_add_left { a b k: rat } :
   apply Or.inl
   apply rat.add.compare_left
   assumption
-  cases TotalOrder.eq_of_compare_eq (by assumption)
-  apply TotalOrder.le_refl
+  cases eq_of_compare_eq (by assumption)
+  apply le_refl
 
 def rat.add.le_of_add_right { a b k: rat } :
   a ≤ b ->
@@ -515,7 +515,7 @@ def rat.add.le_of_le { a b c d: rat } :
   a ≤ b -> c ≤ d ->
   a + c ≤ b + d := by
   intro ab cd
-  apply TotalOrder.le_trans
+  apply le_trans
   apply rat.add.le_of_add_left
   assumption
   apply rat.add.le_of_add_right
@@ -525,27 +525,27 @@ def rat.add.lt_of_lt { a b c d: rat } :
   a < b -> c < d ->
   a + c < b + d := by
   intro ab cd
-  apply TotalOrder.lt_trans
+  apply lt_trans
   apply rat.add.lt_of_add_left
   assumption
   apply rat.add.lt_of_add_right
   assumption
 
-def rat.add.lt_of_le_of_lt { a b c d: rat } :
+def rat.add_lt_of_le_of_lt { a b c d: rat } :
   a ≤ b -> c < d ->
   a + c < b + d := by
   intro ab cd
-  apply TotalOrder.lt_of_le_of_lt
+  apply _root_.lt_of_le_of_lt
   apply rat.add.le_of_add_right
   assumption
   apply rat.add.lt_of_add_left
   assumption
 
-def rat.add.lt_of_lt_of_le { a b c d: rat } :
+def rat.add_lt_of_lt_of_le { a b c d: rat } :
   a < b -> c ≤ d ->
   a + c < b + d := by
   intro ab cd
-  apply TotalOrder.lt_of_lt_of_le
+  apply _root_.lt_of_lt_of_le
   apply rat.add.lt_of_add_right
   assumption
   apply rat.add.le_of_add_left
@@ -630,7 +630,7 @@ def fract.mul.pos_left (k a b: fract) :
   dsimp
   apply int.mul.pos_pos_is_pos
   have : 0 = int.of_nat 0 := rfl
-  apply TotalOrder.lt_of_compare
+  apply lt_of_compare
   erw [this, int.of_nat.compare 0 k.den]
   exact k.den_nz
   have cmp : compare 0 k = Ordering.lt := k_pos
@@ -643,7 +643,7 @@ def rat.neg.swap_lt (a b: rat) :
   a < b ->
   -b < -a := by
   intro h
-  apply TotalOrder.lt_of_compare
+  apply lt_of_compare
   rw [neg.swap_cmp]
   assumption
 
@@ -682,7 +682,7 @@ def rat.mul.compare_neg_right (k a b: rat) :
 def rat.mul.pos_pos_is_pos (a b: rat) :
   0 < a -> 0 < b -> 0 < a * b := by
   intro a_pos b_pos
-  apply TotalOrder.lt_of_compare
+  apply lt_of_compare
   rw [←mul.zero_left b, compare_pos_right]
   assumption
   assumption
@@ -690,7 +690,7 @@ def rat.mul.pos_pos_is_pos (a b: rat) :
 def rat.mul.neg_pos_is_neg (a b: rat) :
   a < 0 -> 0 < b -> a * b < 0 := by
   intro a_pos b_pos
-  apply TotalOrder.lt_of_compare
+  apply lt_of_compare
   rw [←mul.zero_left b, compare_pos_right]
   assumption
   assumption
@@ -698,7 +698,7 @@ def rat.mul.neg_pos_is_neg (a b: rat) :
 def rat.mul.pos_neg_is_neg (a b: rat) :
   0 < a -> b < 0 -> a * b < 0 := by
   intro a_pos b_pos
-  apply TotalOrder.lt_of_compare
+  apply lt_of_compare
   rw [←mul.zero_right a, compare_pos_left]
   assumption
   assumption
@@ -706,7 +706,7 @@ def rat.mul.pos_neg_is_neg (a b: rat) :
 def rat.mul.neg_neg_is_pos (a b: rat) :
   a < 0 -> b < 0 -> 0 < a * b := by
   intro a_neg b_neg
-  apply TotalOrder.lt_of_compare
+  apply lt_of_compare
   rw [←mul.zero_right a, compare_neg_left]
   assumption
   assumption
@@ -714,7 +714,7 @@ def rat.mul.neg_neg_is_pos (a b: rat) :
 def rat.mul.lt_pos_left (a b k: rat) :
   a < b -> 0 < k -> k * a < k * b := by
   intro a_neg b_neg
-  apply TotalOrder.lt_of_compare
+  apply lt_of_compare
   rw [compare_pos_left]
   assumption
   assumption
@@ -722,7 +722,7 @@ def rat.mul.lt_pos_left (a b k: rat) :
 def rat.mul.lt_neg_left (a b k: rat) :
   a < b -> k < 0 -> k * b < k * a := by
   intro a_neg b_neg
-  apply TotalOrder.lt_of_compare
+  apply lt_of_compare
   rw [compare_neg_left]
   assumption
   assumption
@@ -730,7 +730,7 @@ def rat.mul.lt_neg_left (a b k: rat) :
 def rat.mul.le_pos_left (a b k: rat) :
   a ≤ b -> 0 < k -> k * a ≤ k * b := by
   intro a_neg b_neg
-  apply TotalOrder.le_of_compare
+  apply le_of_compare
   rw [compare_pos_left]
   assumption
   assumption
@@ -738,7 +738,7 @@ def rat.mul.le_pos_left (a b k: rat) :
 def rat.mul.le_neg_left (a b k: rat) :
   a ≤ b -> k < 0 -> k * b ≤ k * a := by
   intro a_neg b_neg
-  apply TotalOrder.le_of_compare
+  apply le_of_compare
   rw [compare_neg_left]
   assumption
   assumption
@@ -746,7 +746,7 @@ def rat.mul.le_neg_left (a b k: rat) :
 def rat.mul.lt_pos_right (a b k: rat) :
   a < b -> 0 < k -> a * k < b * k := by
   intro a_neg b_neg
-  apply TotalOrder.lt_of_compare
+  apply lt_of_compare
   rw [compare_pos_right]
   assumption
   assumption
@@ -754,7 +754,7 @@ def rat.mul.lt_pos_right (a b k: rat) :
 def rat.mul.lt_neg_right (a b k: rat) :
   a < b -> k < 0 -> b * k < a * k := by
   intro a_neg b_neg
-  apply TotalOrder.lt_of_compare
+  apply lt_of_compare
   rw [compare_neg_right]
   assumption
   assumption
@@ -762,7 +762,7 @@ def rat.mul.lt_neg_right (a b k: rat) :
 def rat.mul.le_pos_right (a b k: rat) :
   a ≤ b -> 0 < k -> a * k ≤ b * k := by
   intro a_neg b_neg
-  apply TotalOrder.le_of_compare
+  apply le_of_compare
   rw [compare_pos_right]
   assumption
   assumption
@@ -770,7 +770,7 @@ def rat.mul.le_pos_right (a b k: rat) :
 def rat.mul.le_neg_right (a b k: rat) :
   a ≤ b -> k < 0 -> b * k ≤ a * k := by
   intro a_neg b_neg
-  apply TotalOrder.le_of_compare
+  apply le_of_compare
   rw [compare_neg_right]
   assumption
   assumption
@@ -781,17 +781,17 @@ def rat.abs.not_gt (a: rat) :
   rw [abs]
   dsimp
   intro h
-  replace h := TotalOrder.compare_of_gt h
+  replace h := compare_of_gt h
   rw [compare_def, order] at h
   dsimp at h
   erw [int.mul.zero_left, int.mul.one_right] at h
   rw [int.of_nat.zero, int.of_nat.compare] at h
-  replace h := TotalOrder.gt_of_compare h
+  replace h := gt_of_compare h
   exact nat.not_lt_zero h
 
 def rat.abs.nonneg (a: rat) :
   0 ≤ a.abs := by
-  apply TotalOrder.le_of_not_gt
+  apply le_of_not_gt
   apply rat.abs.not_gt
 
 def rat.div.pos_of_gt_one (a b: rat) :
@@ -799,14 +799,14 @@ def rat.div.pos_of_gt_one (a b: rat) :
   intro b_gt_one a_pos
   rw [div.def]
   conv => { rhs; rw [←mul.one_right a] }
-  apply TotalOrder.lt_of_compare
+  apply lt_of_compare
   rw [mul.compare_pos_left]
   rw [←mul.compare_pos_left b, mul.inv_right, mul.one_right]
   any_goals assumption
   intro h
   cases h
   contradiction
-  apply TotalOrder.lt_trans _ b_gt_one
+  apply lt_trans _ b_gt_one
   trivial
 
 def rat.div.neg_of_gt_one (a b: rat) :
@@ -814,14 +814,14 @@ def rat.div.neg_of_gt_one (a b: rat) :
   intro b_gt_one a_pos
   rw [div.def]
   conv => { lhs; rw [←mul.one_right a] }
-  apply TotalOrder.lt_of_compare
+  apply lt_of_compare
   rw [mul.compare_neg_left]
   rw [←mul.compare_pos_left b, mul.inv_right, mul.one_right]
   any_goals assumption
   intro h
   cases h
   contradiction
-  apply TotalOrder.lt_trans _ b_gt_one
+  apply lt_trans _ b_gt_one
   trivial
 
 def rat.add.midpoint (a b: rat) :
@@ -830,24 +830,24 @@ def rat.add.midpoint (a b: rat) :
   intro a_lt_b
   rw [div.def, add.mul_right, ←div.def, ←div.def]
   apply And.intro
-  · apply flip TotalOrder.lt_of_le_of_lt
-    · apply add.lt_of_le_of_lt
-      · apply TotalOrder.le_refl
+  · apply flip lt_of_le_of_lt
+    · apply add_lt_of_le_of_lt
+      · apply le_refl
       · rw [div.def]
-        apply TotalOrder.lt_of_compare
+        apply lt_of_compare
         rw [mul.compare_pos_right]
         assumption
         trivial
     · rw [div.def, ←add.mul_right, ←mul_two, mul.assoc, mul.inv_right, mul.one_right]
       trivial
-  · apply TotalOrder.lt_of_lt_of_le
-    · apply add.lt_of_lt_of_le
+  · apply lt_of_lt_of_le
+    · apply add_lt_of_lt_of_le
       · rw [div.def]
-        apply TotalOrder.lt_of_compare
+        apply lt_of_compare
         rw [mul.compare_pos_right]
         assumption
         trivial
-      · apply TotalOrder.le_refl
+      · apply le_refl
     · rw [div.def, ←add.mul_right, ←mul_two, mul.assoc, mul.inv_right, mul.one_right]
       trivial
 
@@ -869,9 +869,9 @@ def fract.abs.tri (a b: fract) : fract.abs (a + b) ≤ fract.abs a + fract.abs b
     have : (0: int ) = 0 + 0 := rfl
     rw [this]
     apply int.add.le
-    apply TotalOrder.le_of_lt
+    apply le_of_lt
     apply int.mul.pos_pos_is_pos <;> trivial
-    apply TotalOrder.le_of_lt
+    apply le_of_lt
     apply int.mul.pos_pos_is_pos <;> trivial
   have : ∀a b,
     int.pos_succ a * int.of_nat bden + int.of_nat aden * int.pos_succ b = int.of_nat (a.succ * bden + aden * b.succ) := by
@@ -882,18 +882,18 @@ def fract.abs.tri (a b: fract) : fract.abs (a + b) ≤ fract.abs a + fract.abs b
     (int.pos_succ a * int.of_nat bden + int.of_nat aden * int.pos_succ b).abs = Ordering.lt := by
     clear anum bnum
     intro a b
-    apply TotalOrder.compare_of_lt
-    apply TotalOrder.lt_of_lt_of_le
+    apply compare_of_lt
+    apply lt_of_lt_of_le
     apply int.abs.tri_lt
     apply Or.inl
     · apply And.intro
       apply int.mul.pos_pos_is_pos <;> trivial
       apply int.mul.pos_neg_is_neg <;> trivial
     rw [int.abs.mul, int.abs.mul, int.abs.neg_succ, int.abs.pos_succ, int.abs.of_nat, int.abs.of_nat]
-    apply TotalOrder.le_of_compare
+    apply le_of_compare
     apply Or.inr
     rw [←int.of_nat.compare, ←abs_eq, this, int.of_nat.compare,
-      TotalOrder.compare_eq_refl]
+      compare_eq_refl]
 
   suffices compare (int.of_nat (anum * int.of_nat bden + int.of_nat aden * bnum).abs * int.of_nat (aden * bden))
       ((int.of_nat anum.abs * int.of_nat bden + int.of_nat aden * int.of_nat bnum.abs) * int.of_nat (aden * bden)) ≠ Ordering.gt from by
@@ -920,13 +920,13 @@ def fract.abs.tri (a b: fract) : fract.abs (a + b) ≤ fract.abs a + fract.abs b
     any_goals repeat rw [int.abs.neg_succ] at h
     any_goals rw [←int.mul.lift_nat] at h
     any_goals rw [int.pos_succ.of_nat] at h
-    any_goals rw [TotalOrder.compare_eq_refl] at h
+    any_goals rw [compare_eq_refl] at h
     any_goals contradiction
     all_goals rename_i a b
     all_goals rw [int.pos_succ.of_nat] at h
     all_goals conv at h => { lhs; rhs; rw [abs_eq] }
     all_goals rw [int.of_nat.compare] at h
-    · rw [TotalOrder.compare_eq_refl] at h
+    · rw [compare_eq_refl] at h
       contradiction
     · rw [cmp_add_pos_neg] at h
       contradiction
@@ -936,14 +936,14 @@ def fract.abs.tri (a b: fract) : fract.abs (a + b) ≤ fract.abs a + fract.abs b
       contradiction
     · rw [←@int.abs.neg (int.neg_succ _ * _ + _),
         int.add.neg, int.mul.neg_left, int.mul.neg_right, int.neg.neg_succ, int.neg.neg_succ] at h
-      rw [TotalOrder.compare_eq_refl] at h
+      rw [compare_eq_refl] at h
       contradiction
   · rw [←int.mul.lift_nat]
     apply int.mul.pos_pos_is_pos <;> assumption
 
 def rat.abs.tri (a b: rat) : rat.abs (a + b) ≤ rat.abs a + rat.abs b := by
   rw [add.def, add.def, fract.abs.to_rat]
-  apply TotalOrder.le_of_compare
+  apply le_of_compare
   erw [←compare_of_fract]
   apply fract.abs.tri
 
@@ -988,12 +988,12 @@ def fract.abs.tri_ne {a b: fract} :
     apply int.mul.pos_pos_is_pos
     cases aden <;> trivial
     exact r)
-  have eq := TotalOrder.compare_of_eq eq
+  have eq := compare_of_eq eq
   rw [int.of_nat.compare, nat.mul.compare_left_pos] at eq
-  have eq := TotalOrder.eq_of_compare_eq eq
+  have eq := eq_of_compare_eq eq
   rw [eq] at this
   rw [int.abs.mul, int.abs.mul, int.abs.of_nat, int.abs.of_nat] at this
-  have := TotalOrder.lt_irrefl this
+  have := lt_irrefl this
   contradiction
   cases aden
   contradiction
@@ -1005,7 +1005,7 @@ def rat.abs.tri_lt (a b: rat) :
   (0 < a ∧ b < 0) ∨ (a < 0 ∧ 0 < b) ->
   rat.abs (a + b) < rat.abs a + rat.abs b := by
   intro h
-  apply TotalOrder.lt_of_le_of_ne
+  apply lt_of_le_of_ne
   apply rat.abs.tri
   intro h
   rw [add.def, add.def, fract.abs.to_rat] at h
@@ -1023,8 +1023,8 @@ def rat.abs.tri_lt (a b: rat) :
 def rat.inv.pos (a: rat) : 0 < a -> 0 < a⁻¹ := by
   intro h
   cases a with | mk n d d_pos red =>
-  replace h := TotalOrder.compare_of_lt h
-  apply TotalOrder.lt_of_compare
+  replace h := compare_of_lt h
+  apply lt_of_compare
   rw [compare_def, order] at *
   erw [int.mul.zero_left, int.mul.one_right] at *
   rw [rat.invert]
@@ -1065,7 +1065,7 @@ def fract.mul.compare_left_pos (a b k: fract) : 0 < k ->
   rw [lt.def, compare_def, order] at h
   dsimp at h
   erw [int.mul.zero_left, int.mul.one_right] at h
-  replace h := TotalOrder.lt_of_compare h
+  replace h := lt_of_compare h
   dsimp
   apply int.mul.pos_pos_is_pos
   assumption

@@ -35,10 +35,10 @@ def nat.gcd.induction.fueled.termination
     unfold fueled
     simp only
     have := ih b.succ (a % b.succ) (by
-      apply TotalOrder.lt_of_lt_of_le
+      apply lt_of_lt_of_le
       apply nat.mod.lt
       apply nat.zero_lt_succ
-      exact nat.le_of_lt_succ b_lt_succ_fuel
+      exact le_of_lt_succ b_lt_succ_fuel
     )
     split
     rename_i h
@@ -76,15 +76,15 @@ def nat.gcd.induction.fueled.fuel_irr
           simp only
           rw [ih]
 
-          apply TotalOrder.lt_of_lt_of_le
+          apply lt_of_lt_of_le
           apply nat.mod.lt
           apply nat.zero_lt_succ
-          exact nat.le_of_lt_succ b_le_fuela
+          exact le_of_lt_succ b_le_fuela
 
-          apply TotalOrder.lt_of_lt_of_le
+          apply lt_of_lt_of_le
           apply nat.mod.lt
           apply nat.zero_lt_succ
-          exact nat.le_of_lt_succ b_le_fuelb
+          exact le_of_lt_succ b_le_fuelb
 
 #print axioms nat.gcd.induction.fueled.fuel_irr
 
@@ -190,7 +190,7 @@ def nat.gcd_ne_zero : ∀a b, gcd a b ≠ 0 -> a ≠ 0 ∨ b ≠ 0 := by
     intro a b zero_lt_b _ gcd_ne_zero
     rw [nat.gcd.right_nz] at gcd_ne_zero
     apply Or.inr
-    apply TotalOrder.ne_of_gt zero_lt_b
+    apply ne_of_gt zero_lt_b
     assumption
   }
 
@@ -321,7 +321,7 @@ def nat.gcd.common_right : ∀a b k, gcd (a * k) (b * k) = gcd a b * k := by
     rw [nat.mul_mod, ih c.succ]
     assumption
     rw [mul_succ]
-    apply TotalOrder.lt_of_lt_of_le
+    apply lt_of_lt_of_le
     assumption
     apply nat.add.le_left
   }

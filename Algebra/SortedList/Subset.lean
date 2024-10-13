@@ -39,7 +39,7 @@ def List.sorted_subset.len_check :
   induction bs generalizing as with
   | nil => cases as with
     | nil =>
-      apply nat.le_refl
+      apply le_refl
     | cons a as  => contradiction
   | cons b bs ih =>
     cases as with
@@ -55,8 +55,8 @@ def List.sorted_subset.len_check :
         assumption
       | inr h =>
         have := ih (a::as) h.right
-        apply nat.le_trans this
-        apply nat.le_of_lt
+        apply le_trans this
+        apply le_of_lt
         apply nat.lt_succ_self
 
 #print axioms List.sorted_subset.len_check

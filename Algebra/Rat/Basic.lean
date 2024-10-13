@@ -121,14 +121,14 @@ def fract.to_rat (r: fract) : rat := rat.mk
       have := nat.gcd.dvd_right n d
       apply Decidable.byContradiction
       intro div_eq_zero
-      cases nat.div.of_eq_zero (nat.le_zero <| TotalOrder.not_lt_implies_ge div_eq_zero) with
+      cases nat.div.of_eq_zero (nat.le_zero <| not_lt_implies_ge div_eq_zero) with
       | inl gcd_eq_zero =>
         have ⟨ _, d_eq_zero ⟩ := nat.gcd.eq_zero gcd_eq_zero
         cases d_eq_zero
         contradiction
       | inr d_lt_gcd =>
         simp only at d_lt_gcd
-        apply TotalOrder.not_lt_and_ge d_lt_gcd
+        apply not_lt_and_ge d_lt_gcd
         apply nat.dvd.le _ (nat.gcd.dvd_right n den)
         assumption
       )
@@ -151,7 +151,7 @@ def fract.to_rat (r: fract) : rat := rat.mk
             {
               apply Decidable.byContradiction
               intro gcd_eq_zero
-              have gcd_eq_zero := nat.le_zero <| TotalOrder.not_lt_implies_ge gcd_eq_zero
+              have gcd_eq_zero := nat.le_zero <| not_lt_implies_ge gcd_eq_zero
               cases nat.gcd.eq_zero gcd_eq_zero
               contradiction
             }
@@ -174,7 +174,7 @@ def fract.to_rat (r: fract) : rat := rat.mk
             {
               apply Decidable.byContradiction
               intro gcd_eq_zero
-              have gcd_eq_zero := nat.le_zero <| TotalOrder.not_lt_implies_ge gcd_eq_zero
+              have gcd_eq_zero := nat.le_zero <| not_lt_implies_ge gcd_eq_zero
               cases nat.gcd.eq_zero gcd_eq_zero
               contradiction
             }
@@ -376,7 +376,7 @@ def fract.to_rat_to_simple (a: fract) : a.to_rat.to_simple.equiv a := by
           contradiction
         | inr h =>
           apply False.elim
-          apply TotalOrder.not_lt_and_ge h
+          apply not_lt_and_ge h
           apply nat.dvd.le
           assumption
           apply nat.gcd.dvd_right
@@ -396,7 +396,7 @@ def fract.to_rat_to_simple (a: fract) : a.to_rat.to_simple.equiv a := by
           contradiction
         | inr h =>
           apply False.elim
-          apply TotalOrder.not_lt_and_ge h
+          apply not_lt_and_ge h
           apply nat.dvd.le
           assumption
           apply nat.gcd.dvd_right
@@ -423,7 +423,7 @@ def fract.to_rat_to_simple (a: fract) : a.to_rat.to_simple.equiv a := by
       contradiction
     | inr h =>
       apply False.elim
-      apply TotalOrder.not_lt_and_ge h
+      apply not_lt_and_ge h
       apply nat.dvd.le
       apply nat.zero_lt_succ
       apply nat.gcd.dvd_right
@@ -490,7 +490,7 @@ def fract.add.def (a b: fract) : a + b = fract.mk (a.num * b.den + a.den * b.num
   by
     apply Decidable.byContradiction
     intro h
-    have := nat.le_zero <| TotalOrder.le_of_not_gt h
+    have := nat.le_zero <| le_of_not_gt h
     cases nat.mul.eq_zero this <;> rename_i h
     have := a.den_nz
     rw [h] at this
@@ -711,7 +711,7 @@ def rat.abs (a: rat) : rat := rat.mk a.num.abs a.den a.den_nz <| by
 def fract.mul (a b: fract) : fract := fract.mk (a.num * b.num) (a.den * b.den) (by
   apply Decidable.byContradiction
   intro h
-  replace h := nat.le_zero (TotalOrder.le_of_not_lt h)
+  replace h := nat.le_zero (le_of_not_lt h)
   cases nat.mul.eq_zero h
   · cases a with | mk n d nz =>
     dsimp at *
@@ -860,7 +860,7 @@ def fract.add.congr (a b c d: fract) :
   have : ∀x, 0 < x -> 0 < int.of_nat x := by
     intro x x_pos
     have : 0 = int.of_nat 0 := rfl
-    apply TotalOrder.lt_of_compare
+    apply lt_of_compare
     rw [this, int.of_nat.compare]
     assumption
   repeat rw [←int.mul.lift_nat]
@@ -869,11 +869,11 @@ def fract.add.congr (a b c d: fract) :
   congr 1
   rw [int.mul.comm_left _ cden, int.mul.comm_left _ aden, int.mul.comm dden]
   rw [←int.mul.assoc, ←int.mul.assoc cnum]
-  apply TotalOrder.eq_of_compare_eq
+  apply eq_of_compare_eq
   rw [←int.mul.compare_left_pos]
   rw [ac]
-  apply TotalOrder.compare_eq_refl
-  apply TotalOrder.lt_of_compare
+  apply compare_eq_refl
+  apply lt_of_compare
   rw [int.mul.pos_pos_is_pos]
   exact this _ bden_pos
   exact this _ dden_pos
@@ -881,11 +881,11 @@ def fract.add.congr (a b c d: fract) :
     int.mul.comm_left _ aden]
   rw [←int.mul.assoc, ←int.mul.assoc cden]
   rw [int.mul.comm, int.mul.comm cden, int.mul.comm (aden * _)]
-  apply TotalOrder.eq_of_compare_eq
+  apply eq_of_compare_eq
   rw [←int.mul.compare_left_pos]
   rw [bd]
-  apply TotalOrder.compare_eq_refl
-  apply TotalOrder.lt_of_compare
+  apply compare_eq_refl
+  apply lt_of_compare
   rw [int.mul.pos_pos_is_pos]
   exact this _ aden_pos
   exact this _ cden_pos
@@ -1128,7 +1128,7 @@ def fract.abs.to_rat (a: fract) : a.to_rat.abs = a.abs.to_rat := by
     · cases nat.gcd.eq_zero h
       contradiction
     · have := nat.dvd.le nat.zero_lt_succ (nat.gcd.dvd_left n.succ d)
-      have := TotalOrder.not_le_of_lt h
+      have := not_le_of_lt h
       contradiction
     rename_i m n' h
     clear m
@@ -1141,7 +1141,7 @@ def fract.abs.to_rat (a: fract) : a.to_rat.abs = a.abs.to_rat := by
     · cases nat.gcd.eq_zero h
       contradiction
     · have := nat.dvd.le nat.zero_lt_succ (nat.gcd.dvd_left n.succ d)
-      have := TotalOrder.not_le_of_lt h
+      have := not_le_of_lt h
       contradiction
     congr
     rename_i m n'' g
@@ -1160,7 +1160,7 @@ def fract.abs.to_rat (a: fract) : a.to_rat.abs = a.abs.to_rat := by
     · cases nat.gcd.eq_zero h
       contradiction
     · have := nat.dvd.le nat.zero_lt_succ (nat.gcd.dvd_left n.succ d)
-      have := TotalOrder.not_le_of_lt h
+      have := not_le_of_lt h
       contradiction
     rename_i m n' h
     clear m
@@ -1175,7 +1175,7 @@ def fract.abs.to_rat (a: fract) : a.to_rat.abs = a.abs.to_rat := by
     · cases nat.gcd.eq_zero h
       contradiction
     · have := nat.dvd.le nat.zero_lt_succ (nat.gcd.dvd_left n.succ d)
-      have := TotalOrder.not_le_of_lt h
+      have := not_le_of_lt h
       contradiction
     congr
     rename_i m n'' g

@@ -35,7 +35,7 @@ def int.abs.ge (i: int) : i ≤ i.abs := by
   cases i
   trivial
   apply Or.inr
-  apply TotalOrder.compare_eq_refl
+  apply compare_eq_refl
   apply Or.inl
   rfl
 

@@ -111,7 +111,7 @@ def Vector.insert_at_get_ge (vs: Vector α n) (b: fin n) (a: fin n.succ) (value:
 def Vector.insert_at_get_lt (vs: Vector α n) (b: fin n) (a: fin n.succ) (value: α):
   a.val > b.val ->
   (vs.insert_at a value).get (fin.mk b.val
-    (by apply nat.lt_trans b.valLt; apply nat.lt_succ_self)) = vs.get b := by
+    (by apply lt_trans b.valLt; apply nat.lt_succ_self)) = vs.get b := by
   intro a_gt_b
   induction b with
   | zero =>
@@ -142,7 +142,7 @@ def Vector.insert_at_get_lt (vs: Vector α n) (b: fin n) (a: fin n.succ) (value:
 
 def Vector.remove_get_lt { n: nat } (vs: Vector α n.succ) (a: fin n.succ) (b: fin n) :
   b.val < a.val ->
-  (vs.remove a).get b = vs.get (fin.mk b.val (nat.lt_trans b.valLt (nat.lt_succ_self _))) := by
+  (vs.remove a).get b = vs.get (fin.mk b.val (lt_trans b.valLt (nat.lt_succ_self _))) := by
   intro b_lt_a
   induction n with
   | zero => contradiction

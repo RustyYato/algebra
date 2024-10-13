@@ -236,7 +236,7 @@ def sorted_intersection.of_contains
     | head _ =>
       cases z_in_xs with
       | head _ =>
-        have := TotalOrder.lt_irrefl  x_lt_y
+        have := lt_irrefl  x_lt_y
         contradiction
       | tail _ z_in_xs =>
         apply ih
@@ -255,7 +255,7 @@ def sorted_intersection.of_contains
         assumption
       | head _ =>
         have x_ge_y := (sorted_ys.first) x z_in_ys
-        have := TotalOrder.not_lt_and_ge x_lt_y x_ge_y
+        have := not_lt_and_ge x_lt_y x_ge_y
         contradiction
   }
   {
@@ -266,7 +266,7 @@ def sorted_intersection.of_contains
     | head _ =>
       cases z_in_ys with
       | head _ =>
-          have := TotalOrder.lt_irrefl x_gt_y
+          have := lt_irrefl x_gt_y
           contradiction
       | tail _ z_in_ys =>
         apply ih
@@ -285,7 +285,7 @@ def sorted_intersection.of_contains
         assumption
       | head _ =>
         have y_ge_x := (sorted_xs.first) y z_in_xs
-        have := TotalOrder.not_lt_and_ge x_gt_y y_ge_x
+        have := not_lt_and_ge x_gt_y y_ge_x
         contradiction
   }
   {
@@ -339,7 +339,7 @@ def sorted_intersection.idempotent_left
     intro x' x_in_sorted_intersection
     have ⟨ x'_in_xs, _ ⟩  := contains x_in_sorted_intersection
     have := sorted_xs.contains x' x xs x'_in_xs
-    apply TotalOrder.lt_of_lt_of_le <;> assumption
+    apply lt_of_lt_of_le <;> assumption
   }
   {
     intro x y xs ys x_eq_y ih sorted_xs

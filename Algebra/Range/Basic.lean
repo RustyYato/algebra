@@ -7,25 +7,25 @@ structure range (min max: nat) where
 
 def range.empty : range a a -> False := by
   intro r
-  apply nat.not_lt_of_ge r.value_lt_max
+  apply not_lt_of_ge r.value_lt_max
   exact r.min_le_value
 
 def range.for_value (value: nat) : range value value.succ := by
   apply range.mk value
-  apply nat.le_refl
+  apply le_refl
   apply nat.lt_succ_self
 
 def range.reduce_min { min max: nat } (r: range min max) (min': nat) : min' ≤ min -> range min' max := by
   intro min'_le
   apply range.mk r.value
-  exact nat.le_trans min'_le r.min_le_value
+  exact le_trans min'_le r.min_le_value
   exact r.value_lt_max
 
 def range.increase_max { min max: nat } (r: range min max) (max': nat) : max ≤ max' -> range min max' := by
   intro max'_le
   apply range.mk r.value
   exact r.min_le_value
-  exact nat.lt_of_lt_of_le r.value_lt_max max'_le
+  exact lt_of_lt_of_le r.value_lt_max max'_le
 
 def range.try_update_min { min max: nat } (r: range min max) (min': nat) :
   Option (range min' max) :=

@@ -87,22 +87,22 @@ instance Fin.TotalOrdInst : TotalOrder (fin n) where
   compare_antisymm := by
     intros
     unfold compare
-    apply TotalOrder.compare_antisymm
+    apply compare_antisymm
   compare_transitive := by
     intros
     unfold compare
-    apply TotalOrder.compare_transitive <;> assumption
+    apply compare_transitive <;> assumption
   eq_of_compare_eq := by
     unfold compare
     intros
     apply fin.val.congr
-    apply TotalOrder.eq_of_compare_eq <;> assumption
+    apply eq_of_compare_eq <;> assumption
   compare_eq_refl := by
     unfold compare
     intros
     unfold Ord
     dsimp
-    apply TotalOrder.compare_eq_refl <;> assumption
+    apply compare_eq_refl <;> assumption
 
 #print axioms Fin.TotalOrdInst
 

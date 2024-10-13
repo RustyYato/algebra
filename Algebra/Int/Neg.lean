@@ -34,7 +34,7 @@ def int.neg.inj: ∀{ a b: int }, -a = -b -> a = b := by
 def int.neg.swap_cmp : ∀{ a b: int }, compare (-b) (-a) = compare a b := by
   intro a b
   cases a <;> cases b
-  any_goals apply TotalOrder.compare_antisymm
+  any_goals apply compare_antisymm
   repeat rfl
 
 #print axioms int.neg.swap_cmp

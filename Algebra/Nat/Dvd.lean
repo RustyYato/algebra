@@ -119,7 +119,7 @@ instance nat.dvd.dec (a b: nat) : Decidable (a ∣ b) := by
     have := nat.mul.ge k.succ a.succ rfl
     rw [mul.comm] at this
     rw [←ak_eq_b] at b_lt_k
-    exact nat.not_lt_of_ge b_lt_k this
+    exact not_lt_of_ge this b_lt_k
     )
   match this with
   | .Found h => exact Decidable.isTrue h
@@ -182,7 +182,7 @@ def nat.dvd.add { a b c: nat } : a ∣ (b + c) -> a ∣ b -> a ∣ c := by
   exists (x - y)
   rw [nat.mul_sub, x_prf]
   rw [add.comm, ←add_sub, sub.refl, add_zero]
-  apply nat.le_refl
+  apply le_refl
 
 #print axioms nat.dvd.add
 
@@ -200,7 +200,7 @@ def nat.dvd.sub { a b: nat } : a ≤ b -> a ∣ b -> a ∣ (b - a) := by
     exists k
     rw [←prf]
     rw [mul_succ, add.comm, ←add_sub, sub.refl, add_zero]
-    exact le_refl _
+    rfl
 
 #print axioms nat.dvd.sub
 
@@ -217,7 +217,7 @@ def nat.dvd.mod_eq_zero: ∀{ a b: nat }, b ∣ a -> a % b = 0 := by
     cases a with
     | zero => rfl
     | succ a =>
-      apply False.elim <| TotalOrder.not_lt_and_ge a_lt_b _
+      apply False.elim <| not_lt_and_ge a_lt_b _
       exact nat.dvd.le zero_lt_succ b_dvd_a
     apply zero_lt_of_lt a_lt_b
     assumption
@@ -370,12 +370,12 @@ def nat.div.compare_strict (a b c: nat) :
   apply nat.div_mod.induction (fun a c _ => ∀b, c ∣ a -> c ∣ b -> compare (a / c) (b / c) = compare a b) _ _ a c c_pos
   all_goals clear a b c_pos c
   · intro a c a_lt_c b c_dvd_a c_dvd_b
-    have : 0 < c := nat.lt_of_le_of_lt (nat.zero_le _) a_lt_c
+    have : 0 < c := lt_of_le_of_lt (nat.zero_le _) a_lt_c
     cases a with
     | succ a =>
       have := fun h => nat.dvd.le h c_dvd_a
       have := this nat.zero_lt_succ
-      have := nat.not_lt_of_ge a_lt_c this
+      have := not_lt_of_ge this a_lt_c
       contradiction
     | zero =>
       rw [nat.zero_eq, nat.zero_div]
@@ -385,13 +385,13 @@ def nat.div.compare_strict (a b c: nat) :
         | succ b =>
           have := fun h => nat.dvd.le h c_dvd_b
           have := this nat.zero_lt_succ
-          have := nat.not_lt_of_ge (by assumption) this
+          have := not_lt_of_ge this (by assumption)
           contradiction
         | zero =>
           rfl
       · rename_i b_ge_c
-        have := TotalOrder.le_of_not_lt b_ge_c
-        have := TotalOrder.lt_of_lt_of_le (by assumption) this
+        have := le_of_not_lt b_ge_c
+        have := lt_of_lt_of_le (by assumption) this
         rw [nat.zero_eq] at this
         rw [this]
         rfl
@@ -401,21 +401,21 @@ def nat.div.compare_strict (a b c: nat) :
     · cases b with
       | zero =>
         rw [nat.zero_eq, nat.zero_div]
-        rw [TotalOrder.swap_compare rfl, nat.zero_lt_succ, Ordering.swap]
+        rw [swap_compare rfl, nat.zero_lt_succ, Ordering.swap]
         dsimp
         apply Eq.symm
-        apply TotalOrder.compare_of_gt
-        apply nat.lt_of_lt_of_le c_pos
+        apply compare_of_gt
+        apply lt_of_lt_of_le c_pos
         assumption
       | succ b =>
         rw [nat.div.spec b.succ]
         split
-        rw [TotalOrder.swap_compare nat.zero_lt_succ, Ordering.swap]
+        rw [swap_compare nat.zero_lt_succ, Ordering.swap]
         dsimp
         apply Eq.symm
-        apply TotalOrder.compare_of_gt
-        apply nat.lt_of_lt_of_le <;> assumption
-        have c_le_bsucc := TotalOrder.le_of_not_lt (by assumption)
+        apply compare_of_gt
+        apply lt_of_lt_of_le <;> assumption
+        have c_le_bsucc := le_of_not_lt (by assumption)
         rw [nat.compare.succ]
         rw [ih]
         · rw [nat.sub.compare_strict]

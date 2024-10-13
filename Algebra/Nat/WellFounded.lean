@@ -1,6 +1,6 @@
 import Algebra.Nat.Cmp
 
-def nat.lt : nat -> nat -> Prop := TotalOrder.instLT.lt
+abbrev nat.lt (a b: nat) : Prop := a < b
 
 instance nat.wf : WellFounded nat.lt := WellFounded.intro (by
   intro a
@@ -13,7 +13,7 @@ instance nat.wf : WellFounded nat.lt := WellFounded.intro (by
   | succ a ih =>
     apply Acc.intro
     intro y y_lt_a
-    cases nat.lt_or_eq_of_le <| nat.le_of_lt_succ y_lt_a with
+    cases lt_or_eq_of_le <| le_of_lt_succ y_lt_a with
     | inl y_lt_a => exact Acc.inv ih y_lt_a
     | inr y_eq_a =>
       rw [y_eq_a]

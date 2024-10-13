@@ -31,7 +31,7 @@ def nat.fact.nz : 0 < n ! := by
   | zero => rfl
   | succ n ih =>
     rw [fact.succ, succ_mul]
-    apply TotalOrder.lt_of_lt_of_le
+    apply lt_of_lt_of_le
     assumption
     apply add.le_left
 
@@ -45,12 +45,12 @@ def nat.dvd.fact {n m: nat} : 0 < m -> m ≤ n -> m ∣ n ! := by
       have := nat.le_zero m_le_n
       contradiction
   | succ n ih =>
-    cases TotalOrder.lt_or_eq_of_le m_le_n with
+    cases lt_or_eq_of_le m_le_n with
     | inr h =>
       cases h
       exists n.fact
     | inl h =>
-      have ⟨ x, prf ⟩  := ih (nat.le_of_lt_succ h)
+      have ⟨ x, prf ⟩  := ih (le_of_lt_succ h)
       exists (x * n.succ)
       rw [←mul.assoc, prf, mul.comm]
       rfl
@@ -64,12 +64,12 @@ def nat.dvd.of_fact {n m: nat} : m ≤ n -> m ! ∣ n ! := by
     cases nat.le_zero m_le_n
     apply dvd.refl
   | succ n ih =>
-    cases TotalOrder.lt_or_eq_of_le m_le_n with
+    cases lt_or_eq_of_le m_le_n with
     | inr h =>
       cases h
       apply dvd.refl
     | inl h =>
-      have ⟨ x, prf ⟩  := ih (nat.le_of_lt_succ h)
+      have ⟨ x, prf ⟩  := ih (le_of_lt_succ h)
       exists (x * n.succ)
       rw [←mul.assoc, prf, mul.comm]
       rfl

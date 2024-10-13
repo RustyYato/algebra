@@ -217,9 +217,8 @@ def nat.sub.eq_zero {a b: nat} : a - b = 0 ↔ a ≤ b := by
       apply Iff.intro
       intro
       contradiction
-      intro
-      have := @nat.zero_lt_succ a
-      have := TotalOrder.not_lt_and_ge this
+      intro h
+      have := not_lt_and_ge nat.zero_lt_succ h
       contradiction
     | succ b =>
       rw [succ_sub_succ]
