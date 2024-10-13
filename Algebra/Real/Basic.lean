@@ -86,3 +86,25 @@ def real.lift₂_mk : lift₂ f all_eq (mk a) (mk b) = f a b := rfl
 def real.exact : mk a = mk b -> a ≈ b := Quotient.exact
 def real.sound : a ≈ b -> mk a = mk b := Quotient.sound
 def real.exists_rep : ∀r, ∃c, mk c = r := Quotient.exists_rep
+
+def real.of_rat (r: rat) : real := by
+  apply real.mk
+  apply CauchySeq.mk (fun _ => r)
+  intro ε ε_pos
+  exists 0
+  intro m _
+  dsimp
+  rw [rat.sub.self, rat.abs.zero]
+  assumption
+
+instance real.coe_rat : Coe rat real := ⟨ of_rat ⟩
+
+def real.coe_eq_of_rat (r: rat) : ↑r = of_rat r := rfl
+
+abbrev real.ofNat (n: Nat) : real := of_rat (rat.ofNat n)
+
+instance real.ofNatInst : OfNat real n where
+  ofNat := real.ofNat n
+
+def real.zero_eq : 0 = of_rat 0 := rfl
+def real.one_eq : 1 = of_rat 1 := rfl

@@ -20,8 +20,10 @@ def fract.equiv (a b: fract) : Prop := a.num * b.den = b.num * a.den
 instance fract.ofNatInst : OfNat fract n where
   ofNat := fract.mk n 1 (by trivial)
 
+def rat.ofNat (n: Nat) := rat.mk n 1 (by trivial) (by rw [nat.gcd.one_right])
+
 instance rat.ofNatInst : OfNat rat n where
-  ofNat := rat.mk n 1 (by trivial) (by rw [nat.gcd.one_right])
+  ofNat := rat.ofNat n
 
 instance fract.equiv.instEquiv : Equivalence fract.equiv where
   refl := fun _ => rfl
