@@ -414,7 +414,7 @@ def int.sub_nat.comm_neg { a b: nat } : (int.neg_succ a).sub_nat b = (int.neg_su
 
 #print axioms int.sub_nat.comm_neg
 
-def int.add.comm { a b: int } : a + b = b + a := by
+def int.add.comm (a b: int) : a + b = b + a := by
   cases a with
   | zero => rw [zero_eq, zero_add, add_zero]
   | pos_succ a =>
@@ -446,7 +446,7 @@ def int.add.comm { a b: int } : a + b = b + a := by
 
 #print axioms int.add.comm
 
-def int.add.assoc { a b c: int } : (a + b) + c = a + (b + c) := by
+def int.add.assoc (a b c: int) : (a + b) + c = a + (b + c) := by
   cases c with
   | zero => rfl
   | pos_succ c =>
