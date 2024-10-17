@@ -169,6 +169,8 @@ def Ordinal.le (a b: Ordinal) : Prop := by
 instance : LE Ordinal := ⟨Ordinal.le⟩
 def Ordinal.le.def (a b: Ordinal) : (a ≤ b) = a.le b := rfl
 
+def Ordinal.mk_le (a b: WellOrder) : (mk a ≤ mk b) ↔ a.Le b := liftProp₂_mk
+
 def ULift.up.inj.{u₀,v₀} {α: Type v₀} (a b: α) :
   (ULift.up a: ULift.{u₀,v₀} α) = ULift.up b -> a = b := by
   intro h
@@ -317,6 +319,11 @@ def Ordinal.ulift (o: Ordinal) : Ordinal := by
     . intro ⟨x⟩ ⟨y⟩ r
       exact ab.right_resp _ _ r
 
+def Ordinal.mk_ulift (o: WellOrder) : Ordinal.ulift.{u,v} (mk o) = mk o.ulift := by
+  unfold ulift
+  rw [lift_mk]
+  rfl
+
 def Ordinal.ulift_eq_self (o: Ordinal) : ulift o = o := by
   induction o using ind with | mk o =>
   unfold ulift
@@ -367,8 +374,7 @@ def Ordinal.bool : Ordinal := by
   intro a b c
   cases a <;> cases b <;> cases c <;> trivial
 
-def Ordinal.ofNat (n: Nat) : Ordinal := by
-  apply Ordinal.mk
+def WellOrder.ofNat (n: Nat) : WellOrder := by
   apply WellOrder.mk (Fin n) _ _
   exact (· < ·)
   apply IsWellOrder.mk
@@ -392,6 +398,8 @@ def Ordinal.ofNat (n: Nat) : Ordinal := by
     assumption
   · apply Fin.lt_trans
 
+def Ordinal.ofNat (n: Nat) : Ordinal := Ordinal.mk (WellOrder.ofNat n)
+
 def Ordinal.omega : Ordinal := by
   apply Ordinal.mk
   apply WellOrder.mk Nat _ _
@@ -402,6 +410,8 @@ def Ordinal.omega : Ordinal := by
   apply Nat.lt_trans
 
 instance : OfNat Ordinal n := ⟨ Ordinal.ulift (Ordinal.ofNat n) ⟩
+
+def Ordinal.ofNat.def : @OfNat.ofNat Ordinal n _ = (Ordinal.ofNat n).ulift := rfl
 
 inductive Sum.Lex (alt: α -> α -> Prop) (blt: β -> β -> Prop) : α ⊕ β -> α ⊕ β -> Prop where
 | inl : alt x y -> Lex alt blt (inl x) (inl y)
@@ -525,6 +535,9 @@ def Ordinal.add (a b: Ordinal) : Ordinal := by
 instance : HAdd Ordinal Ordinal Ordinal := ⟨ Ordinal.add ⟩
 def Ordinal.add.def.{u,v} (a: Ordinal.{u}) (b: Ordinal.{v}) : a + b = a.add b := rfl
 
+def Ordinal.mk_add (a: WellOrder.{u}) (b: WellOrder.{v}) : mk a + mk b = mk (a.add b) := by
+  rw [add.def, add, lift₂_mk]
+
 def WellOrder.mul_rel (a b: WellOrder) : a.ty × b.ty -> a.ty × b.ty -> Prop := Prod.Lex a.rel b.rel
 
 def WellOrder.mul (a b: WellOrder) : WellOrder := by
@@ -608,10 +621,11 @@ def Ordinal.mul (a b: Ordinal) : Ordinal := by
 instance : HMul Ordinal Ordinal Ordinal := ⟨ Ordinal.mul ⟩
 def Ordinal.mul.def.{u,v} (a: Ordinal.{u}) (b: Ordinal.{v}) : a * b = a.mul b := rfl
 
+def Ordinal.mk_mul (a: WellOrder.{u}) (b: WellOrder.{v}) : mk a * mk b = mk (a.mul b) := by
+  rw [mul.def, mul, lift₂_mk]
+
 def Ordinal.zero_eq_ulift_empty : 0 = ulift empty := by
-  rw [OfNat.ofNat, instOfNatOrdinal]
-  unfold ulift
-  erw [lift_mk, lift_mk]
+  rw [ofNat.def, ofNat, empty, mk_ulift, mk_ulift]
   apply sound'
   apply WellOrder.ulift_equiv_ulift
   apply WellOrder.Equiv.mk
@@ -623,9 +637,7 @@ def Ordinal.zero_eq_ulift_empty : 0 = ulift empty := by
   exact fun x => x.elim
 
 def Ordinal.one_eq_ulift_unit : 1 = ulift unit := by
-  rw [OfNat.ofNat, instOfNatOrdinal]
-  unfold ulift
-  erw [lift_mk, lift_mk]
+  rw [ofNat.def, ofNat, unit, mk_ulift, mk_ulift]
   apply sound'
   apply WellOrder.ulift_equiv_ulift
   apply WellOrder.Equiv.mk (fun _ => ⟨⟩) (fun _ => 0)
@@ -636,9 +648,7 @@ def Ordinal.one_eq_ulift_unit : 1 = ulift unit := by
   intros; contradiction
 
 def Ordinal.two_eq_ulift_bool : 2 = ulift bool := by
-  rw [OfNat.ofNat, instOfNatOrdinal]
-  unfold ulift
-  erw [lift_mk, lift_mk]
+  rw [ofNat.def, ofNat, bool, mk_ulift, mk_ulift]
   apply sound'
   apply WellOrder.ulift_equiv_ulift
   apply WellOrder.Equiv.mk _ _ _ _ _ _
@@ -673,11 +683,9 @@ def Ordinal.two_eq_unit : 2 = bool := by
   rw [two_eq_ulift_bool, ulift_eq_self]
 
 def Ordinal.ulift_add.{u,v,w} (a: Ordinal.{u}) (b: Ordinal.{v}) : ulift.{u,w} a + b = ulift.{max u v,w} (a + b) := by
-  rw [add.def, add.def]
   induction a using ind with | mk a =>
   induction b using ind with | mk b =>
-  unfold ulift add
-  erw [lift₂_mk, lift_mk, lift₂_mk, lift_mk]
+  rw [mk_ulift, mk_add, mk_add, mk_ulift]
   apply sound'
   apply WellOrder.ulift_equiv_right
   apply WellOrder.Equiv.trans
@@ -687,11 +695,9 @@ def Ordinal.ulift_add.{u,v,w} (a: Ordinal.{u}) (b: Ordinal.{v}) : ulift.{u,w} a 
   rfl
 
 def Ordinal.add_ulift.{u,v,w} (a: Ordinal.{u}) (b: Ordinal.{v}) : a + ulift.{v,w} b = ulift.{max u v,w} (a + b) := by
-  rw [add.def, add.def]
   induction a using ind with | mk a =>
   induction b using ind with | mk b =>
-  unfold ulift add
-  erw [lift₂_mk, lift_mk, lift₂_mk, lift_mk]
+  rw [mk_ulift, mk_add, mk_add, mk_ulift]
   apply sound'
   apply WellOrder.ulift_equiv_right
   apply WellOrder.Equiv.trans
@@ -701,11 +707,9 @@ def Ordinal.add_ulift.{u,v,w} (a: Ordinal.{u}) (b: Ordinal.{v}) : a + ulift.{v,w
   rfl
 
 def Ordinal.ulift_mul.{u,v,w} (a: Ordinal.{u}) (b: Ordinal.{v}) : ulift.{u,w} a * b = ulift.{max u v,w} (a * b) := by
-  rw [mul.def, mul.def]
   induction a using ind with | mk a =>
   induction b using ind with | mk b =>
-  unfold ulift mul
-  erw [lift₂_mk, lift_mk, lift₂_mk, lift_mk]
+  rw [mk_ulift, mk_mul, mk_mul, mk_ulift]
   apply sound'
   apply WellOrder.ulift_equiv_right
   apply WellOrder.Equiv.trans
@@ -715,11 +719,9 @@ def Ordinal.ulift_mul.{u,v,w} (a: Ordinal.{u}) (b: Ordinal.{v}) : ulift.{u,w} a 
   rfl
 
 def Ordinal.mul_ulift.{u,v,w} (a: Ordinal.{u}) (b: Ordinal.{v}) : a * ulift.{v,w} b = ulift.{max u v,w} (a * b) := by
-  rw [mul.def, mul.def]
   induction a using ind with | mk a =>
   induction b using ind with | mk b =>
-  unfold ulift mul
-  erw [lift₂_mk, lift_mk, lift₂_mk, lift_mk]
+  rw [mk_ulift, mk_mul, mk_mul, mk_ulift]
   apply sound'
   apply WellOrder.ulift_equiv_right
   apply WellOrder.Equiv.trans
@@ -730,9 +732,7 @@ def Ordinal.mul_ulift.{u,v,w} (a: Ordinal.{u}) (b: Ordinal.{v}) : a * ulift.{v,w
 
 def Ordinal.zero_add (a: Ordinal) : 0 + a = a := by
   induction a using ind with | mk a =>
-  rw [zero_eq_ulift_empty, ulift_add, add.def]
-  unfold add ulift
-  erw [lift₂_mk, lift_mk]
+  rw [zero_eq_ulift_empty, ulift_add, empty, mk_add, mk_ulift]
   apply sound'
   apply WellOrder.ulift_equiv_left
   unfold WellOrder.add
@@ -755,9 +755,7 @@ def Ordinal.zero_add (a: Ordinal) : 0 + a = a := by
 
 def Ordinal.add_zero (a: Ordinal) : a + 0 = a := by
   induction a using ind with | mk a =>
-  rw [zero_eq_ulift_empty, add_ulift, add.def]
-  unfold add ulift
-  erw [lift₂_mk, lift_mk]
+  rw [zero_eq_ulift_empty, add_ulift, empty, mk_add, mk_ulift]
   apply sound'
   apply WellOrder.ulift_equiv_left
   unfold WellOrder.add
@@ -780,9 +778,7 @@ def Ordinal.add_zero (a: Ordinal) : a + 0 = a := by
 
 def Ordinal.one_mul (a: Ordinal) : 1 * a = a := by
   induction a using ind with | mk a =>
-  rw [one_eq_ulift_unit, ulift_mul, mul.def]
-  unfold mul ulift
-  erw [lift₂_mk, lift_mk]
+  rw [one_eq_ulift_unit, ulift_mul, unit, mk_mul, mk_ulift]
   apply sound'
   apply WellOrder.ulift_equiv_left
   unfold WellOrder.mul WellOrder.mul_rel
@@ -799,9 +795,7 @@ def Ordinal.one_mul (a: Ordinal) : 1 * a = a := by
 
 def Ordinal.mul_one (a: Ordinal) : a * 1 = a := by
   induction a using ind with | mk a =>
-  rw [one_eq_ulift_unit, mul_ulift, mul.def]
-  unfold mul ulift
-  erw [lift₂_mk, lift_mk]
+  rw [one_eq_ulift_unit, mul_ulift, unit, mk_mul, mk_ulift]
   apply sound'
   apply WellOrder.ulift_equiv_left
   unfold WellOrder.mul WellOrder.mul_rel
@@ -818,9 +812,7 @@ def Ordinal.mul_one (a: Ordinal) : a * 1 = a := by
 
 def Ordinal.zero_mul (a: Ordinal) : 0 * a = 0 := by
   induction a using ind with | mk a =>
-  rw [zero_eq_ulift_empty, ulift_mul, mul.def]
-  unfold mul ulift
-  erw [lift₂_mk, lift_mk, lift_mk]
+  rw [zero_eq_ulift_empty, ulift_mul, empty, mk_mul, mk_ulift, mk_ulift]
   apply sound'
   apply WellOrder.ulift_equiv_ulift
   unfold WellOrder.mul WellOrder.mul_rel
@@ -834,9 +826,7 @@ def Ordinal.zero_mul (a: Ordinal) : 0 * a = 0 := by
 
 def Ordinal.mul_zero (a: Ordinal) : a * 0 = 0 := by
   induction a using ind with | mk a =>
-  rw [zero_eq_ulift_empty, mul_ulift, mul.def]
-  unfold mul ulift
-  erw [lift₂_mk, lift_mk, lift_mk]
+  rw [zero_eq_ulift_empty, mul_ulift, empty, mk_mul, mk_ulift, mk_ulift]
   apply sound'
   apply WellOrder.ulift_equiv_ulift
   unfold WellOrder.mul WellOrder.mul_rel
@@ -849,16 +839,11 @@ def Ordinal.mul_zero (a: Ordinal) : a * 0 = 0 := by
   intro; contradiction
 
 def Ordinal.le_zero (a: Ordinal) : a ≤ 0 -> a = 0 := by
-  rw [zero_eq_ulift_empty, le.def, le]
-  intro h
   induction a using ind with | mk a =>
-  unfold ulift empty at h
-  rw [lift_mk] at h
-  replace h := liftProp₂_mk.mp h
-  unfold ulift empty
-  rw [lift_mk]
-  dsimp
-  have ⟨f,_,_⟩ := WellOrder.of_ulift_le_right _ _ h
+  rw [zero_eq_ulift_empty, empty, mk_ulift, le.def]
+  intro h
+  replace h := (mk_le _ _).mp h
+  have ⟨ f, _, _ ⟩ := WellOrder.of_ulift_le_right _ _ h
   apply sound'
   apply WellOrder.ulift_equiv_right
   apply WellOrder.Equiv.mk f Empty.elim _ _ _ _
@@ -870,10 +855,7 @@ def Ordinal.mul_eq_zero (a b: Ordinal) : a * b = 0 -> a = 0 ∨ b = 0 := by
   intro h
   induction a using ind with | mk a =>
   induction b using ind with | mk b =>
-  unfold ulift at h
-  erw [lift_mk, mul.def] at h
-  unfold mul at h
-  erw [lift₂_mk] at h
+  rw [mk_mul, empty, mk_ulift] at h
   replace ⟨h⟩ := exact h
   replace h := WellOrder.of_ulift_equiv_right _ _ h
   have ⟨ f, g, fg, gf, f_resp, g_resp ⟩ := h
@@ -886,8 +868,7 @@ def Ordinal.mul_eq_zero (a b: Ordinal) : a * b = 0 -> a = 0 ∨ b = 0 := by
       contradiction
     · intro h₀
       apply Or.inr
-      unfold ulift empty
-      rw [lift_mk]
+      rw [empty, mk_ulift]
       apply sound'
       apply WellOrder.ulift_equiv_right
       apply WellOrder.Equiv.mk _ _ _ _ _ _
@@ -905,8 +886,7 @@ def Ordinal.mul_eq_zero (a b: Ordinal) : a * b = 0 -> a = 0 ∨ b = 0 := by
       · intro; contradiction
   · intro h₀
     apply Or.inl
-    unfold ulift empty
-    rw [lift_mk]
+    rw [empty, mk_ulift]
     apply sound'
     apply WellOrder.ulift_equiv_right
     apply WellOrder.Equiv.mk _ _ _ _ _ _
@@ -925,9 +905,7 @@ def Ordinal.mul_eq_zero (a b: Ordinal) : a * b = 0 -> a = 0 ∨ b = 0 := by
 
 def Ordinal.two_mul (a: Ordinal) : a * 2 = a + a := by
   induction a using ind with | mk a =>
-  rw [two_eq_ulift_bool, mul_ulift, mul.def, add.def]
-  unfold mul add ulift
-  erw [lift₂_mk, lift₂_mk, lift_mk]
+  rw [two_eq_ulift_bool, mul_ulift, bool, mk_mul, mk_add, mk_ulift]
   apply sound'
   apply WellOrder.ulift_equiv_left
   unfold WellOrder.mul WellOrder.mul_rel WellOrder.add WellOrder.add_rel
@@ -960,9 +938,9 @@ def Ordinal.two_mul (a: Ordinal) : a * 2 = a + a := by
 
 def Ordinal.omega_mul_fin (n: Nat) : ofNat (n+1) * omega = omega := by
   unfold omega ofNat
-  rw [mul.def, mul, lift₂_mk]
+  rw [mk_mul]
   apply sound'
-  unfold WellOrder.mul WellOrder.mul_rel
+  unfold WellOrder.mul WellOrder.mul_rel WellOrder.ofNat
   dsimp
   apply WellOrder.Equiv.mk _ _ _ _ _ _
   · intro ⟨x,y⟩
@@ -1024,7 +1002,7 @@ def Ordinal.omega_mul_fin (n: Nat) : ofNat (n+1) * omega = omega := by
 
 def Ordinal.omega_add_fin (n: Nat) : ofNat n + omega = omega := by
   unfold omega ofNat
-  rw [add.def, add, lift₂_mk]
+  rw [mk_add]
   apply sound'
   unfold WellOrder.add WellOrder.add_rel
   dsimp
@@ -1077,3 +1055,66 @@ def Ordinal.omega_add_fin (n: Nat) : ofNat n + omega = omega := by
     refine Nat.sub_lt_sub_right ?h_2.h_2.a.a x_lt_y
     apply Nat.le_of_not_lt
     assumption
+
+def Ordinal.mul_add (k a b: Ordinal) : k * (a + b) = k * a + k * b := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  induction k using ind with | mk k =>
+  repeat first| rw [mk_mul]|rw [mk_add]
+  apply sound'
+  unfold WellOrder.add WellOrder.mul WellOrder.add_rel WellOrder.mul_rel
+  apply WellOrder.Equiv.mk _ _ _ _ _ _ <;> dsimp
+  · intro ⟨a₀,k₀⟩
+    match a₀ with
+    | .inl a₀ => exact .inl ⟨a₀,k₀⟩
+    | .inr a₀ => exact .inr ⟨a₀,k₀⟩
+  · intro ak
+    match ak with
+    | .inl ak => exact ⟨.inl ak.1, ak.2⟩
+    | .inr ak => exact ⟨.inr ak.1, ak.2⟩
+  · intro x
+    cases x <;> rfl
+  · intro ⟨x,_⟩
+    cases x <;> rfl
+  · intro ⟨xl,xr⟩ ⟨yl,yr⟩
+    cases xl <;> cases yl <;> (dsimp; rename_i xr yr; intro r)
+    any_goals cases r
+    any_goals rename_i r
+    any_goals cases r
+    · apply Sum.Lex.inl
+      apply Prod.Lex.left
+      assumption
+    · apply Sum.Lex.inl
+      apply Prod.Lex.right
+      assumption
+    · apply Sum.Lex.inl_inr
+    · apply Sum.Lex.inr
+      apply Prod.Lex.left
+      assumption
+    · apply Sum.Lex.inr
+      apply Prod.Lex.right
+      assumption
+  · intro ak₀ ak₁
+    cases ak₀ <;> cases ak₁ <;> (
+      dsimp
+      rename_i ak₀ ak₁
+      have ⟨a₀,k₀⟩ := ak₀
+      have ⟨a₁,k₁⟩ := ak₁
+      intro r
+      cases r)
+    · rename_i r
+      cases r
+      apply Prod.Lex.left
+      apply Sum.Lex.inl
+      assumption
+      apply Prod.Lex.right
+      assumption
+    · apply Prod.Lex.left
+      apply Sum.Lex.inl_inr
+    · rename_i r
+      cases r
+      apply Prod.Lex.left
+      apply Sum.Lex.inr
+      assumption
+      apply Prod.Lex.right
+      assumption
