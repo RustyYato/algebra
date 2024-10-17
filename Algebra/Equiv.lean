@@ -64,6 +64,10 @@ def EquivUnchecked.get.inj : ∀a b: EquivUnchecked rel, a.get = b.get -> a = b 
   rw [mk_get, mk_get] at this
   exact this
 def EquivUnchecked.exact : ∀a b: α, mk rel a = mk rel b -> Relation.EquivGen rel a b := (equiv_class_builder_inst α rel).exact
+def EquivUnchecked.exists_rep : ∀a, ∃b, mk rel b = a := by
+  intro a
+  induction a using ind with | mk a =>
+  exists a
 axiom EquivUnchecked.sound { α: Sort _ } (rel: α -> α -> Prop) :
   ∀a b, rel a b -> EquivUnchecked.mk rel a = EquivUnchecked.mk rel b
 
@@ -110,6 +114,7 @@ def Equiv.lift₂_mk {s₀: Setoid α₀} {s₁: Setoid α₁} (f: α₀ -> α�
 def Equiv.get_equiv { s: Setoid α } (a: α) : (mk s a).get ≈ a := by
   apply exact
   rw [mk_get]
+def Equiv.exists_rep : ∀a, ∃b, mk s b = a := EquivUnchecked.exists_rep
 
 example : ∀a b: EquivUnchecked rel, a ≠ b -> a.get ≠ b.get := by
   intro a b eq h
