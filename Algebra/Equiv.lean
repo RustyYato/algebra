@@ -70,6 +70,14 @@ def EquivUnchecked.exists_rep : ∀a, ∃b, mk rel b = a := by
   exists a
 axiom EquivUnchecked.sound { α: Sort _ } (rel: α -> α -> Prop) :
   ∀a b, rel a b -> EquivUnchecked.mk rel a = EquivUnchecked.mk rel b
+def EquivUnchecked.get_sound :
+  ∀a b:  EquivUnchecked rel, rel a.get b.get -> a = b := by
+  intro a b r
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  replace r := sound _ _ _ r
+  rw [mk_get, mk_get] at r
+  exact r
 
 example : (∀α: Type, (rel: α -> α -> Prop) -> ∀x: α, (EquivUnchecked.mk rel x).get = x) -> False := by
   intro mk_inj
@@ -115,6 +123,8 @@ def Equiv.get_equiv { s: Setoid α } (a: α) : (mk s a).get ≈ a := by
   apply exact
   rw [mk_get]
 def Equiv.exists_rep : ∀a, ∃b, mk s b = a := EquivUnchecked.exists_rep
+def Equiv.get_sound { s: Setoid α } :
+  ∀a b:  Equiv s, a.get ≈ b.get -> a = b := EquivUnchecked.get_sound
 
 example : ∀a b: EquivUnchecked rel, a ≠ b -> a.get ≠ b.get := by
   intro a b eq h
