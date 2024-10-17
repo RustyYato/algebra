@@ -116,18 +116,38 @@ example : ∀a b: EquivUnchecked rel, a ≠ b -> a.get ≠ b.get := by
   apply eq
   exact EquivUnchecked.get.inj _ _ h
 
-def squash α := EquivUnchecked (fun _ _: α => True)
-def squash.mk : α -> squash α := EquivUnchecked.mk _
-def squash.get : squash α -> α := EquivUnchecked.get
-instance squash.instSubsingleton : Subsingleton (squash α) where
-  allEq a b := by
-    induction a using EquivUnchecked.ind with | mk a =>
-    induction b using EquivUnchecked.ind with | mk b =>
-    apply EquivUnchecked.sound
-    trivial
-
 instance Equiv.instSubsingleton [s: Setoid α] [Subsingleton α] : Subsingleton (Equiv s) where
   allEq a b := by
     induction a using Equiv.ind with | mk a =>
     induction b using Equiv.ind with | mk b =>
     rw [Subsingleton.allEq a b]
+
+def squash.setoid α : Setoid α where
+  r _ _ := True
+  iseqv := {
+    refl := fun _ => True.intro
+    symm := fun _ => True.intro
+    trans := fun _ _ => True.intro
+  }
+def squash α := Equiv (squash.setoid α)
+def squash.mk : α -> squash α := Equiv.mk _
+def squash.get : squash α -> α := Equiv.get
+instance squash.instSubsingleton : Subsingleton (squash α) where
+  allEq a b := by
+    induction a using Equiv.ind with | mk a =>
+    induction b using Equiv.ind with | mk b =>
+    apply Equiv.sound
+    trivial
+
+def ident.setoid α : Setoid α where
+  r a b := a = b
+  iseqv := {
+    refl := fun _ => rfl
+    symm := fun h => h.symm
+    trans := fun h₀ h₁ => h₀.trans h₁
+  }
+def ident α := Equiv (ident.setoid α)
+def ident.mk : α -> ident α := Equiv.mk _
+def ident.get : ident  α -> α := Equiv.get
+def ident.mk.inj : ∀a b: α, mk a = mk b -> a = b := Equiv.exact
+def ident.get.inj : ∀a b: ident α, a.get = b.get -> a = b := Equiv.get.inj
