@@ -410,17 +410,17 @@ instance : HAdd Ordinal Ordinal Ordinal := ⟨ Ordinal.add ⟩
 def WellOrder.mul_rel (a b: WellOrder) : a.ty × b.ty -> a.ty × b.ty -> Prop := Prod.Lex a.rel b.rel
 
 def WellOrder.mul (a b: WellOrder) : WellOrder := by
-  apply WellOrder.mk _ (mul_rel a b) _
+  apply WellOrder.mk _ (mul_rel b a) _
   apply IsWellOrder.mk
-  · exact ⟨fun (a₀, b₀) => Prod.lexAccessible (WellFounded.apply a.wo.wf a₀) (WellFounded.apply b.wo.wf) b₀⟩
+  · exact ⟨fun (b₀, a₀) => Prod.lexAccessible (WellFounded.apply b.wo.wf b₀) (WellFounded.apply a.wo.wf) a₀⟩
   · rintro ⟨xl,xr⟩ ⟨yl,yr⟩
-    cases a.wo.tri xl yl <;> rename_i h
+    cases b.wo.tri xl yl <;> rename_i h
     apply Or.inl
     apply Prod.Lex.left
     assumption
     cases h
     subst yl
-    cases b.wo.tri xr yr <;> rename_i h
+    cases a.wo.tri xr yr <;> rename_i h
     apply Or.inl
     apply Prod.Lex.right
     assumption
@@ -440,22 +440,22 @@ def WellOrder.mul (a b: WellOrder) : WellOrder := by
   · intro x y z xy yz
     cases xy <;> cases yz
     apply Prod.Lex.left
-    apply a.wo.trans <;> assumption
+    apply b.wo.trans <;> assumption
     apply Prod.Lex.left
     assumption
     apply Prod.Lex.left
     assumption
     apply Prod.Lex.right
-    apply b.wo.trans <;> assumption
+    apply a.wo.trans <;> assumption
 
 def WellOrder.mul_congr : ∀a b c d: WellOrder, Equiv a c -> Equiv b d -> Equiv (a.mul b) (c.mul d) := by
   intro a b c d ac bd
   apply WellOrder.Equiv.mk _ _ _ _ _ _
-  · rintro ⟨ a₀, b₀ ⟩
-    exact ⟨ ac.left a₀, bd.left b₀ ⟩
-  · rintro ⟨ c₀, d₀ ⟩
-    exact ⟨ ac.right c₀, bd.right d₀ ⟩
-  · rintro ⟨ c₀, d₀ ⟩
+  · rintro ⟨ b₀, a₀ ⟩
+    exact ⟨ bd.left b₀, ac.left a₀ ⟩
+  · rintro ⟨ d₀, c₀ ⟩
+    exact ⟨ bd.right d₀, ac.right c₀ ⟩
+  · rintro ⟨ d₀, c₀ ⟩
     dsimp
     rw [ac.right_left, bd.right_left]
   · rintro ⟨ c₀, d₀ ⟩
@@ -465,19 +465,19 @@ def WellOrder.mul_congr : ∀a b c d: WellOrder, Equiv a c -> Equiv b d -> Equiv
     dsimp
     cases r <;> rename_i r
     apply Prod.Lex.left
-    apply ac.left_resp
+    apply bd.left_resp
     assumption
     apply Prod.Lex.right
-    apply bd.left_resp
+    apply ac.left_resp
     assumption
   · rintro ⟨ xl, xr ⟩ ⟨ yl, yr ⟩ r
     dsimp
     cases r <;> rename_i r
     apply Prod.Lex.left
-    apply ac.right_resp
+    apply bd.right_resp
     assumption
     apply Prod.Lex.right
-    apply bd.right_resp
+    apply ac.right_resp
     assumption
 
 def Ordinal.mul (a b: Ordinal) : Ordinal := by
@@ -647,14 +647,14 @@ def Ordinal.one_mul (a: Ordinal) : 1 * a = a := by
   unfold WellOrder.mul WellOrder.mul_rel
   dsimp
   apply WellOrder.Equiv.mk _ _ _ _ _ _ <;> dsimp
-  intro x; exact x.2
-  intro x; exact ⟨⟨⟩, x⟩
+  intro x; exact x.1
+  intro x; exact ⟨x, ⟨⟩⟩
   intros; rfl
   intros; rfl
   intro x y r
-  cases r; contradiction; assumption
+  cases r; assumption; contradiction
   intro x y r
-  apply Prod.Lex.right; assumption
+  apply Prod.Lex.left; assumption
 
 def Ordinal.mul_one (a: Ordinal) : a * 1 = a := by
   rw [one_eq_ulift_unit]
@@ -665,23 +665,23 @@ def Ordinal.mul_one (a: Ordinal) : a * 1 = a := by
   unfold WellOrder.mul WellOrder.mul_rel
   dsimp
   apply WellOrder.Equiv.mk _ _ _ _ _ _ <;> dsimp
-  intro x; exact x.1
-  intro x; exact ⟨x, ⟨⟩⟩
+  intro x; exact x.2
+  intro x; exact ⟨⟨⟩, x⟩
   intros; rfl
   intros; rfl
   intro x y r
-  cases r; assumption; contradiction
+  cases r; contradiction; assumption
   intro x y r
-  apply Prod.Lex.left; assumption
+  apply Prod.Lex.right; assumption
 
-def Ordinal.two_mul (a: Ordinal) : 2 * a = a + a := by
+def Ordinal.two_mul (a: Ordinal) : a * 2 = a + a := by
   rw [two_eq_ulift_bool]
   induction a using ind with | mk a =>
   apply sound'
   apply WellOrder.Equiv.trans
   apply WellOrder.mul_congr
-  apply WellOrder.ulift_equiv_self
   rfl
+  apply WellOrder.ulift_equiv_self
   unfold WellOrder.mul WellOrder.mul_rel WellOrder.add WellOrder.add_rel
   dsimp
   apply WellOrder.Equiv.mk _ _ _ _ _ _ <;> dsimp
@@ -710,7 +710,7 @@ def Ordinal.two_mul (a: Ordinal) : 2 * a = a + a := by
   any_goals apply Prod.Lex.right; assumption
   apply Prod.Lex.left; trivial
 
-def Ordinal.omega_mul_fin (n: Nat) : omega * ofNat (n+1) = omega := by
+def Ordinal.omega_mul_fin (n: Nat) : ofNat (n+1) * omega = omega := by
   apply sound'
   unfold WellOrder.mul WellOrder.mul_rel
   dsimp
@@ -784,7 +784,7 @@ def Ordinal.omega_add_fin (n: Nat) : ofNat n + omega = omega := by
   · intro x
     match Nat.decLt x n with
     | .isTrue h => exact .inl ⟨ x, h ⟩
-    | .isFalse h => exact .inr (x - n)
+    | .isFalse _ => exact .inr (x - n)
   · intro x
     cases Nat.decLt x n
     dsimp
