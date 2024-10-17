@@ -125,6 +125,20 @@ def Equiv.lift₂_mk {s₀: Setoid α₀} {s₁: Setoid α₁} (f: α₀ -> α�
   rw [mk_get]
   apply exact
   rw [mk_get]
+def Equiv.liftProp_mk {s: Setoid α} (f: α -> Prop) (all_eq: ∀a b: α, a ≈ b -> (f a ↔ f b)) (a: α) :
+  liftProp f all_eq (mk s a) ↔ f a := by
+  unfold liftProp
+  apply all_eq
+  apply exact
+  rw [mk_get]
+def Equiv.liftProp₂_mk {s₀: Setoid α₀} {s₁: Setoid α₁} (f: α₀ -> α₁ -> Prop) (all_eq: ∀a b c d, a ≈ c -> b ≈ d -> (f a b ↔ f c d)) (a: α₀) (b: α₁) :
+  liftProp₂ f all_eq (mk s₀ a) (mk s₁ b) ↔ f a b := by
+  unfold liftProp₂
+  apply all_eq
+  apply exact
+  rw [mk_get]
+  apply exact
+  rw [mk_get]
 def Equiv.get_equiv { s: Setoid α } (a: α) : (mk s a).get ≈ a := by
   apply exact
   rw [mk_get]

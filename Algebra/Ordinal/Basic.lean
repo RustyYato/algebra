@@ -128,10 +128,56 @@ def Ordinal.liftProp : (f: WellOrder -> Prop) -> (all_eq: ∀x y, x ≈ y -> (f 
 def Ordinal.liftProp₂ : (f: WellOrder -> WellOrder -> Prop) -> (all_eq: ∀a b c d, a ≈ c -> b ≈ d -> (f a b ↔ f c d)) -> Ordinal -> Ordinal -> Prop := Equiv.liftProp₂
 def Ordinal.lift_mk : lift f all_eq (mk a) = f a := Equiv.lift_mk _ _ _
 def Ordinal.lift₂_mk : lift₂ f all_eq (mk a) (mk b) = f a b := Equiv.lift₂_mk _ _ _ _
+def Ordinal.liftProp_mk : liftProp f all_eq (mk a) ↔ f a := Equiv.liftProp_mk _ _ _
+def Ordinal.liftProp₂_mk : liftProp₂ f all_eq (mk a) (mk b) ↔ f a b := Equiv.liftProp₂_mk _ _ _ _
 def Ordinal.exact : mk a = mk b -> a ≈ b := Equiv.exact _ _
 def Ordinal.sound : a ≈ b -> mk a = mk b := Equiv.sound _ _
 def Ordinal.sound' : WellOrder.Equiv a b -> mk a = mk b := sound ∘ Nonempty.intro
 def Ordinal.exists_rep : ∀o, ∃p, mk p = o := Equiv.exists_rep
+
+def Ordinal.le (a b: Ordinal) : Prop := by
+  apply liftProp₂ WellOrder.Le _ a b
+  intro a b c d ⟨ac⟩ ⟨bd⟩
+  apply Iff.intro
+  · intro ⟨f,f_inj,f_resp⟩
+    apply WellOrder.Le.mk (bd.left ∘ f ∘ ac.right)
+    · intro c₀ c₁ h
+      dsimp at h
+      apply ac.right_inj
+      apply f_inj
+      apply bd.left_inj
+      assumption
+    · intro c₀ c₁ h
+      apply bd.left_resp
+      apply f_resp
+      apply ac.right_resp
+      assumption
+  · intro ⟨f,f_inj,f_resp⟩
+    apply WellOrder.Le.mk (bd.right ∘ f ∘ ac.left)
+    · intro c₀ c₁ h
+      dsimp at h
+      apply ac.left_inj
+      apply f_inj
+      apply bd.right_inj
+      assumption
+    · intro c₀ c₁ h
+      apply bd.right_resp
+      apply f_resp
+      apply ac.left_resp
+      assumption
+
+instance : LE Ordinal := ⟨Ordinal.le⟩
+def Ordinal.le.def (a b: Ordinal) : (a ≤ b) = a.le b := rfl
+
+def ULift.up.inj.{u₀,v₀} {α: Type v₀} (a b: α) :
+  (ULift.up a: ULift.{u₀,v₀} α) = ULift.up b -> a = b := by
+  intro h
+  rw [←ULift.down_up.{v₀,u₀} a, ←ULift.down_up.{v₀,u₀} b, h]
+
+def ULift.down.inj (a b: ULift α) :
+  a.down = b.down -> a = b := by
+  intro h
+  rw [←ULift.up_down a, ←ULift.up_down b, h]
 
 def WellOrder.ulift (o: WellOrder) : WellOrder := by
   apply WellOrder.mk (ULift o.ty) _ _
@@ -208,6 +254,50 @@ def WellOrder.of_ulift_equiv_ulift (a b: WellOrder) : Equiv (ulift a) (ulift b) 
   apply of_ulift_equiv_left
   apply of_ulift_equiv_right
   exact eq
+
+def WellOrder.ulift_le_left.{u,v,w} (a: WellOrder.{u}) (b: WellOrder.{v}) : Le a b -> Le (ulift.{u,w} a) b := by
+  intro ⟨f,f_inj,f_resp⟩
+  apply WellOrder.Le.mk (f ∘ ULift.down) <;> dsimp
+  intro x y h
+  exact ULift.down.inj _ _ (f_inj _ _ h)
+  intro x y r
+  exact f_resp _ _ r
+
+def WellOrder.ulift_le_right.{u,v,w} (a: WellOrder.{u}) (b: WellOrder.{v}) : Le a b -> Le a (ulift.{v,w} b) := by
+  intro ⟨f,f_inj,f_resp⟩
+  apply WellOrder.Le.mk (ULift.up ∘ f) <;> dsimp
+  intro x y h
+  exact f_inj _ _ (ULift.up.inj _ _ h)
+  intro x y r
+  exact f_resp _ _ r
+
+def WellOrder.ulift_le_ulift.{u,v,w₀,w₁} (a: WellOrder.{u}) (b: WellOrder.{v}) : Le a b -> Le (ulift.{u,w₀} a) (ulift.{v,w₁} b) := by
+  intro h
+  apply WellOrder.ulift_le_left
+  apply WellOrder.ulift_le_right
+  exact h
+
+def WellOrder.of_ulift_le_left.{u,v,w} (a: WellOrder.{u}) (b: WellOrder.{v}) : Le (ulift.{u,w} a) b -> Le a b := by
+  intro ⟨f,f_inj,f_resp⟩
+  apply WellOrder.Le.mk (f ∘ ULift.up) <;> dsimp
+  intro x y h
+  exact ULift.up.inj _ _ (f_inj _ _ h)
+  intro x y r
+  exact f_resp _ _ r
+
+def WellOrder.of_ulift_le_right.{u,v,w} (a: WellOrder.{u}) (b: WellOrder.{v}) : Le a (ulift.{v,w} b) -> Le a b := by
+  intro ⟨f,f_inj,f_resp⟩
+  apply WellOrder.Le.mk (ULift.down ∘ f) <;> dsimp
+  intro x y h
+  exact f_inj _ _ (ULift.down.inj _ _ h)
+  intro x y r
+  exact f_resp _ _ r
+
+def WellOrder.of_ulift_le_ulift.{u,v,w₀,w₁} (a: WellOrder.{u}) (b: WellOrder.{v}) : Le a b -> Le (ulift.{u,w₀} a) (ulift.{v,w₁} b) := by
+  intro h
+  apply WellOrder.ulift_le_left
+  apply WellOrder.ulift_le_right
+  exact h
 
 def Ordinal.ulift (o: Ordinal) : Ordinal := by
   apply o.lift (mk ∘ WellOrder.ulift) _
@@ -757,6 +847,23 @@ def Ordinal.mul_zero (a: Ordinal) : a * 0 = 0 := by
   intro ⟨_,_⟩; contradiction
   intro ⟨_,_⟩; contradiction
   intro; contradiction
+
+def Ordinal.le_zero (a: Ordinal) : a ≤ 0 -> a = 0 := by
+  rw [zero_eq_ulift_empty, le.def, le]
+  intro h
+  induction a using ind with | mk a =>
+  unfold ulift empty at h
+  rw [lift_mk] at h
+  replace h := liftProp₂_mk.mp h
+  unfold ulift empty
+  rw [lift_mk]
+  dsimp
+  have ⟨f,_,_⟩ := WellOrder.of_ulift_le_right _ _ h
+  apply sound'
+  apply WellOrder.ulift_equiv_right
+  apply WellOrder.Equiv.mk f Empty.elim _ _ _ _
+  any_goals (intro x; contradiction)
+  all_goals (intro x; have := f x; contradiction)
 
 def Ordinal.mul_eq_zero (a b: Ordinal) : a * b = 0 -> a = 0 ∨ b = 0 := by
   rw [zero_eq_ulift_empty]
