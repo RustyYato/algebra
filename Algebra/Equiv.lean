@@ -71,7 +71,7 @@ def EquivUnchecked.exists_rep : ∀a, ∃b, mk rel b = a := by
 axiom EquivUnchecked.sound { α: Sort _ } (rel: α -> α -> Prop) :
   ∀a b, rel a b -> EquivUnchecked.mk rel a = EquivUnchecked.mk rel b
 def EquivUnchecked.get_sound :
-  ∀a b:  EquivUnchecked rel, rel a.get b.get -> a = b := by
+  ∀a b: EquivUnchecked rel, rel a.get b.get -> a = b := by
   intro a b r
   induction a using ind with | mk a =>
   induction b using ind with | mk b =>
@@ -97,8 +97,14 @@ def Equiv.mk_get {s: Setoid α} (q: Equiv s) : mk s q.get = q := EquivUnchecked.
 def Equiv.get.inj {s: Setoid α} : ∀a b: Equiv s, a.get = b.get -> a = b := EquivUnchecked.get.inj
 def Equiv.sound {s: Setoid α} : ∀a b: α, a ≈ b -> mk s a = mk s b := EquivUnchecked.sound s.r
 def Equiv.ind {s: Setoid α} {motive: Equiv s -> Prop} : (mk: ∀x, motive (mk s x)) -> ∀q, motive q := EquivUnchecked.ind
+@[irreducible]
 def Equiv.lift {s: Setoid α} (f: α -> β) (_all_eq: ∀a b: α, a ≈ b -> f a = f b) (q: Equiv s) : β := f q.get
+@[irreducible]
 def Equiv.lift₂ {s₀: Setoid α₀} {s₁: Setoid α₁} (f: α₀ -> α₁ -> β) (_all_eq: ∀a b c d, a ≈ c -> b ≈ d -> f a b = f c d) (q₀: Equiv s₀) (q₁: Equiv s₁) : β := f q₀.get q₁.get
+@[irreducible]
+def Equiv.liftProp {s: Setoid α} (f: α -> Prop) (_all_eq: ∀a b: α, a ≈ b -> (f a ↔ f b)) (q: Equiv s) : Prop := f q.get
+@[irreducible]
+def Equiv.liftProp₂ {s₀: Setoid α₀} {s₁: Setoid α₁} (f: α₀ -> α₁ -> Prop) (_all_eq: ∀a b c d, a ≈ c -> b ≈ d -> (f a b ↔ f c d)) (q₀: Equiv s₀) (q₁: Equiv s₁) : Prop := f q₀.get q₁.get
 def Equiv.exact {s: Setoid α} : ∀a b, mk s a = mk s b -> a ≈ b :=
   fun _ _ h => (Relation.EquivGen.iffRel s.iseqv).mpr <| EquivUnchecked.exact _ _ h
 def Equiv.exact_get {s: Setoid α} : ∀a b: Equiv s, a = b -> a.get ≈ b.get := by
