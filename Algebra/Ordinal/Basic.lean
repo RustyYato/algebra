@@ -1364,3 +1364,86 @@ def Ordinal.mul_add (k a b: Ordinal) : k * (a + b) = k * a + k * b := by
       assumption
       apply Prod.Lex.right
       assumption
+
+def Ordinal.zero_lt_one : (0: Ordinal) < (1: Ordinal) := by
+  rw [Ordinal.zero_eq_ulift_empty, Ordinal.one_eq_ulift_unit,
+    Ordinal.empty, Ordinal.unit, Ordinal.mk_ulift, Ordinal.mk_ulift,
+    Ordinal.mk_lt]
+  apply WellOrder.ulift_lt_ulift
+  apply WellOrder.Lt.mk (.mk _ _ _ _ _ _)
+  any_goals (intros; contradiction)
+  exact ⟨⟩
+
+def Ordinal.lt_trans { a b c: Ordinal } : a < b -> b < c -> a < c := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  induction c using ind with | mk c =>
+  rw [mk_lt, mk_lt, mk_lt]
+  intro ⟨ab⟩ ⟨bc⟩
+  apply WellOrder.Lt.mk (.mk _ _ _ _ _ _)
+  exact bc.f ∘ ab.f
+  -- exact bc.top
+  exact bc.f ab.top
+  intro a₀ a₁ r
+  have r := bc.inj _ _ r
+  have r := ab.inj _ _ r
+  exact r
+  intro a₀ a₁
+  dsimp
+  rw [←bc.resp, ←ab.resp]
+  intro a₀
+  apply bc.resp.mp
+  apply ab.lt_top
+  intro c₀ r
+  have := c.wo
+  have init := bc.toRelInitalSeg.init
+  unfold RelPrincipalSeg.toRelInitalSeg at init
+  dsimp at init
+  have ⟨ b₀, prf ⟩ := init c₀ ab.top r
+  subst c₀
+  have r := bc.resp.mpr r
+  have ⟨ a₀, prf ⟩  := ab.of_lt_top _ r
+  exists a₀
+  dsimp
+  rw [prf]
+
+def Ordinal.le_trans { a b c: Ordinal } : a ≤ b -> b ≤ c -> a ≤ c := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  induction c using ind with | mk c =>
+  rw [mk_le, mk_le, mk_le]
+  intro ⟨ab⟩ ⟨bc⟩
+  apply WellOrder.Le.mk (.mk _ _ _ _)
+  exact bc.f ∘ ab.f
+  intro a₀ a₁ r
+  have r := bc.inj _ _ r
+  have r := ab.inj _ _ r
+  exact r
+  intro a₀ a₁
+  dsimp
+  rw [←bc.resp, ←ab.resp]
+  intro c₀ b₀ r
+  have ⟨ b₁, prf ⟩  := bc.init _ _ r
+  subst c₀
+  have ⟨ a₁, prf ⟩  := ab.init _ _ (bc.resp.mpr r)
+  subst b₁
+  exists a₁
+
+def Ordinal.le_of_lt {a b: Ordinal} : a < b -> a ≤ b := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  rw [mk_lt, mk_le]
+  intro ⟨princ_seg⟩
+  have := b.wo
+  exact ⟨princ_seg.toRelInitalSeg⟩
+
+def Ordinal.irrefl (a: Ordinal) : ¬(a < a) := by
+  induction a using ind with | mk a =>
+  rw [mk_lt]
+  intro ⟨princ_seg⟩
+  have f_top_eq_top : princ_seg.f princ_seg.top = princ_seg.top := by
+    have := a.wo
+    exact RelInitialSeg.eq princ_seg.toRelInitalSeg (RelInitialSeg.refl a.rel) princ_seg.top
+  have := princ_seg.lt_top princ_seg.top
+  rw [f_top_eq_top] at this
+  exact a.wo.wf.irrefl this
