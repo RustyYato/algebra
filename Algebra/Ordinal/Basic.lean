@@ -1,5 +1,6 @@
 import Algebra.ClassicLogic
 import Algebra.Equiv
+import Algebra.WellFounded
 
 open ClassicLogic
 
@@ -33,8 +34,17 @@ def RelInitialSeg.mk (f: α -> β) :
   RelInitialSeg r s := fun inj resp init => .mk' (.mk (.mk f inj) resp) init
 
 structure RelPrincipalSeg (r: α -> α -> Prop) (s: β -> β -> Prop) extends RelEmbedding r s where
+  mk' ::
   top: β
   lt_top: ∀b, s (f b) top
+  of_lt_top: ∀x, s x top -> ∃y, f y = x
+
+def RelPrincipalSeg.mk (f: α -> β) (top: β) :
+  (∀x y, f x = f y -> x = y) ->
+  (∀{x y}, r x y ↔ s (f x) (f y)) ->
+  (∀b, s (f b) top) ->
+  (∀x, s x top -> ∃y, f y = x) ->
+  RelPrincipalSeg r s := fun inj resp => .mk' (.mk (.mk f inj) resp) top
 
 inductive WellOrder.Le : WellOrder.{u} -> WellOrder.{v} -> Prop where
 | mk { r₀: α₀ -> α₀ -> Prop } { r₁: α₁ -> α₁ -> Prop } { to₀: IsWellOrder r₀ } { to₁: IsWellOrder r₁ } :
@@ -43,6 +53,54 @@ inductive WellOrder.Le : WellOrder.{u} -> WellOrder.{v} -> Prop where
 inductive WellOrder.Lt : WellOrder.{u} -> WellOrder.{v} -> Prop where
 | mk { r₀: α₀ -> α₀ -> Prop } { r₁: α₁ -> α₁ -> Prop } { to₀: IsWellOrder r₀ } { to₁: IsWellOrder r₁ } :
   RelPrincipalSeg r₀ r₁ -> Lt (.mk α₀ r₀ to₀) (.mk α₁ r₁ to₁)
+
+def IsWellOrder.ext {r: α -> α -> Prop} [wo: IsWellOrder r] (a b: α) :
+  (∀x, r x a ↔ r x b) -> a = b := by
+  intro rel_iff
+  cases wo.tri a b <;> rename_i h
+  have := (rel_iff _).mpr h
+  have := wo.wf.irrefl this
+  contradiction
+  cases h <;> rename_i h
+  assumption
+  have := (rel_iff _).mp h
+  have := wo.wf.irrefl this
+  contradiction
+
+def Embedding.refl α : Embedding α α := .mk id (fun _ _ => id)
+def RelEmbedding.refl (r: α -> α -> Prop) : RelEmbedding r r := .mk (.refl _) (Iff.refl _)
+def RelInitialSeg.refl (r: α -> α -> Prop) : RelInitialSeg r r := .mk' (.refl _) fun a _ _ => ⟨a,rfl⟩
+
+def RelPrincipalSeg.toRelInitalSeg [swo: IsWellOrder s] (seg: RelPrincipalSeg r s) : RelInitialSeg r s := by
+  apply RelInitialSeg.mk' seg.toRelEmbedding
+  intro b a b_lt_fa
+  have b_lt_top := swo.trans _ _ _ b_lt_fa (seg.lt_top a)
+  have ⟨ a₀, prf ⟩ := seg.of_lt_top _ b_lt_top
+  exists a₀
+
+def RelInitialSeg.eq {r: α -> α -> Prop} [rwo: IsWellOrder r] [swo: IsWellOrder s] (a b: RelInitialSeg r s) (x: α) : a.f x = b.f x := by
+  rename_i β
+  induction x using rwo.wf.induction with
+  | h x ih =>
+  apply swo.ext
+  intro y
+  apply Iff.intro
+  · intro y_lt_ax
+    have ⟨ y₀, prf ⟩ := a.init y x y_lt_ax
+    rw [←prf] at y_lt_ax
+    have y₀_lt_x := a.resp.mpr y_lt_ax
+    have := ih y₀ y₀_lt_x
+    rw [this] at prf
+    subst y
+    exact b.resp.mp y₀_lt_x
+  · intro y_lt_bx
+    have ⟨ y₀, prf ⟩ := b.init y x y_lt_bx
+    rw [←prf] at y_lt_bx
+    have y₀_lt_x := b.resp.mpr y_lt_bx
+    have := ih y₀ y₀_lt_x
+    rw [←this] at prf
+    subst y
+    exact a.resp.mp y₀_lt_x
 
 inductive WellOrder.Equiv : WellOrder.{u} -> WellOrder.{v} -> Type _ where
 | mk (f: α₀ -> α₁) (g: α₁ -> α₀) :
@@ -233,10 +291,61 @@ def Ordinal.le (a b: Ordinal) : Prop := by
   apply le_congr <;> assumption
   apply le_congr <;> (symm; assumption)
 
+def Ordinal.lt_congr (a b c d: WellOrder) :
+  a.Equiv c -> b.Equiv d ->
+  a.Lt b -> c.Lt d := by
+  intro ac bd
+  intro ⟨emb⟩
+  apply WellOrder.Lt.mk (.mk (bd.left ∘ emb.f ∘ ac.right) _ _ _ _ _)
+  · exact bd.left emb.top
+  · intro c₀ c₁ h
+    dsimp at h
+    apply ac.right_inj
+    apply emb.inj
+    apply bd.left_inj
+    assumption
+  · intro c₀ c₁
+    apply Iff.intro
+    intro h
+    apply bd.left_resp
+    apply emb.resp.mp
+    apply ac.right_resp
+    assumption
+    intro h
+    dsimp at h
+    replace h := bd.right_resp _ _ h
+    rw [bd.left_right, bd.left_right] at h
+    replace h := emb.resp.mpr h
+    replace h := ac.left_resp _ _ h
+    rw [ac.right_left, ac.right_left] at h
+    exact h
+  · dsimp
+    intro c₀
+    apply bd.left_resp
+    apply emb.lt_top
+  · dsimp
+    intro d₀ lt_top
+    rw [←bd.right_left d₀] at lt_top
+    have := bd.right_resp _ _ lt_top
+    rw [bd.left_right, bd.left_right] at this
+    have ⟨ y, prf ⟩ := emb.of_lt_top (bd.right d₀) this
+    exists ac.left y
+    rw [ac.left_right, prf, bd.right_left]
+
+def Ordinal.lt (a b: Ordinal) : Prop := by
+  apply liftProp₂ WellOrder.Lt _ a b
+  intro a b c d ⟨ac⟩ ⟨bd⟩
+  apply Iff.intro
+  apply lt_congr <;> assumption
+  apply lt_congr <;> (symm; assumption)
+
 instance : LE Ordinal := ⟨Ordinal.le⟩
 def Ordinal.le.def (a b: Ordinal) : (a ≤ b) = a.le b := rfl
-
 def Ordinal.mk_le (a b: WellOrder) : (mk a ≤ mk b) ↔ a.Le b := liftProp₂_mk
+
+instance : LT Ordinal := ⟨Ordinal.lt⟩
+def Ordinal.lt.def (a b: Ordinal) : (a < b) = a.lt b := rfl
+def Ordinal.mk_lt (a b: WellOrder) : (mk a < mk b) ↔ a.Lt b := liftProp₂_mk
 
 def ULift.up.inj.{u₀,v₀} {α: Type v₀} (a b: α) :
   (ULift.up a: ULift.{u₀,v₀} α) = ULift.up b -> a = b := by
@@ -377,6 +486,65 @@ def WellOrder.of_ulift_le_ulift.{u,v,w₀,w₁} (a: WellOrder.{u}) (b: WellOrder
   intro h
   apply WellOrder.ulift_le_left
   apply WellOrder.ulift_le_right
+  exact h
+
+def WellOrder.ulift_lt_left.{u,v,w} (a: WellOrder.{u}) (b: WellOrder.{v}) : Lt a b -> Lt (ulift.{u,w} a) b := by
+  intro ⟨emb⟩
+  apply WellOrder.Lt.mk (.mk (emb.f ∘ ULift.down) emb.top _ _ _ _) <;> dsimp
+  intro x y h
+  exact ULift.down.inj _ _ (emb.inj _ _ h)
+  intro x y
+  exact emb.resp
+  intro; exact emb.lt_top _
+  intro b₀ r
+  have ⟨ y, prf ⟩  := emb.of_lt_top b₀ r
+  exists ⟨y⟩
+
+def WellOrder.ulift_lt_right.{u,v,w} (a: WellOrder.{u}) (b: WellOrder.{v}) : Lt a b -> Lt a (ulift.{v,w} b) := by
+  intro ⟨emb⟩
+  apply WellOrder.Lt.mk (.mk (ULift.up ∘ emb.f) ⟨emb.top⟩ _ _ _ _) <;> dsimp
+  intro x y h
+  exact emb.inj _ _ (ULift.up.inj _ _ h)
+  exact emb.resp
+  intro; exact emb.lt_top _
+  intro b₀ r
+  have ⟨ y, prf ⟩  := emb.of_lt_top b₀.down r
+  exists y
+  rw [prf]
+
+def WellOrder.ulift_lt_ulift.{u,v,w₀,w₁} (a: WellOrder.{u}) (b: WellOrder.{v}) : Lt a b -> Lt (ulift.{u,w₀} a) (ulift.{v,w₁} b) := by
+  intro h
+  apply WellOrder.ulift_lt_left
+  apply WellOrder.ulift_lt_right
+  exact h
+
+def WellOrder.of_ulift_lt_left.{u,v,w} (a: WellOrder.{u}) (b: WellOrder.{v}) : Lt (ulift.{u,w} a) b -> Lt a b := by
+  intro ⟨emb⟩
+  apply WellOrder.Lt.mk (.mk (emb.f ∘ ULift.up) emb.top _ _ _ _) <;> dsimp
+  intro x y h
+  exact ULift.up.inj _ _ (emb.inj _ _ h)
+  exact emb.resp
+  intro; exact emb.lt_top _
+  intro b₀ r
+  have ⟨ y, prf ⟩  := emb.of_lt_top b₀ r
+  exists y.down
+
+def WellOrder.of_ulift_lt_right.{u,v,w} (a: WellOrder.{u}) (b: WellOrder.{v}) : Lt a (ulift.{v,w} b) -> Lt a b := by
+  intro ⟨emb⟩
+  apply WellOrder.Lt.mk (.mk (ULift.down ∘ emb.f) emb.top.down _ _ _ _) <;> dsimp
+  intro x y h
+  exact emb.inj _ _ (ULift.down.inj _ _ h)
+  exact emb.resp
+  intro; exact emb.lt_top _
+  intro b₀ r
+  have ⟨ y, prf ⟩  := emb.of_lt_top ⟨b₀⟩ r
+  exists y
+  rw [prf]
+
+def WellOrder.of_ulift_lt_ulift.{u,v,w₀,w₁} (a: WellOrder.{u}) (b: WellOrder.{v}) : Lt a b -> Lt (ulift.{u,w₀} a) (ulift.{v,w₁} b) := by
+  intro h
+  apply WellOrder.ulift_lt_left
+  apply WellOrder.ulift_lt_right
   exact h
 
 def Ordinal.ulift (o: Ordinal) : Ordinal := by

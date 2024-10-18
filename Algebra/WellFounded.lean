@@ -33,3 +33,9 @@ def Prod'.lex_any_wf
 instance [awf: WellFoundedRelation α] [bwf: WellFoundedRelation β] : WellFoundedRelation (Prod' α β) where
   rel := Prod'.LexAny awf.rel bwf.rel
   wf := Prod'.lex_any_wf awf.wf bwf.wf
+
+def WellFounded.irrefl (wf: WellFounded r) : ¬r a a := by
+  intro h
+  induction a using wf.induction with
+  | h a ih =>
+  apply ih <;> assumption
