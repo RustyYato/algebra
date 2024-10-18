@@ -15,8 +15,12 @@ structure WellOrder.{u} where
 
 inductive WellOrder.Le : WellOrder.{u} -> WellOrder.{v} -> Prop where
 | mk (f: α₀ -> α₁)
+    -- f is injective
     (f_inj: ∀x y, f x = f y -> x = y)
-    (f_resp: ∀x y, r₀ x y -> r₁ (f x) (f y)) :
+    -- f preserves relations
+    (f_resp: ∀{x y}, r₀ x y ↔ r₁ (f x) (f y))
+    -- f maps to the initial segment of r
+    (f_init: ∀a b, r₁ a (f b) -> ∃x, f x = a) :
     Le (.mk α₀ r₀ to₀) (.mk α₁ r₁ to₁)
 
 inductive WellOrder.Equiv : WellOrder.{u} -> WellOrder.{v} -> Type _ where
@@ -28,18 +32,30 @@ inductive WellOrder.Equiv : WellOrder.{u} -> WellOrder.{v} -> Type _ where
     Equiv (.mk α₀ r₀ to₀) (.mk α₁ r₁ to₁)
 
 @[refl]
-def WellOrder.Le.refl (a: WellOrder) : Le a a := Le.mk id (fun _ _ => id) (fun _ _ => id)
+def WellOrder.Le.refl (a: WellOrder) : Le a a := Le.mk id (fun _ _ => id) (Iff.refl _) (fun a _ _ => ⟨ a, rfl ⟩)
 
 def WellOrder.Le.trans {a b c: WellOrder} : Le a b -> Le b c -> Le a c
-| .mk ab ab_inj ab_resp, .mk bc bc_inj bc_resp => by
+| .mk ab ab_inj ab_resp ab_princ, .mk bc bc_inj bc_resp bc_princ => by
   apply Le.mk (bc ∘ ab)
-  intro x y h
+  · intro x y h
   exact ab_inj _ _ (bc_inj _ _ h)
-  intro x y h
-  dsimp
-  apply bc_resp
-  apply ab_resp
+  · intro x y
+    apply Iff.intro
+    intro h
+    apply bc_resp.mp
+    apply ab_resp.mp
   exact h
+    intro h
+    apply ab_resp.mpr
+    apply bc_resp.mpr
+    exact h
+  · intro a₀ b₀ r
+    have ⟨ x, prf ⟩ := bc_princ a₀ (ab b₀) r
+    subst a₀
+    replace r := bc_resp.mpr r
+    have ⟨ x, prf ⟩ := ab_princ _ _ r
+    subst prf
+    exists x
 
 @[refl]
 def WellOrder.Equiv.refl (a: WellOrder) : Equiv a a :=
@@ -97,8 +113,23 @@ def WellOrder.Equiv.right_inj (h: Equiv a b) : ∀x y, h.right x = h.right y -> 
   rw [h.right_left, h.right_left] at this
   exact this
 
-def WellOrder.Equiv.le_left (h: Equiv a b) : Le a b := .mk h.left h.left_inj h.left_resp
-def WellOrder.Equiv.le_right (h: Equiv a b) : Le b a := .mk h.right h.right_inj h.right_resp
+def WellOrder.Equiv.le_left (h: Equiv a b) : Le a b := by
+  apply Le.mk _ _ _ _
+  · exact h.left
+  · exact h.left_inj
+  · intro x y
+    apply Iff.intro
+    intro r
+    apply h.left_resp
+    assumption
+    intro r
+    have := h.right_resp _ _ r
+    rw [h.left_right, h.left_right] at this
+    exact this
+  · intro b₀ a₀ _
+    exists h.right b₀
+    rw [h.right_left]
+def WellOrder.Equiv.le_right (h: Equiv a b) : Le b a := h.symm.le_left
 
 instance WellOrder.setoid : Setoid WellOrder where
   r a b := Nonempty (Equiv a b)
@@ -135,11 +166,11 @@ def Ordinal.sound : a ≈ b -> mk a = mk b := Equiv.sound _ _
 def Ordinal.sound' : WellOrder.Equiv a b -> mk a = mk b := sound ∘ Nonempty.intro
 def Ordinal.exists_rep : ∀o, ∃p, mk p = o := Equiv.exists_rep
 
-def Ordinal.le (a b: Ordinal) : Prop := by
-  apply liftProp₂ WellOrder.Le _ a b
-  intro a b c d ⟨ac⟩ ⟨bd⟩
-  apply Iff.intro
-  · intro ⟨f,f_inj,f_resp⟩
+def Ordinal.le_congr (a b c d: WellOrder) :
+  a.Equiv c -> b.Equiv d ->
+  a.Le b -> c.Le d := by
+  intro ac bd
+  intro ⟨f,f_inj,f_resp,f_init⟩
     apply WellOrder.Le.mk (bd.left ∘ f ∘ ac.right)
     · intro c₀ c₁ h
       dsimp at h
@@ -147,24 +178,39 @@ def Ordinal.le (a b: Ordinal) : Prop := by
       apply f_inj
       apply bd.left_inj
       assumption
-    · intro c₀ c₁ h
+  · intro c₀ c₁
+    apply Iff.intro
+    intro h
       apply bd.left_resp
-      apply f_resp
+    apply f_resp.mp
       apply ac.right_resp
       assumption
-  · intro ⟨f,f_inj,f_resp⟩
-    apply WellOrder.Le.mk (bd.right ∘ f ∘ ac.left)
-    · intro c₀ c₁ h
+    intro h
       dsimp at h
-      apply ac.left_inj
-      apply f_inj
-      apply bd.right_inj
-      assumption
-    · intro c₀ c₁ h
-      apply bd.right_resp
-      apply f_resp
-      apply ac.left_resp
-      assumption
+    replace h := bd.right_resp _ _ h
+    rw [bd.left_right, bd.left_right] at h
+    replace h := f_resp.mpr h
+    replace h := ac.left_resp _ _ h
+    rw [ac.right_left, ac.right_left] at h
+    exact h
+  · dsimp
+    intro d₀ c₀ r
+    replace r := bd.right_resp _ _ r
+    rw [bd.left_right] at r
+    have ⟨ x, prf ⟩ := f_init (bd.right d₀) (ac.right c₀) r
+    rw [←prf] at r
+    replace r := f_resp.mpr r
+    replace r := ac.left_resp _ _ r
+    rw [ac.right_left] at r
+    exists ac.left x
+    rw [ac.left_right, prf, bd.right_left]
+
+def Ordinal.le (a b: Ordinal) : Prop := by
+  apply liftProp₂ WellOrder.Le _ a b
+  intro a b c d ⟨ac⟩ ⟨bd⟩
+  apply Iff.intro
+  apply le_congr <;> assumption
+  apply le_congr <;> (symm; assumption)
 
 instance : LE Ordinal := ⟨Ordinal.le⟩
 def Ordinal.le.def (a b: Ordinal) : (a ≤ b) = a.le b := rfl
@@ -258,20 +304,26 @@ def WellOrder.of_ulift_equiv_ulift (a b: WellOrder) : Equiv (ulift a) (ulift b) 
   exact eq
 
 def WellOrder.ulift_le_left.{u,v,w} (a: WellOrder.{u}) (b: WellOrder.{v}) : Le a b -> Le (ulift.{u,w} a) b := by
-  intro ⟨f,f_inj,f_resp⟩
+  intro ⟨f,f_inj,f_resp,f_init⟩
   apply WellOrder.Le.mk (f ∘ ULift.down) <;> dsimp
   intro x y h
   exact ULift.down.inj _ _ (f_inj _ _ h)
-  intro x y r
-  exact f_resp _ _ r
+  intro x y
+  exact f_resp
+  intro b₀ a₀ r
+  have ⟨a₁, prf⟩  := f_init b₀ a₀.down r
+  exists ⟨a₁⟩
 
 def WellOrder.ulift_le_right.{u,v,w} (a: WellOrder.{u}) (b: WellOrder.{v}) : Le a b -> Le a (ulift.{v,w} b) := by
-  intro ⟨f,f_inj,f_resp⟩
+  intro ⟨f,f_inj,f_resp,f_init⟩
   apply WellOrder.Le.mk (ULift.up ∘ f) <;> dsimp
   intro x y h
   exact f_inj _ _ (ULift.up.inj _ _ h)
-  intro x y r
-  exact f_resp _ _ r
+  exact f_resp
+  intro b₀ a₀ r
+  have ⟨a₁, prf⟩  := f_init b₀.down a₀ r
+  exists a₁
+  rw [prf]
 
 def WellOrder.ulift_le_ulift.{u,v,w₀,w₁} (a: WellOrder.{u}) (b: WellOrder.{v}) : Le a b -> Le (ulift.{u,w₀} a) (ulift.{v,w₁} b) := by
   intro h
@@ -280,20 +332,25 @@ def WellOrder.ulift_le_ulift.{u,v,w₀,w₁} (a: WellOrder.{u}) (b: WellOrder.{v
   exact h
 
 def WellOrder.of_ulift_le_left.{u,v,w} (a: WellOrder.{u}) (b: WellOrder.{v}) : Le (ulift.{u,w} a) b -> Le a b := by
-  intro ⟨f,f_inj,f_resp⟩
+  intro ⟨f,f_inj,f_resp,f_init⟩
   apply WellOrder.Le.mk (f ∘ ULift.up) <;> dsimp
   intro x y h
   exact ULift.up.inj _ _ (f_inj _ _ h)
-  intro x y r
-  exact f_resp _ _ r
+  exact f_resp
+  intro b₀ a₀ r
+  have ⟨x,prf⟩ := f_init _ _ r
+  exists x.down
 
 def WellOrder.of_ulift_le_right.{u,v,w} (a: WellOrder.{u}) (b: WellOrder.{v}) : Le a (ulift.{v,w} b) -> Le a b := by
-  intro ⟨f,f_inj,f_resp⟩
+  intro ⟨f,f_inj,f_resp,f_init⟩
   apply WellOrder.Le.mk (ULift.down ∘ f) <;> dsimp
   intro x y h
   exact f_inj _ _ (ULift.down.inj _ _ h)
-  intro x y r
-  exact f_resp _ _ r
+  exact f_resp
+  intro _ _ r
+  have ⟨x,prf⟩ := f_init _ _ r
+  exists x
+  rw [prf]
 
 def WellOrder.of_ulift_le_ulift.{u,v,w₀,w₁} (a: WellOrder.{u}) (b: WellOrder.{v}) : Le a b -> Le (ulift.{u,w₀} a) (ulift.{v,w₁} b) := by
   intro h
@@ -843,7 +900,7 @@ def Ordinal.le_zero (a: Ordinal) : a ≤ 0 -> a = 0 := by
   rw [zero_eq_ulift_empty, empty, mk_ulift, le.def]
   intro h
   replace h := (mk_le _ _).mp h
-  have ⟨ f, _, _ ⟩ := WellOrder.of_ulift_le_right _ _ h
+  have ⟨f, _, _,_⟩ := WellOrder.of_ulift_le_right _ _ h
   apply sound'
   apply WellOrder.ulift_equiv_right
   apply WellOrder.Equiv.mk f Empty.elim _ _ _ _
@@ -1117,4 +1174,5 @@ def Ordinal.mul_add (k a b: Ordinal) : k * (a + b) = k * a + k * b := by
       apply Sum.Lex.inr
       assumption
       apply Prod.Lex.right
+      assumption
       assumption
