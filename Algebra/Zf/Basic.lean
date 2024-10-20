@@ -608,3 +608,26 @@ def Zf.mem_sUnion {a: Zf.{u}} : ∀{x}, x ∈ ⋃₀a ↔ ∃a₀: Zf.{u}, a₀ 
     exists ⟨a₀,a₁⟩
     apply prf₁.trans
     apply prf
+
+def Zf.sInter (a: Zf.{u}) : Zf := (⋃₀ a).sep <| fun x => ∀a₀: Zf.{u}, a₀ ∈ a -> x ∈ a₀
+
+instance : SInter Zf := ⟨.sInter⟩
+
+def Zf.sInter.def (a: Zf) : ⋂₀ a = a.sInter := rfl
+
+def Zf.mem_sInter.{u} {a: Zf.{u}} (h: a.Nonempty) : ∀{x: Zf.{u}}, x ∈ ⋂₀a ↔ ∀a₀: Zf.{u}, a₀ ∈ a -> x ∈ a₀ := by
+  intro x
+  rw [sInter.def]
+  unfold sInter
+  apply Iff.trans
+  apply mem_sep
+  apply Iff.intro
+  intro ⟨_,prop⟩
+  assumption
+  intro prop
+  apply And.intro _ prop
+  have ⟨w,w_in_a⟩ := h
+  apply mem_sUnion.mpr
+  exists w
+  apply And.intro w_in_a
+  apply prop _ w_in_a
