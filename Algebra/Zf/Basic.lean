@@ -276,6 +276,24 @@ def Zf.ext_empty (x: Zf.{u}) : (∀y: Zf.{u}, y ∉ x) -> x = ∅ := by
   have := not_mem_empty a mem
   contradiction
 
+def Zf.Pre.Nonempty.{u} (a: Zf.Pre.{u}) : Prop := ∃x: Zf.Pre.{u}, x ∈ a
+def Zf.Nonempty.{u} (a: Zf.{u}) : Prop := ∃x: Zf.{u}, x ∈ a
+
+def Zf.not_empty_nonempty : ¬Zf.Nonempty ∅ := by
+  intro ⟨_,mem⟩
+  have := not_mem_empty _ mem
+  contradiction
+
+def Zf.mk_nonempty (a: Zf.Pre) : (mk a).Nonempty ↔ a.Nonempty := by
+  apply Iff.intro
+  · intro ⟨b,mem⟩
+    induction b using ind with | mk b =>
+    exists b
+    exact mk_mem.mp mem
+  · intro ⟨b,mem⟩
+    exists mk b
+    exact mk_mem.mpr mem
+
 def Zf.Pre.union : Zf.Pre.{u} -> Zf.Pre.{u} -> Zf.Pre.{u}
 | .intro a amem, .intro b bmem => .intro (a ⊕ b) <| fun x => match x with
   | .inl x => amem x
