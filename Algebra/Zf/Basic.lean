@@ -344,3 +344,58 @@ def Zf.mem_union {a b: Zf} : ∀{x: Zf}, x ∈ a ∪ b ↔ x ∈ a ∨ x ∈ b :
     cases mem <;> (rename_i mem; have ⟨y,prf⟩ := mem)
     exact ⟨Sum.inl _,prf⟩
     exact ⟨Sum.inr _,prf⟩
+
+def Zf.Pre.sep (pred: (Zf.Pre.{u} -> Prop)) : Zf.Pre.{u} -> Zf.Pre.{u}
+| .intro a amem => .intro { x: a // pred (amem x) } (amem ∘ Subtype.val)
+
+def Zf.sep (pred: (Zf.{u} -> Prop)) : Zf.{u} -> Zf.{u} := by
+  apply lift (fun _ => mk _) _
+  apply Zf.Pre.sep
+  exact pred ∘ mk
+  intro a b a_eq_b
+  dsimp
+  apply sound
+  cases a with | intro a amem =>
+  cases b with | intro b bmem =>
+  apply And.intro
+  · dsimp
+    intro ⟨a₀,a₀_prop⟩
+    dsimp
+    have ⟨b₀,prf⟩ := a_eq_b.left a₀
+    rw [sound prf] at a₀_prop
+    exists ⟨_,a₀_prop⟩
+  · dsimp
+    intro ⟨b₀,b₀_prop⟩
+    dsimp
+    have ⟨a₀,prf⟩ := a_eq_b.right b₀
+    rw [←sound prf] at b₀_prop
+    exists ⟨_,b₀_prop⟩
+
+def Zf.mk_sep (pred: (Zf.{u} -> Prop)) (a: Zf.Pre) : Zf.sep pred (mk a) = mk (Zf.Pre.sep (pred ∘ mk) a) := by
+  rw [sep, lift_mk]
+
+def Zf.mem_sep { prop: Zf -> Prop } { a: Zf } : ∀{x}, x ∈ a.sep prop ↔ x ∈ a ∧ prop x := by
+  intro x
+  induction a using ind with | mk a =>
+  induction x using ind with | mk x =>
+  cases a with | intro a amem =>
+  -- cases x with | intro x xmem =>
+  apply Iff.intro
+  · intro mem
+    rw [mk_sep] at mem
+    have ⟨x₀,prf⟩  := mk_mem.mp mem
+    apply And.intro
+    apply mk_mem.mpr
+    exists x₀.val
+    have := x₀.property
+    dsimp at this
+    rw [sound]
+    exact this
+    exact prf
+  · intro mem
+    rw [mk_sep]
+    apply mk_mem.mpr
+    have ⟨mem,prop_of_mem⟩ := mem
+    have ⟨a₀,prf⟩ := mk_mem.mp mem
+    rw [sound prf] at prop_of_mem
+    exists ⟨a₀,prop_of_mem⟩
