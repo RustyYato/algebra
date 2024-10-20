@@ -4,6 +4,11 @@ import Algebra.WellFounded
 
 open ClassicLogic
 
+inductive Sum.Lex (alt: α -> α -> Prop) (blt: β -> β -> Prop) : α ⊕ β -> α ⊕ β -> Prop where
+| inl : alt x y -> Lex alt blt (inl x) (inl y)
+| inl_inr: Lex alt blt (inl x) (inr y)
+| inr : blt x y -> Lex alt blt (inr x) (inr y)
+
 class IsWellOrder (rel: α -> α -> Prop) where
   wf: WellFounded rel
   tri: ∀a b: α, rel a b ∨ a = b ∨ rel b a
@@ -101,6 +106,36 @@ def RelInitialSeg.eq {r: α -> α -> Prop} [rwo: IsWellOrder r] [swo: IsWellOrde
     rw [←this] at prf
     subst y
     exact a.resp.mp y₀_lt_x
+
+def RelInitialSeg.leSum (r: α -> α -> Prop) (s: β -> β -> Prop) :
+  RelInitialSeg r (Sum.Lex r s) := by
+  apply RelInitialSeg.mk Sum.inl (fun _ _ => Sum.inl.inj) _ _
+  intro _ _
+  apply Iff.intro
+  exact Sum.Lex.inl
+  intro h
+  cases h
+  assumption
+  intro x a r
+  cases r <;> rename_i x _
+  exists x
+
+def RelInitialSeg.lt_or_eq.{u,v}
+  { α: Type u }
+  { β: Type v }
+  (r: α -> α -> Prop) (s: β -> β -> Prop)
+  [rwo: IsWellOrder r] [swo: IsWellOrder s]
+   :
+  Nonempty (RelInitialSeg r s) ∨ Nonempty (RelInitialSeg s r) := by
+  sorry
+
+def RelInitialSeg.total.{u,v}
+  { α: Type u }
+  { β: Type v }
+  (r: α -> α -> Prop) (s: β -> β -> Prop)
+  [rwo: IsWellOrder r] [swo: IsWellOrder s] :
+  Nonempty (RelInitialSeg r s) ∨ Nonempty (RelInitialSeg s r) := by
+  sorry
 
 inductive WellOrder.Equiv : WellOrder.{u} -> WellOrder.{v} -> Type _ where
 | mk (f: α₀ -> α₁) (g: α₁ -> α₀) :
@@ -658,11 +693,6 @@ def Ordinal.omega : Ordinal := by
 instance : OfNat Ordinal n := ⟨ Ordinal.ulift (Ordinal.ofNat n) ⟩
 
 def Ordinal.ofNat.def : @OfNat.ofNat Ordinal n _ = (Ordinal.ofNat n).ulift := rfl
-
-inductive Sum.Lex (alt: α -> α -> Prop) (blt: β -> β -> Prop) : α ⊕ β -> α ⊕ β -> Prop where
-| inl : alt x y -> Lex alt blt (inl x) (inl y)
-| inl_inr: Lex alt blt (inl x) (inr y)
-| inr : blt x y -> Lex alt blt (inr x) (inr y)
 
 def WellOrder.add_rel (a b: WellOrder) : a.ty ⊕ b.ty -> a.ty ⊕ b.ty -> Prop := Sum.Lex a.rel b.rel
 
@@ -1365,6 +1395,63 @@ def Ordinal.mul_add (k a b: Ordinal) : k * (a + b) = k * a + k * b := by
       apply Prod.Lex.right
       assumption
 
+def Ordinal.ofNat_add (n m: Nat) : ofNat (n + m) = ofNat n + ofNat m := by
+  unfold ofNat
+  rw [mk_add]
+  apply sound'
+  unfold WellOrder.ofNat WellOrder.add WellOrder.add_rel
+  apply WellOrder.Equiv.mk _ _ _ _ _ _ <;> dsimp
+  · intro ⟨x,xLt⟩
+    if h:x < n then
+      exact .inl ⟨x,h⟩
+    else
+      replace h := Nat.le_of_not_lt h
+      rw [←Nat.sub_add_cancel h, Nat.add_comm] at xLt
+      exact .inr ⟨_,Nat.lt_of_add_lt_add_left xLt⟩
+  · intro x
+    match x with
+    | .inl x => exact ⟨x.val, Nat.lt_of_lt_of_le x.isLt (Nat.le_add_right _ _)⟩
+    | .inr x => exact ⟨n+x.val, Nat.add_lt_add_left x.isLt _⟩
+  · intro x
+    cases x <;> (rename_i x; have ⟨x,xLt⟩ := x; dsimp)
+    rw [dif_pos xLt]
+    rw [dif_neg (Nat.not_lt_of_le (Nat.le_add_right _ _))]
+    congr
+    rw [Nat.add_comm, Nat.add_sub_cancel]
+  · intro ⟨x,xLt⟩
+    dsimp
+    if h:x < n then
+      rw [dif_pos h]
+    else
+      rw [dif_neg h]
+      dsimp
+      congr
+      rw [Nat.add_comm, Nat.sub_add_cancel]
+      apply Nat.le_of_not_lt; assumption
+  · intro ⟨x,xLt⟩ ⟨y,yLt⟩ x_lt_y
+    replace x_lt_y : x < y := x_lt_y
+    dsimp
+    split <;> rename_i hx
+    split <;> rename_i hx
+    apply Sum.Lex.inl
+    assumption
+    apply Sum.Lex.inl_inr
+    replace hx := Nat.le_of_not_lt hx
+    have hy := Nat.lt_of_le_of_lt hx x_lt_y
+    rw [dif_neg (Nat.not_lt_of_gt hy)]
+    apply Sum.Lex.inr
+    apply Nat.sub_lt_sub_right
+    assumption
+    assumption
+  · intro x y r
+    cases r <;> dsimp
+    trivial
+    rename_i x y
+    apply Nat.lt_of_lt_of_le x.isLt
+    apply Nat.le_add_right
+    apply Nat.add_lt_add_left
+    assumption
+
 def Ordinal.zero_lt_one : (0: Ordinal) < (1: Ordinal) := by
   rw [Ordinal.zero_eq_ulift_empty, Ordinal.one_eq_ulift_unit,
     Ordinal.empty, Ordinal.unit, Ordinal.mk_ulift, Ordinal.mk_ulift,
@@ -1447,3 +1534,117 @@ def Ordinal.irrefl (a: Ordinal) : ¬(a < a) := by
   have := princ_seg.lt_top princ_seg.top
   rw [f_top_eq_top] at this
   exact a.wo.wf.irrefl this
+
+def Ordinal.init_seg_of (a b: Ordinal) : a < b ∨ a = b ∨ b < a := by
+  sorry
+
+def Ordinal.tri (a b: Ordinal) : a < b ∨ a = b ∨ b < a := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  rw [mk_lt, mk_lt]
+  apply byContradiction
+  intro h
+  replace ⟨ not_lt, h ⟩ := not_or.mp h
+  replace ⟨ not_eq, not_gt ⟩ := not_or.mp h
+  clear h
+  apply not_eq
+  apply sound'
+  apply WellOrder.Equiv.mk _ _ _ _ _ _
+  ·
+    sorry
+  · sorry
+  · sorry
+  · sorry
+  · sorry
+  · sorry
+
+def Ordinal.not_lt_zero (o: Ordinal) : ¬o < 0 := by
+  induction o using ind with | mk o =>
+  rw [ofNat.def, ofNat, mk_ulift, mk_lt]
+  intro ⟨seg⟩
+  dsimp at seg
+  exact seg.top.down.elim0
+
+def Ordinal.ofNat_eq_OfNat (n: Nat) : Ordinal.ofNat n = @OfNat.ofNat Ordinal n _ := by
+  unfold OfNat.ofNat instOfNatOrdinal
+  dsimp
+  rw [ulift_eq_self]
+
+def Ordinal.lt_succ_self (o: Ordinal) : o < o + 1 := by
+  induction o using ind with | mk o =>
+  rw [one_eq_ulift_unit, unit, add_ulift, mk_add, mk_ulift, mk_lt]
+  apply WellOrder.ulift_lt_right
+  unfold WellOrder.add WellOrder.add_rel
+  apply WellOrder.Lt.mk (.mk _ _ _ _ _ _) <;> dsimp
+  · exact Sum.inl
+  · exact .inr ⟨⟩
+  · intro x y
+    exact Sum.inl.inj
+  · intro x y
+    apply Iff.intro
+    exact Sum.Lex.inl
+    intro r
+    cases r
+    assumption
+  · intro b
+    apply Sum.Lex.inl_inr
+  · intro x r
+    cases r
+    any_goals contradiction
+    rename_i x _
+    exists x
+
+def Ordinal.of_lt_succ (a b: Ordinal) : a < b + 1 -> a < b ∨ a = b := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  rw [one_eq_ulift_unit, unit, add_ulift, mk_add, mk_ulift, mk_lt, mk_lt]
+  unfold WellOrder.add WellOrder.add_rel
+  intro r
+  replace ⟨r⟩ := WellOrder.of_ulift_lt_right _ _ r
+  dsimp at r
+
+  sorry
+
+def Ordinal.ofNat_lt (m n: Nat) : ofNat n < ofNat m ↔ n < m := by
+  induction m with
+  | zero =>
+    rw [ofNat_eq_OfNat 0]
+    apply Iff.intro
+    exact False.elim ∘ (not_lt_zero _)
+    exact False.elim ∘ (Nat.not_lt_zero _)
+  | succ m ih =>
+    rw [ofNat_add, ofNat_eq_OfNat 1]
+
+    sorry
+
+def Ordinal.ofNat_le (m n: Nat) : ofNat n ≤ ofNat m ↔ n ≤ m := by
+  unfold ofNat
+  rw [mk_le]
+  apply Iff.intro
+  · intro h
+    cases h <;> rename_i h
+    cases h with | mk' h init =>
+    cases h with | mk h resp =>
+    cases h with | mk f inj =>
+    dsimp at resp init
+    clear resp init
+    induction m with
+    | zero =>
+      sorry
+    | succ m ih =>
+      sorry
+  · intro h
+    sorry
+
+def Ordinal.ofNat_mul (n m: Nat) : ofNat (n * m) = ofNat n * ofNat m := by
+  unfold ofNat
+  rw [mk_mul]
+  apply sound'
+  unfold WellOrder.ofNat WellOrder.mul WellOrder.mul_rel
+  apply WellOrder.Equiv.mk _ _ _ _ _ _ <;> dsimp
+  · sorry
+  · sorry
+  · sorry
+  · sorry
+  · sorry
+  · sorry
