@@ -242,3 +242,36 @@ def Zf.ulift.{u,v} (a: Zf.{u}) : Zf.{max u v} := by
   symm
   apply Zf.Pre.ulift_equiv
   assumption
+
+def Zf.Pre.empty : Pre := ⟨ Empty, Empty.elim ⟩
+def Zf.empty : Zf := Zf.mk .empty
+
+instance : EmptyCollection Zf.Pre := ⟨.ulift .empty⟩
+instance : EmptyCollection Zf := ⟨.ulift .empty⟩
+
+def Zf.empty.def : ∅ = Zf.ulift .empty := rfl
+
+def Zf.mk_empty : ∅ = mk ∅ := by
+  rw [empty.def, ulift, empty, lift_mk]
+  apply sound
+  rfl
+
+def Zf.not_mem_empty (x: Zf) : x ∉ (∅: Zf) := by
+  intro mem
+  induction x using ind with | mk x =>
+  rw [mk_empty] at mem
+  replace mem := mk_mem.mp mem
+  have ⟨⟨_⟩,_⟩ := mem
+  contradiction
+
+def Zf.ext_empty (x: Zf.{u}) : (∀y: Zf.{u}, y ∉ x) -> x = ∅ := by
+  intro h
+  apply ext
+  intro a
+  apply Iff.intro
+  intro mem
+  have := h a mem
+  contradiction
+  intro mem
+  have := not_mem_empty a mem
+  contradiction
