@@ -230,3 +230,15 @@ def Zf.ext_sub (a b: Zf) : a ⊆ b -> b ⊆ a -> a = b := by
   apply ext
   intro x
   exact ⟨ ab x, ba x ⟩
+
+def Zf.ulift.{u,v} (a: Zf.{u}) : Zf.{max u v} := by
+  apply Zf.lift (mk ∘ Pre.ulift) _ a
+  dsimp
+  intro a b ab
+  apply sound
+  apply Zf.Pre.Equiv.trans
+  apply Zf.Pre.ulift_equiv
+  apply flip Zf.Pre.Equiv.trans
+  symm
+  apply Zf.Pre.ulift_equiv
+  assumption
