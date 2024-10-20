@@ -668,7 +668,7 @@ def Zf.insert (a b: Zf) : Zf := {a} ∪ b
 
 instance : Insert Zf Zf := ⟨.insert⟩
 
-def Zf.mem_insert {a b: Zf} : ∀{x: Zf}, x ∈ insert a b ↔ x = a ∨ x ∈ b := by
+def Zf.mem_insert {a b: Zf} : ∀{x: Zf}, x ∈ Insert.insert a b ↔ x = a ∨ x ∈ b := by
   intro x
   apply Iff.intro
   intro h
@@ -680,3 +680,62 @@ def Zf.mem_insert {a b: Zf} : ∀{x: Zf}, x ∈ insert a b ↔ x = a ∨ x ∈ b
   cases h <;> rename_i h
   apply Or.inl; apply mem_singleton.mpr; assumption
   apply Or.inr; assumption
+
+def Zf.mem_pair {a b: Zf} : ∀{x}, x ∈ ({ a, b }: Zf) ↔ x = a ∨ x = b := by
+  intro x
+  apply Iff.intro
+  intro h
+  cases Zf.mem_insert.mp h
+  apply Or.inl; assumption
+  apply Or.inr; apply Zf.mem_singleton.mp; assumption
+  intro h
+  apply Zf.mem_insert.mpr
+  cases h
+  apply Or.inl; assumption
+  apply Or.inr; apply Zf.mem_singleton.mpr; assumption
+
+def Zf.mem_pair_left {a b: Zf} : a ∈ ({ a, b }: Zf) := mem_pair.mpr (Or.inl rfl)
+def Zf.mem_pair_right {a b: Zf} : b ∈ ({ a, b }: Zf) := mem_pair.mpr (Or.inr rfl)
+
+def Zf.insert_nonempty (a b: Zf) : (Insert.insert a b).Nonempty := ⟨a,Zf.mem_insert.mpr (Or.inl rfl)⟩
+
+def Zf.sUnion_pair_eq_union (a b: Zf) : ⋃₀ {a, b} = a ∪ b := by
+  apply ext
+  intro x
+  apply Iff.intro
+  intro h
+  apply mem_union.mpr
+  have ⟨w,w_mem,x_mem⟩ := mem_sUnion.mp h
+  cases mem_pair.mp w_mem <;> subst w
+  apply Or.inl; assumption
+  apply Or.inr; assumption
+  intro h
+  apply mem_sUnion.mpr
+  cases mem_union.mp h
+  exists a
+  apply And.intro
+  apply mem_pair.mpr
+  apply Or.inl; rfl
+  assumption
+  exists b
+  apply And.intro
+  apply mem_pair.mpr
+  apply Or.inr; rfl
+  assumption
+
+def Zf.sInter_pair_eq_inter (a b: Zf) : ⋂₀ {a, b} = a ∩ b := by
+  apply ext
+  intro x
+  have := @mem_sInter _ (Zf.insert_nonempty a {b})
+  apply Iff.intro
+  intro h
+  replace h := this.mp h
+  apply mem_inter.mpr
+  apply And.intro <;> apply h
+  exact mem_pair_left
+  exact mem_pair_right
+  intro h
+  have ⟨l,r⟩ := mem_inter.mp h
+  apply this.mpr
+  intro a₀ h
+  cases mem_pair.mp h <;> (subst a₀; assumption)
