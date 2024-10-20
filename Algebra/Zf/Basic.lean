@@ -231,6 +231,36 @@ def Zf.ext_sub (a b: Zf) : a ⊆ b -> b ⊆ a -> a = b := by
   intro x
   exact ⟨ ab x, ba x ⟩
 
+def Zf.mem_congr {k a b: Zf.Pre} : Zf.Pre.Equiv a b -> k ∈ a -> k ∈ b := by
+  intro a_eq_b
+  cases k with | intro k kmem =>
+  cases a with | intro a amem =>
+  cases b with | intro b bmem =>
+  intro ⟨a₀,prf⟩
+  have ⟨b₀,a₀_eq_b₀⟩ := a_eq_b.left a₀
+  exists b₀
+  exact prf.trans a₀_eq_b₀
+
+def Zf.congr_mem {a b k: Zf.Pre} : Zf.Pre.Equiv a b -> a ∈ k -> b ∈ k := by
+  intro a_eq_b
+  cases k with | intro k kmem =>
+  cases a with | intro a amem =>
+  cases b with | intro b bmem =>
+  intro ⟨k₀,prf⟩
+  exists k₀
+  exact a_eq_b.symm.trans prf
+
+def Zf.sub_congr {k a b: Zf.Pre} : Zf.Pre.Equiv a b -> k ⊆ a -> k ⊆ b := by
+  intro a_eq_b k_sub_a x x_mem_k
+  apply mem_congr a_eq_b
+  apply k_sub_a
+  exact x_mem_k
+
+def Zf.congr_sub {a b k: Zf.Pre} : Zf.Pre.Equiv a b -> a ⊆ k -> b ⊆ k := by
+  intro a_eq_b k_sub_a x x_mem_b
+  apply k_sub_a
+  exact mem_congr a_eq_b.symm x_mem_b
+
 def Zf.ulift.{u,v} (a: Zf.{u}) : Zf.{max u v} := by
   apply Zf.lift (mk ∘ Pre.ulift) _ a
   dsimp
@@ -424,3 +454,69 @@ instance : Inter Zf := ⟨Zf.inter⟩
 
 def Zf.inter.def (a b: Zf.{u}) : a ∩ b = a.inter b := rfl
 def Zf.mem_inter {a b: Zf.{u}} : ∀{x: Zf.{u}}, x ∈ a ∩ b ↔ x ∈ a ∧ x ∈ b := Zf.mem_sep
+
+def Zf.Pre.powerset : Zf.Pre -> Zf.Pre
+| .intro a amem => .intro (a -> Prop) <| fun prop => .intro { x: a // prop x } <| fun x => amem x.val
+
+def Zf.Pre.mem_powerset {a: Zf.Pre} : ∀{x}, x ∈ a.powerset ↔ x ⊆ a := by
+  intro x
+  cases a with | intro a amem =>
+  cases x with | intro x xmem =>
+  apply Iff.intro
+  intro ⟨prop,prf₀⟩ k ⟨x₀,prf₁⟩
+  have ⟨⟨a₀,_⟩,prf₂⟩ := prf₀.left x₀
+  dsimp at prf₂
+  exists a₀
+  exact prf₁.trans prf₂
+  intro sub
+  unfold powerset
+  apply Zf.Pre.Mem.intro _ _
+  intro a₀
+  exact ∃x₀: x, Equiv (xmem x₀) (amem a₀)
+  dsimp
+  apply And.intro
+  · intro x₀
+    have ⟨a₀,prf⟩ := sub (xmem x₀) ⟨_,by rfl⟩
+    apply Exists.intro _ _
+    apply Subtype.mk a₀
+    exists x₀
+    assumption
+  · intro ⟨a₀,x₀,prf⟩
+    exists x₀
+
+def Zf.powerset : Zf -> Zf := by
+  apply lift (fun _ => mk _) _
+  exact Zf.Pre.powerset
+  intro a b a_eq_b
+  dsimp
+  apply ext
+  intro x
+  induction x using ind with | mk x =>
+  apply Iff.trans
+  apply mk_mem
+  apply flip Iff.trans
+  symm
+  apply mk_mem
+  apply Iff.intro
+  intro mem
+  apply Zf.Pre.mem_powerset.mpr
+  apply Zf.sub_congr a_eq_b
+  exact Zf.Pre.mem_powerset.mp mem
+  intro mem
+  apply Zf.Pre.mem_powerset.mpr
+  apply Zf.sub_congr a_eq_b.symm
+  exact Zf.Pre.mem_powerset.mp mem
+
+def Zf.mk_powerset (a: Zf.Pre) : (mk a).powerset = mk a.powerset := by
+  rw [powerset, lift_mk]
+
+def Zf.mem_powerset {a: Zf} : ∀{x}, x ∈ a.powerset ↔ x ⊆ a := by
+  intro x
+  induction a using ind with | mk a =>
+  induction x using ind with | mk x =>
+  rw [mk_powerset]
+  apply Iff.trans
+  apply mk_mem
+  apply flip Iff.trans; symm
+  apply mk_subset
+  exact Zf.Pre.mem_powerset
