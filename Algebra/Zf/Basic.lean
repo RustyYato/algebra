@@ -631,3 +631,52 @@ def Zf.mem_sInter.{u} {a: Zf.{u}} (h: a.Nonempty) : ∀{x: Zf.{u}}, x ∈ ⋂₀
   exists w
   apply And.intro w_in_a
   apply prop _ w_in_a
+
+def Zf.Pre.singleton (a: Zf.Pre) : Zf.Pre := .intro Unit <| fun _ => a
+def Zf.singleton : Zf -> Zf := by
+  apply lift (fun _ => mk _) _
+  exact .singleton
+  intro a b a_eq_b
+  apply sound
+  unfold Zf.Pre.singleton
+  apply And.intro <;> (intro; exists ⟨⟩)
+
+instance : Singleton Zf.Pre Zf.Pre := ⟨.singleton⟩
+instance : Singleton Zf Zf := ⟨.singleton⟩
+
+def Zf.singleton.def (a: Zf) : { a } = a.singleton := rfl
+def Zf.mk_singleton (a: Zf.Pre) : { mk a } = mk { a } := by
+  rw [singleton.def, singleton, lift_mk]
+  rfl
+
+def Zf.mem_singleton {a: Zf} : ∀{x: Zf}, x ∈ ({ a }: Zf) ↔ x = a := by
+  intro x
+  induction a using ind with | mk a =>
+  induction x using ind with | mk x =>
+  rw [mk_singleton]
+  apply Iff.trans
+  apply mk_mem
+  apply Iff.intro
+  intro ⟨_,_⟩
+  apply sound; assumption
+  intro
+  exists ⟨⟩
+  apply exact
+  assumption
+
+def Zf.insert (a b: Zf) : Zf := {a} ∪ b
+
+instance : Insert Zf Zf := ⟨.insert⟩
+
+def Zf.mem_insert {a b: Zf} : ∀{x: Zf}, x ∈ insert a b ↔ x = a ∨ x ∈ b := by
+  intro x
+  apply Iff.intro
+  intro h
+  cases mem_union.mp h <;> rename_i h
+  apply Or.inl; apply mem_singleton.mp; assumption
+  apply Or.inr; assumption
+  intro h
+  apply mem_union.mpr
+  cases h <;> rename_i h
+  apply Or.inl; apply mem_singleton.mpr; assumption
+  apply Or.inr; assumption
