@@ -399,3 +399,10 @@ def Zf.mem_sep { prop: Zf -> Prop } { a: Zf } : ∀{x}, x ∈ a.sep prop ↔ x �
     have ⟨a₀,prf⟩ := mk_mem.mp mem
     rw [sound prf] at prop_of_mem
     exists ⟨a₀,prop_of_mem⟩
+
+def Zf.inter (a b: Zf.{u}) : Zf := a.sep (· ∈ b)
+
+instance : Inter Zf := ⟨Zf.inter⟩
+
+def Zf.inter.def (a b: Zf.{u}) : a ∩ b = a.inter b := rfl
+def Zf.mem_inter {a b: Zf.{u}} : ∀{x: Zf.{u}}, x ∈ a ∩ b ↔ x ∈ a ∧ x ∈ b := Zf.mem_sep
