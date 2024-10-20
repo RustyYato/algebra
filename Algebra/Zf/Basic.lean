@@ -161,3 +161,46 @@ def Zf.ext (a b: Zf.{u}) : (∀x: Zf.{u}, x ∈ a ↔ x ∈ b) -> a = b := by
   apply Iff.intro
   exact (mk_mem.mp <| (ext (mk x)).mp <| mk_mem.mpr ·)
   exact (mk_mem.mp <| (ext (mk x)).mpr <| mk_mem.mpr ·)
+
+def Zf.Pre.acc_equiv : @Acc Pre (· ∈ ·) a -> Zf.Pre.Equiv a b -> @Acc Zf.Pre (· ∈ ·) b := by
+  intro acc ab
+  induction acc generalizing b with
+  | intro a acc_mem ih =>
+  cases a with
+  | intro a amem =>
+  apply Acc.intro
+  intro c c_in_b
+  cases b with
+  | intro b bmem =>
+  have ⟨b₀,prf⟩ := c_in_b
+  have ⟨a₀,a₀_eq_b₀⟩ := ab.right b₀
+  apply ih _ _
+  exact (prf.trans a₀_eq_b₀.symm).symm
+  exists a₀
+
+def Zf.Pre.mem_wf : @WellFounded Zf.Pre (· ∈ ·) := by
+  apply WellFounded.intro
+  intro a
+  induction a with
+  | intro a amem ih =>
+  apply Acc.intro
+  intro b
+  intro b_in_a
+  have ⟨a₀,prf⟩ := b_in_a
+  apply acc_equiv (ih a₀)
+  exact prf.symm
+
+def Zf.mem_wf : @WellFounded Zf (· ∈ ·) := by
+  apply WellFounded.intro
+  intro a
+  induction a using ind with | mk a =>
+  induction a using Zf.Pre.mem_wf.induction with
+  | h a ih =>
+  apply Acc.intro
+  intro b b_in_a
+  induction b using ind with | mk b =>
+  apply ih
+  apply mk_mem.mp
+  assumption
+
+#print axioms Zf.mem_wf
