@@ -1,17 +1,43 @@
 import Algebra.Equiv
 
+class SUnion (α: Type _) where
+  sUnion : α -> α
+class SInter (α: Type _) where
+  sInter : α -> α
+
+prefix:900 "⋃₀" => SUnion.sUnion
+prefix:900 "⋂₀" => SInter.sInter
+
 inductive Zf.Pre.{u} where
 | intro (α: Type u) (mem: α -> Zf.Pre)
+
+def Zf.Pre.ty : Zf.Pre.{u} -> Type u
+| .intro a _ => a
+def Zf.Pre.mem : (a: Zf.Pre.{u}) -> a.ty -> Zf.Pre.{u}
+| .intro _ amem => amem
 
 def Zf.Pre.Equiv.{u,v} : Zf.Pre.{u} -> Zf.Pre.{v} -> Prop
 | .intro _ amem, .intro _ bmem =>
   (∀a₀, ∃b₀, Zf.Pre.Equiv (amem a₀) (bmem b₀)) ∧
   (∀b₀, ∃a₀, Zf.Pre.Equiv (amem a₀) (bmem b₀))
 
+def Zf.Pre.Equiv.left' : ∀{a b}, Pre.Equiv a b -> (∀a₀, ∃b₀, Zf.Pre.Equiv (a.mem a₀) (b.mem b₀))
+| .intro _ _, .intro _ _, .intro a _ => a
+def Zf.Pre.Equiv.right' : ∀{a b}, Pre.Equiv a b -> (∀b₀, ∃a₀, Zf.Pre.Equiv (a.mem a₀) (b.mem b₀))
+| .intro _ _, .intro _ _, .intro _ b => b
+
 inductive Zf.Pre.Mem.{u,v} (a: Zf.Pre.{u}) : Zf.Pre.{v} -> Prop where
 | intro (b₀: β) : Equiv a (bmem b₀) -> Mem a (.intro β bmem)
 
 instance Zf.Pre.MembershipInst : Membership Zf.Pre Zf.Pre := ⟨Zf.Pre.Mem⟩
+
+def Zf.Pre.mem_iff { a b: Zf.Pre } : (b ∈ a) ↔ ∃a₀: a.ty, b.Equiv (a.mem a₀) :=by
+  cases a; cases b
+  apply Iff.intro
+  repeat (
+    intro ⟨a₀,prf⟩
+    exists a₀
+  )
 
 @[refl]
 def Zf.Pre.Equiv.refl (a: Zf.Pre) : Equiv a a := by
@@ -520,3 +546,65 @@ def Zf.mem_powerset {a: Zf} : ∀{x}, x ∈ a.powerset ↔ x ⊆ a := by
   apply flip Iff.trans; symm
   apply mk_subset
   exact Zf.Pre.mem_powerset
+
+def Zf.Pre.sUnion : Zf.Pre -> Zf.Pre
+| .intro a amem => .intro ((x: a) × (amem x).ty) fun ⟨a₀,b₀⟩ => (amem a₀).mem b₀
+
+def Zf.sUnion : Zf -> Zf := by
+  apply lift (fun _ => mk _) _
+  exact Zf.Pre.sUnion
+  dsimp
+  intro a b a_eq_b
+  apply sound
+  cases a with | intro a amem =>
+  cases b with | intro b bmem =>
+  unfold Zf.Pre.sUnion
+  dsimp only
+  apply And.intro
+  intro ⟨a₀,a₁⟩
+  have ⟨b₀,a₀_eq_b₀⟩ := a_eq_b.left a₀
+  have ⟨b₁,a₁_eq_b₁⟩ := a₀_eq_b₀.left' a₁
+  exists ⟨b₀,b₁⟩
+  intro ⟨b₀,b₁⟩
+  have ⟨a₀,a₀_eq_b₀⟩ := a_eq_b.right b₀
+  have ⟨a₁,a₁_eq_b₁⟩ := a₀_eq_b₀.right' b₁
+  exists ⟨a₀,a₁⟩
+
+instance : SUnion Zf.Pre := ⟨.sUnion⟩
+instance : SUnion Zf := ⟨.sUnion⟩
+
+def Zf.sUnion.def (a: Zf) : ⋃₀ a = a.sUnion := rfl
+
+def Zf.mk_sUnion (a: Zf.Pre) : ⋃₀ mk a = mk (⋃₀ a) := by
+  rw [Zf.sUnion.def, sUnion, lift_mk]
+  rfl
+
+def Zf.mem_sUnion {a: Zf.{u}} : ∀{x}, x ∈ ⋃₀a ↔ ∃a₀: Zf.{u}, a₀ ∈ a ∧ x ∈ a₀ := by
+  intro x
+  induction a using ind with | mk a =>
+  induction x using ind with | mk x =>
+  cases a with | intro a amem =>
+  cases x with | intro x xmem =>
+  rw [mk_sUnion]
+  apply Iff.trans
+  apply mk_mem
+  apply Iff.intro
+  · intro ⟨⟨a₀,a₁⟩,prf⟩
+    exists mk (amem a₀)
+    apply And.intro
+    apply mk_mem.mpr
+    exists a₀
+    apply mk_mem.mpr
+    apply Zf.Pre.mem_iff.mpr
+    exists a₁
+  · intro ⟨b,b_in_a,x_in_b⟩
+    induction b using ind with | mk b =>
+    cases b with | intro b bmem =>
+    replace b_in_a := mk_mem.mp b_in_a
+    replace x_in_b := mk_mem.mp x_in_b
+    have ⟨a₀,prf₀⟩ := b_in_a
+    have ⟨b₀,prf₁⟩ := x_in_b
+    have ⟨a₁,prf⟩ := prf₀.left' b₀
+    exists ⟨a₀,a₁⟩
+    apply prf₁.trans
+    apply prf
