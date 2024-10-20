@@ -275,3 +275,72 @@ def Zf.ext_empty (x: Zf.{u}) : (∀y: Zf.{u}, y ∉ x) -> x = ∅ := by
   intro mem
   have := not_mem_empty a mem
   contradiction
+
+def Zf.Pre.union : Zf.Pre.{u} -> Zf.Pre.{u} -> Zf.Pre.{u}
+| .intro a amem, .intro b bmem => .intro (a ⊕ b) <| fun x => match x with
+  | .inl x => amem x
+  | .inr x => bmem x
+
+def Zf.union : Zf.{u} -> Zf.{u} -> Zf.{u} := by
+  apply lift₂ (fun a b => mk (Zf.Pre.union a b))
+  intro a b c d ac bd
+  apply sound
+  cases a with | intro a amem =>
+  cases b with | intro b bmem =>
+  cases c with | intro c cmem =>
+  cases d with | intro d dmem =>
+  apply And.intro
+  · intro x
+    cases x <;> rename_i x
+    have ⟨y,prf⟩ := ac.left x
+    exists .inl y
+    have ⟨y,prf⟩ := bd.left x
+    exists .inr y
+  · intro x
+    cases x <;> rename_i x
+    have ⟨y,prf⟩ := ac.right x
+    exists .inl y
+    have ⟨y,prf⟩ := bd.right x
+    exists .inr y
+
+instance : Union Zf.Pre := ⟨Zf.Pre.union⟩
+instance : Union Zf.{u} := ⟨Zf.union.{u}⟩
+
+def Zf.Pre.union.def (a b: Zf.Pre) : a ∪ b = Zf.Pre.union a b := rfl
+def Zf.union.def (a b: Zf) : a ∪ b = Zf.union a b := rfl
+def Zf.mk_union (a b: Zf.Pre) : mk a ∪ mk b = mk (a ∪ b) := by
+  rw [union.def, union, lift₂_mk]
+  rfl
+
+def Zf.mem_union {a b: Zf} : ∀{x: Zf}, x ∈ a ∪ b ↔ x ∈ a ∨ x ∈ b := by
+  intro x
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  induction x using ind with | mk x =>
+  rw [mk_union]
+  apply Iff.trans
+  apply mk_mem
+  apply flip Iff.trans
+  symm
+  · apply (Iff.intro _ _)
+    exact x ∈ a ∨ x ∈ b
+    intro h
+    cases h <;> rename_i h
+    exact Or.inl (mk_mem.mp h)
+    exact Or.inr (mk_mem.mp h)
+    intro h
+    cases h <;> rename_i h
+    exact Or.inl (mk_mem.mpr h)
+    exact Or.inr (mk_mem.mpr h)
+  cases a with | intro a amem =>
+  cases b with | intro b bmem =>
+  apply Iff.intro
+  · intro mem
+    have ⟨y,prf⟩ := mem
+    split at prf
+    exact Or.inl ⟨_,prf⟩
+    exact Or.inr ⟨_,prf⟩
+  · intro mem
+    cases mem <;> (rename_i mem; have ⟨y,prf⟩ := mem)
+    exact ⟨Sum.inl _,prf⟩
+    exact ⟨Sum.inr _,prf⟩
