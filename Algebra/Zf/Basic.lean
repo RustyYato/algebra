@@ -204,3 +204,29 @@ def Zf.mem_wf : @WellFounded Zf (· ∈ ·) := by
   assumption
 
 #print axioms Zf.mem_wf
+
+instance Zf.Pre.Subset : HasSubset Zf.Pre.{u} where
+  Subset a b := ∀x: Zf.Pre.{u}, x ∈ a -> x ∈ b
+
+instance Zf.Subset : HasSubset Zf.{u} where
+  Subset a b := ∀x: Zf.{u}, x ∈ a -> x ∈ b
+
+def Zf.mk_subset (a b: Zf.Pre) : mk a ⊆ mk b ↔ a ⊆ b := by
+  apply Iff.intro
+  · intro sub x x_in_a
+    apply mk_mem.mp
+    apply sub
+    apply mk_mem.mpr
+    assumption
+  · intro sub x x_in_a
+    induction x using ind with | mk x =>
+    apply mk_mem.mpr
+    apply sub
+    apply mk_mem.mp
+    assumption
+
+def Zf.ext_sub (a b: Zf) : a ⊆ b -> b ⊆ a -> a = b := by
+  intro ab ba
+  apply ext
+  intro x
+  exact ⟨ ab x, ba x ⟩
