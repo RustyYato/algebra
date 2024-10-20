@@ -195,8 +195,7 @@ def real.exact : mk a = mk b -> a ≈ b := Quotient.exact
 def real.sound : a ≈ b -> mk a = mk b := Quotient.sound
 def real.exists_rep : ∀r, ∃c, mk c = r := Quotient.exists_rep
 
-def real.of_rat (r: rat) : real := by
-  apply real.mk
+def CauchySeq.of_rat (r: rat) : CauchySeq := by
   apply CauchySeq.mk (fun _ => r)
   intro ε ε_pos
   exists 0
@@ -205,11 +204,18 @@ def real.of_rat (r: rat) : real := by
   rw [rat.sub.self, rat.abs.zero]
   assumption
 
+def real.of_rat : rat -> real := mk ∘ CauchySeq.of_rat
+
 instance real.coe_rat : Coe rat real := ⟨ of_rat ⟩
 
 def real.coe_eq_of_rat (r: rat) : ↑r = of_rat r := rfl
 
+abbrev CauchySeq.ofNat (n: Nat) : CauchySeq := of_rat (rat.ofNat n)
+
 abbrev real.ofNat (n: Nat) : real := of_rat (rat.ofNat n)
+
+instance CauchySeq.ofNatInst : OfNat CauchySeq n where
+  ofNat := CauchySeq.ofNat n
 
 instance real.ofNatInst : OfNat real n where
   ofNat := real.ofNat n
@@ -484,3 +490,25 @@ instance CauchySeq.MulInst : Mul CauchySeq := ⟨ mul ⟩
 instance real.MulInst : Mul real := ⟨ mul ⟩
 
 def real.of_rat.mul (a b: rat) : of_rat a * of_rat b = of_rat (a * b) := rfl
+
+def CauchySeq.Equiv.invert (a b: CauchySeq) :
+  a ≠ 0 -> a ≈ b -> is_cauchy_equiv (fun n => (a n)⁻¹) (fun n => (b n)⁻¹) := by
+  intro a_nz ab ε ε_pos
+  dsimp
+  -- 1/a - 1/b = b/ab + a/ba =
+  -- = (b - a)/ab =
+  sorry
+
+def CauchySeq.invert (a: CauchySeq) : a ≠ 0 -> CauchySeq := by
+  intro h
+  apply CauchySeq.mk (fun n => (a n)⁻¹)
+  apply is_cauchy_iff_is_cauchy_equiv.mpr
+  apply CauchySeq.Equiv.invert <;> trivial
+
+def real.invert (a: real) : a ≠ 0 -> real := by
+  apply a.lift (fun c h => by
+    sorry) _
+  intro h
+  apply CauchySeq.mk (fun n => (a n)⁻¹)
+  apply is_cauchy_iff_is_cauchy_equiv.mpr
+  apply CauchySeq.Equiv.invert <;> trivial
