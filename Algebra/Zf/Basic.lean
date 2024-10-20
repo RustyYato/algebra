@@ -1,4 +1,5 @@
 import Algebra.Equiv
+import Algebra.ClassicLogic
 
 class SUnion (α: Type _) where
   sUnion : α -> α
@@ -745,3 +746,33 @@ def Zf.sInter_pair_eq_inter (a b: Zf) : ⋂₀ {a, b} = a ∩ b := by
 @[refl]
 def Zf.sub.refl (a: Zf) : a ⊆ a := fun _ => id
 def Zf.sub.trans {a b c: Zf} : a ⊆ b -> b ⊆ c -> a ⊆ c := fun ab bc x mem => bc x (ab x mem)
+
+def Zf.inter_sub_left (a b: Zf) : a ∩ b ⊆ a := fun _ mem => (mem_inter.mp mem).left
+def Zf.inter_sub_right (a b: Zf) : a ∩ b ⊆ b := fun _ mem => (mem_inter.mp mem).right
+
+def Zf.sdiff (a b: Zf) : Zf := a.sep (· ∉ b)
+
+instance : SDiff Zf := ⟨.sdiff⟩
+
+def Zf.sdiff.def (a b: Zf) : a \ b = a.sdiff b := rfl
+
+def Zf.mem_sdiff {a b: Zf} : ∀{x}, x ∈ a \ b ↔ x ∈ a ∧ x ∉ b := mem_sep
+
+def Zf.sdiff_eq_empty_iff_sub {a b: Zf} : a \ b = ∅ ↔ a ⊆ b := by
+  apply Iff.intro
+  intro h x x_in_a
+  have := not_mem_empty x
+  rw [←h] at this
+  have := fun g: x ∉ b => this (by
+    apply mem_sdiff.mpr
+    apply And.intro
+    assumption
+    assumption)
+  exact ClassicLogic.byContradiction this
+  intro sub
+  apply ext_empty
+  intro y y_mem
+  have ⟨y_in_a,y_notin_b⟩ := mem_sdiff.mp y_mem
+  apply y_notin_b
+  apply sub
+  assumption
