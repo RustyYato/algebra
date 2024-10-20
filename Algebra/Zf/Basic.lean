@@ -139,7 +139,7 @@ def Zf.Mem.{u,v} : Zf.{u} -> Zf.{v} -> Prop := by
   apply Zf.Pre.Mem.intro d₀
   exact (a_eq_c.symm.trans eqv).trans prf
 
-instance Zf.MembershipInst.{u,v} : Membership Zf.{u} Zf.{v} := ⟨Zf.Mem⟩
+instance Zf.MembershipInst.{u} : Membership Zf.{u} Zf.{u} := ⟨Zf.Mem⟩
 
 def Zf.mem.def (a b: Zf) : (a ∈ b) = Zf.Mem a b := rfl
 def Zf.mk_mem {a b: Zf.Pre} : (mk a ∈ mk b) ↔ (a ∈ b) := by
@@ -664,8 +664,10 @@ def Zf.mem_singleton {a: Zf} : ∀{x: Zf}, x ∈ ({ a }: Zf) ↔ x = a := by
   apply exact
   assumption
 
+def Zf.Pre.insert (a b: Zf.Pre) : Zf.Pre := {a} ∪ b
 def Zf.insert (a b: Zf) : Zf := {a} ∪ b
 
+instance : Insert Zf.Pre Zf.Pre := ⟨.insert⟩
 instance : Insert Zf Zf := ⟨.insert⟩
 
 def Zf.mem_insert {a b: Zf} : ∀{x: Zf}, x ∈ Insert.insert a b ↔ x = a ∨ x ∈ b := by
@@ -739,3 +741,7 @@ def Zf.sInter_pair_eq_inter (a b: Zf) : ⋂₀ {a, b} = a ∩ b := by
   apply this.mpr
   intro a₀ h
   cases mem_pair.mp h <;> (subst a₀; assumption)
+
+@[refl]
+def Zf.sub.refl (a: Zf) : a ⊆ a := fun _ => id
+def Zf.sub.trans {a b c: Zf} : a ⊆ b -> b ⊆ c -> a ⊆ c := fun ab bc x mem => bc x (ab x mem)
