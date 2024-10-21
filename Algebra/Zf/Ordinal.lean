@@ -4,10 +4,10 @@ import Algebra.ClassicLogic
 import Algebra.WellFounded
 
 -- a transitive set is one where every member is a subset
-structure Zf.IsTransitive (a: Zf) : Prop where
+class Zf.IsTransitive (a: Zf) : Prop where
   mem_is_sub: ∀x ∈ a, x ⊆ a
 
-structure Zf.IsOrdinal (a: Zf) extends IsTransitive a: Prop where
+class Zf.IsOrdinal (a: Zf) extends IsTransitive a: Prop where
   mem_is_tri: ∀x y, x ∈ a -> y ∈ a -> x ∈ y ∨ x = y ∨ y ∈ x
 
 def Zf.Pre.succ (a: Zf.Pre) := Insert.insert a a
@@ -161,11 +161,13 @@ def Zf.mem_ω₀ : ∀{x}, x ∈ ω₀ ↔ ∃m, x = Zf.of_nat m := by
   rw [mk_of_nat] at h
   exact exact h
 
-def Zf.IsOrdinal.zero : Zf.IsOrdinal 0 where
+instance Zf.IsTransitive.zero : Zf.IsTransitive 0 where
   mem_is_sub := fun _ mem => (not_mem_empty _ mem).elim
+
+instance Zf.IsOrdinal.zero : Zf.IsOrdinal 0 where
   mem_is_tri := fun _ _ mem => (not_mem_empty _ mem).elim
 
-def Zf.IsTransitive.succ (transx: Zf.IsTransitive x) : Zf.IsTransitive x.succ where
+instance Zf.IsTransitive.succ (transx: Zf.IsTransitive x) : Zf.IsTransitive x.succ where
   mem_is_sub := by
     intro a a_in_xsucc b b_in_a
     apply Zf.mem_succ.mpr
@@ -174,7 +176,7 @@ def Zf.IsTransitive.succ (transx: Zf.IsTransitive x) : Zf.IsTransitive x.succ wh
     exact Or.inr b_in_a
     exact Or.inr (transx.mem_is_sub _ h _ b_in_a)
 
-def Zf.IsOrdinal.succ (ordx: Zf.IsOrdinal x) : Zf.IsOrdinal x.succ where
+instance Zf.IsOrdinal.succ [ordx: Zf.IsOrdinal x] : Zf.IsOrdinal x.succ where
   mem_is_sub := ordx.toIsTransitive.succ.mem_is_sub
   mem_is_tri := by
     intro a b a_in_xsucc b_in_xsucc
@@ -190,9 +192,9 @@ def Zf.IsOrdinal.succ (ordx: Zf.IsOrdinal x) : Zf.IsOrdinal x.succ where
     assumption
     assumption
 
-def Zf.IsTransitive.inter
-  (transx: Zf.IsTransitive x)
-  (transy: Zf.IsTransitive y) : Zf.IsTransitive (x ∩ y) where
+instance Zf.IsTransitive.inter
+  [transx: Zf.IsTransitive x]
+  [transy: Zf.IsTransitive y] : Zf.IsTransitive (x ∩ y) where
   mem_is_sub := by
     intro a mem b b_in_a
     apply mem_inter.mpr
@@ -201,9 +203,9 @@ def Zf.IsTransitive.inter
     exact transx.mem_is_sub _ l _ b_in_a
     exact transy.mem_is_sub _ r _ b_in_a
 
-def Zf.IsTransitive.union
-  (transx: Zf.IsTransitive x)
-  (transy: Zf.IsTransitive y) : Zf.IsTransitive (x ∪ y) where
+instance Zf.IsTransitive.union
+  [transx: Zf.IsTransitive x]
+  [transy: Zf.IsTransitive y] : Zf.IsTransitive (x ∪ y) where
   mem_is_sub := by
     intro a mem b b_in_a
     apply mem_union.mpr
@@ -211,14 +213,9 @@ def Zf.IsTransitive.union
     exact Or.inl <| transx.mem_is_sub _ mem _ b_in_a
     exact Or.inr <| transy.mem_is_sub _ mem _ b_in_a
 
-def Zf.IsOrdinal.inter
-  (ordx: Zf.IsOrdinal x)
-  (ordy: Zf.IsOrdinal y) : Zf.IsOrdinal (x ∩ y) where
-  mem_is_sub := by
-    apply Zf.IsTransitive.mem_is_sub
-    apply Zf.IsTransitive.inter
-    exact ordx.toIsTransitive
-    exact ordy.toIsTransitive
+instance Zf.IsOrdinal.inter
+  [ordx: Zf.IsOrdinal x]
+  [Zf.IsOrdinal y] : Zf.IsOrdinal (x ∩ y) where
   mem_is_tri := by
     intro a b a_in_xy b_in_xy
     have ⟨a_in_x,_⟩ := mem_inter.mp a_in_xy
@@ -261,8 +258,8 @@ def Zf.exists_min_element (Y: Zf):
   contradiction
 
 def Zf.IsOrdinal.mem_or_eq_of_sub
-  (ordx: Zf.IsOrdinal x)
-  (ordy: Zf.IsOrdinal y) :
+  [ordx: Zf.IsOrdinal x]
+  [ordy: Zf.IsOrdinal y] :
   x ⊆ y -> x ∈ y ∨ x = y := by
   intro x_sub_y
   apply ClassicLogic.byCases (x = y)
@@ -308,8 +305,8 @@ def Zf.IsOrdinal.mem_total
   (ordy: Zf.IsOrdinal y) : x ∈ y ∨ x = y ∨ y ∈ x := by
   have inter_sub_x := inter_sub_left x y
   have inter_sub_y := inter_sub_right x y
-  cases mem_or_eq_of_sub (ordx.inter ordy) ordx inter_sub_x <;> rename_i hx
-  <;> cases mem_or_eq_of_sub (ordx.inter ordy) ordy inter_sub_y <;> rename_i hy
+  cases mem_or_eq_of_sub inter_sub_x <;> rename_i hx
+  <;> cases mem_or_eq_of_sub inter_sub_y <;> rename_i hy
   have := mem_wf.irrefl (mem_inter.mpr ⟨hx,hy⟩)
   contradiction
   rw [hy] at hx
@@ -321,7 +318,7 @@ def Zf.IsOrdinal.mem_total
 
 def Zf.IsOrdinal.mem (ordx: Zf.IsOrdinal x): y ∈ x -> Zf.IsOrdinal y := by
   intro y_in_x
-  apply Zf.IsOrdinal.mk _
+  apply (fun a b => @Zf.IsOrdinal.mk a b) _ _
   intros a b a_in_y b_in_y
   apply ordx.mem_is_tri
   apply ordx.mem_is_sub <;> assumption
@@ -342,8 +339,7 @@ def Zf.IsOrdinal.mem (ordx: Zf.IsOrdinal x): y ∈ x -> Zf.IsOrdinal y := by
   have := mem_wf.transGen.irrefl (.tail (.tail (.single y_in_b) b_in_a) a_in_y)
   contradiction
 
-def Zf.IsOrdinal.union (ordx: Zf.IsOrdinal x) (ordy: Zf.IsOrdinal y) : Zf.IsOrdinal (x ∪ y) where
-  mem_is_sub := Zf.IsTransitive.mem_is_sub (ordx.toIsTransitive.union ordy.toIsTransitive)
+instance Zf.IsOrdinal.union [ordx: Zf.IsOrdinal x] [ordy: Zf.IsOrdinal y] : Zf.IsOrdinal (x ∪ y) where
   mem_is_tri := by
     intro a b a_in_union b_in_union
     cases mem_union.mp a_in_union <;> rename_i ha <;>
@@ -352,7 +348,7 @@ def Zf.IsOrdinal.union (ordx: Zf.IsOrdinal x) (ordy: Zf.IsOrdinal y) : Zf.IsOrdi
     all_goals try (apply Zf.IsOrdinal.mem ordx; assumption; done)
     all_goals (apply Zf.IsOrdinal.mem ordy; assumption; done)
 
-def Zf.IsOrdinal.sUnion (ordx: ∀x₀ ∈ x, Zf.IsOrdinal x₀) : Zf.IsOrdinal (⋃₀ x) where
+instance Zf.IsOrdinal.sUnion (ordx: ∀x₀ ∈ x, Zf.IsOrdinal x₀) : Zf.IsOrdinal (⋃₀ x) where
   mem_is_sub := by
     intro a a_in_sunionx b b_in_a
     have ⟨c,c_in_x,a_in_c⟩ := mem_sUnion.mp a_in_sunionx
@@ -388,3 +384,70 @@ def Zf.IsOrdinal.sInter (ordx: ∀x₀ ∈ x, Zf.IsOrdinal x₀) (h: x.Nonempty)
     have orda := ordx₀.mem (mema x₀ x₀_in_x)
     have ordb := ordx₀.mem (memb x₀ x₀_in_x)
     apply Zf.IsOrdinal.mem_total <;> assumption
+
+class Zf.IsLimitOrdinal (x: Zf) extends Zf.IsOrdinal x : Prop where
+  not_succ: ∀y, Zf.succ y ≠ x
+
+instance Zf.IsLimitOrdinal.zero : Zf.IsLimitOrdinal 0 where
+  not_succ := by
+    intro x h
+    have not_mem := not_mem_empty x
+    have : (0: Zf) = ∅ := rfl
+    erw [←this, ←h] at not_mem
+    apply not_mem
+    apply mem_succ.mpr
+    exact Or.inl rfl
+
+instance Zf.IsLimitOrdinal.ω₀ : Zf.IsLimitOrdinal ω₀ where
+  mem_is_sub := by
+    intro x x_in_omega k k_in_x
+    apply mem_ω₀.mpr
+    have ⟨ n,prf ⟩ := mem_ω₀.mp x_in_omega
+    subst prf
+    have ⟨m,_,_⟩ := mem_of_nat.mp k_in_x
+    exists m
+  mem_is_tri := by
+    intro a b a_in_omega b_in_omega
+    have ⟨n,prf⟩ := mem_ω₀.mp a_in_omega
+    have ⟨m,prf⟩ := mem_ω₀.mp b_in_omega
+    subst a; subst b;
+    cases h:compare n m
+    apply Or.inl
+    apply mem_of_nat.mpr
+    exists n
+    apply Or.inr
+    apply Or.inl
+    rw [eq_of_compare_eq h]
+    apply Or.inr
+    apply Or.inr
+    apply mem_of_nat.mpr
+    exists m
+    apply And.intro
+    apply gt_of_compare
+    assumption
+    rfl
+  not_succ := by
+    intro x h
+    have := (@mem_ω₀ x).mp
+    rw [←h] at this
+    have ⟨m,prf⟩ := this (mem_succ.mpr (.inl rfl))
+    subst x
+    have := mem_ω₀.mpr ⟨m.succ,rfl⟩
+    rw [←h] at this
+    exact mem_wf.irrefl this
+
+def Zf.IsOrdinal.succ_sub_of_mem [ordx: Zf.IsOrdinal x] : ∀y, y ∈ x -> y.succ ⊆ x := by
+  intro y y_in_x z z_in_succ
+  cases mem_succ.mp z_in_succ
+  subst y
+  assumption
+  apply ordx.mem_is_sub <;> assumption
+
+def Zf.IsLimitOrdinal.succ_mem_of_mem [ordx: Zf.IsLimitOrdinal x] : ∀y ∈ x, y.succ ∈ x := by
+  intro y y_in_x
+  have : Zf.IsOrdinal y := ordx.mem y_in_x
+  have := Zf.IsOrdinal.succ_sub_of_mem _ y_in_x
+  cases IsOrdinal.mem_or_eq_of_sub this
+  assumption
+  have := ordx.not_succ y
+  contradiction
