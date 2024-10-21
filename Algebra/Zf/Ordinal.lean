@@ -341,3 +341,50 @@ def Zf.IsOrdinal.mem (ordx: Zf.IsOrdinal x): y ∈ x -> Zf.IsOrdinal y := by
   rename_i y_in_b
   have := mem_wf.transGen.irrefl (.tail (.tail (.single y_in_b) b_in_a) a_in_y)
   contradiction
+
+def Zf.IsOrdinal.union (ordx: Zf.IsOrdinal x) (ordy: Zf.IsOrdinal y) : Zf.IsOrdinal (x ∪ y) where
+  mem_is_sub := Zf.IsTransitive.mem_is_sub (ordx.toIsTransitive.union ordy.toIsTransitive)
+  mem_is_tri := by
+    intro a b a_in_union b_in_union
+    cases mem_union.mp a_in_union <;> rename_i ha <;>
+    cases mem_union.mp b_in_union <;> rename_i hb
+    all_goals apply Zf.IsOrdinal.mem_total
+    all_goals try (apply Zf.IsOrdinal.mem ordx; assumption; done)
+    all_goals (apply Zf.IsOrdinal.mem ordy; assumption; done)
+
+def Zf.IsOrdinal.sUnion (ordx: ∀x₀ ∈ x, Zf.IsOrdinal x₀) : Zf.IsOrdinal (⋃₀ x) where
+  mem_is_sub := by
+    intro a a_in_sunionx b b_in_a
+    have ⟨c,c_in_x,a_in_c⟩ := mem_sUnion.mp a_in_sunionx
+    have ordc := ordx c c_in_x
+    apply mem_sUnion.mpr
+    exists c
+    apply And.intro c_in_x
+    apply ordc.mem_is_sub <;> assumption
+  mem_is_tri := by
+    intro a b a_in_sunion b_in_sunion
+    have ⟨c,c_in_x,a_in_c⟩ := mem_sUnion.mp a_in_sunion
+    have ⟨d,d_in_x,b_in_d⟩ := mem_sUnion.mp b_in_sunion
+    have ordc := ordx c c_in_x
+    have ordd := ordx d d_in_x
+    have orda := ordc.mem a_in_c
+    have ordb := ordd.mem b_in_d
+    apply Zf.IsOrdinal.mem_total <;> assumption
+
+def Zf.IsOrdinal.sInter (ordx: ∀x₀ ∈ x, Zf.IsOrdinal x₀) (h: x.Nonempty) : Zf.IsOrdinal (⋂₀ x) where
+  mem_is_sub := by
+    intro a a_in_sunionx b b_in_a
+    have mem := (mem_sInter h).mp a_in_sunionx
+    apply (mem_sInter h).mpr
+    intro a₀ a₀_in_x
+    have := mem a₀ a₀_in_x
+    apply (ordx a₀ a₀_in_x).mem_is_sub <;> assumption
+  mem_is_tri := by
+    intro a b a_in_sinter b_in_sinter
+    have mema := (mem_sInter h).mp a_in_sinter
+    have memb := (mem_sInter h).mp b_in_sinter
+    have ⟨x₀,x₀_in_x⟩ := h
+    have ordx₀ := ordx x₀ x₀_in_x
+    have orda := ordx₀.mem (mema x₀ x₀_in_x)
+    have ordb := ordx₀.mem (memb x₀ x₀_in_x)
+    apply Zf.IsOrdinal.mem_total <;> assumption

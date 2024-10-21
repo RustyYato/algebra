@@ -336,6 +336,8 @@ def Zf.ext_empty (x: Zf.{u}) : (∀y: Zf.{u}, y ∉ x) -> x = ∅ := by
 def Zf.Pre.Nonempty.{u} (a: Zf.Pre.{u}) : Prop := ∃x: Zf.Pre.{u}, x ∈ a
 def Zf.Nonempty.{u} (a: Zf.{u}) : Prop := ∃x: Zf.{u}, x ∈ a
 
+def Zf.not_nonempty (a: Zf.{u}) : ¬a.Nonempty -> a = ∅ := fun h => ext_empty _ (not_exists.mp h)
+
 def Zf.not_empty_nonempty : ¬Zf.Nonempty ∅ := by
   intro ⟨_,mem⟩
   have := not_mem_empty _ mem
