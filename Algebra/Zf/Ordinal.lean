@@ -2,6 +2,7 @@ import Algebra.Zf.Basic
 import Algebra.Nat.Mul
 import Algebra.ClassicLogic
 import Algebra.WellFounded
+import Algebra.AxiomBlame
 
 -- a transitive set is one where every member is a subset
 class Zf.IsTransitive (a: Zf) : Prop where
@@ -247,7 +248,7 @@ def Zf.exists_min_element (Y: Zf):
     dsimp at ih
     have := not_and.mp <| not_exists.mp h x
     have ⟨ w, h ⟩ := ClassicLogic.not_forall.mp (this x_in_Y)
-    have ⟨ w_in_Y, w_in_x ⟩ := not_imp.mp h
+    have ⟨ w_in_Y, w_in_x ⟩ := ClassicLogic.not_imp.mp h
     have := ClassicLogic.not_not.mp w_in_x
     have := ih w w_in_Y this
     contradiction)

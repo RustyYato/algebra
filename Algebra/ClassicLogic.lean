@@ -105,3 +105,7 @@ def not_iff : ¬(P ↔ Q) ↔ (¬P ↔ Q) := by
   any_goals contradiction
   apply Iff.intro <;> intro <;> trivial
   apply Iff.intro <;> intro <;> trivial
+
+theorem not_imp : ¬(a → b) ↔ a ∧ ¬b :=
+  have := propDecide
+  Decidable.not_imp_iff_and_not
