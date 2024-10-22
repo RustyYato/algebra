@@ -452,3 +452,56 @@ def Zf.IsLimitOrdinal.succ_mem_of_mem [ordx: Zf.IsLimitOrdinal x] : ∀y ∈ x, 
   assumption
   have := ordx.not_succ y
   contradiction
+
+def Zf.IsOrdinal.succ_mem_succ [ordb: Zf.IsOrdinal b] : a ∈ b -> a.succ ∈ b.succ := by
+  intro r
+  have := ordb.mem r
+  apply mem_succ.mpr
+  exact Or.comm.mp <| mem_or_eq_of_sub (succ_sub_of_mem _ r)
+
+def Zf.IsOrdinal.succ_sUnion [ordx: Zf.IsOrdinal x] : ⋃₀ x.succ = x := by
+  apply ext_sub
+  apply (Zf.sUnion_least_upper_bound _ _).mpr
+  intro a a_in_xsucc
+  cases mem_succ.mp a_in_xsucc
+  subst x
+  rfl
+  apply ordx.mem_is_sub
+  assumption
+  intro a a_in_x
+  apply mem_sUnion.mpr
+  exists a.succ
+  apply And.intro
+  apply succ_mem_succ
+  assumption
+  exact mem_succ.mpr (.inl rfl)
+
+def Zf.IsLimitOrdinal.sUnion [ordx: Zf.IsLimitOrdinal x] : ⋃₀ x = x := by
+  apply ext_sub
+  apply (Zf.sUnion_least_upper_bound _ _).mpr
+  exact ordx.mem_is_sub
+  intro a a_in_x
+  apply mem_sUnion.mpr
+  exists a.succ
+  apply And.intro
+  apply succ_mem_of_mem
+  assumption
+  exact mem_succ.mpr (.inl rfl)
+
+def Zf.IsOrdinal.sInter_eq_empty [ordx: Zf.IsOrdinal x] : ⋂₀ x = ∅ := by
+  apply ext_empty
+  intro a h
+  apply (Zf.sUnion_least_upper_bound _ _).mpr
+  intro a a_in_xsucc
+  cases mem_succ.mp a_in_xsucc
+  subst x
+  rfl
+  apply ordx.mem_is_sub
+  assumption
+  intro a a_in_x
+  apply mem_sUnion.mpr
+  exists a.succ
+  apply And.intro
+  apply succ_mem_succ
+  assumption
+  exact mem_succ.mpr (.inl rfl)

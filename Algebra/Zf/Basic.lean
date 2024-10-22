@@ -1,10 +1,11 @@
 import Algebra.Equiv
 import Algebra.ClassicLogic
+import Algebra.WellFounded
 
 class SUnion (α: Type _) where
   sUnion : α -> α
-class SInter (α: Type _) where
-  sInter : α -> α
+class SInter (α: Type _) (β: outParam (Type _)) where
+  sInter : α -> β
 
 prefix:900 "⋃₀" => SUnion.sUnion
 prefix:900 "⋂₀" => SInter.sInter
@@ -103,6 +104,8 @@ def HasEquiv.Equiv.trans [s: Setoid α] {a b c: α} : a ≈ b -> b ≈ c -> a �
 
 def Zf := Equiv Zf.Pre.setoid
 def Zf.mk : Zf.Pre -> Zf := Equiv.mk Zf.Pre.setoid
+def Zf.get : Zf -> Zf.Pre := Equiv.get
+def Zf.mk_get : ∀z, mk z.get = z := Equiv.mk_get
 def Zf.ind { motive: Zf -> Prop } : (mk: ∀x, motive (mk x)) -> ∀o, motive o := Equiv.ind
 def Zf.lift : (f: Zf.Pre -> α) -> (all_eq: ∀x y, x ≈ y -> f x = f y) -> Zf -> α := Equiv.lift
 def Zf.lift₂ : (f: Zf.Pre -> Zf.Pre -> α) -> (all_eq: ∀a b c d, a ≈ c -> b ≈ d -> f a b = f c d) -> Zf -> Zf -> α := Equiv.lift₂
@@ -352,6 +355,98 @@ def Zf.mk_nonempty (a: Zf.Pre) : (mk a).Nonempty ↔ a.Nonempty := by
   · intro ⟨b,mem⟩
     exists mk b
     exact mk_mem.mpr mem
+
+def Class.setoid : Setoid (Zf -> Prop) where
+  r a b := ∀x, a x ↔ b x
+  iseqv := {
+    refl := by intros; rfl
+    symm := by intros _ _ h _; symm; apply h
+    trans := by intros _ _ _ h g _; apply Iff.trans; apply h; apply g
+  }
+
+structure Class where
+  ofEquiv :: mem : Equiv Class.setoid
+
+def Class.ofMem (prop: Zf -> Prop) : Class := .ofEquiv (Equiv.mk setoid prop)
+
+def Class.univ : Class := .ofMem fun _ => True
+def Class.empty : Class := .ofMem fun _ => False
+def Class.ofSet (z: Zf) : Class := .ofMem (· ∈ z)
+def Class.isSet (a: Class) : Prop := ∃z, a = .ofSet z
+def Class.ofSet_isSet (z: Zf) : Class.isSet (.ofSet z) := ⟨_,rfl⟩
+def Class.isProper (a: Class) := ∀z: Zf, a ≠ .ofSet z
+def Class.sound (a b: Zf -> Prop) : (∀x, a x ↔ b x) -> ofMem a = ofMem b := by
+  intro h
+  unfold ofMem
+  rw [Equiv.sound]
+  assumption
+
+instance : EmptyCollection Class := ⟨Class.empty⟩
+
+def Class.Mem (a b: Class) := by
+  apply Equiv.liftProp' _ _ b.mem
+  exact fun b => ∃z, b z ∧ a = .ofSet z
+  intro x y x_eq_y
+  intro ⟨z,xz,a_eq_z⟩
+  exists z
+  apply And.intro _ a_eq_z
+  apply (x_eq_y _).mp
+  assumption
+
+instance : Membership Class Class := ⟨Class.Mem⟩
+
+def Class.mem.def (a b: Class) : (a ∈ b) = Class.Mem a b := rfl
+def Class.mk_mem {a: Class} {b: Zf -> Prop} :
+  a ∈ (Class.ofMem b) ↔ ∃z, b z ∧ a = .ofSet z := by
+  rw [mem.def, Mem, Equiv.liftProp']
+  apply Equiv.liftProp_mk
+
+def Class.mem_univ (a: Class) : a ∈ Class.univ ↔ a.isSet := by
+  apply Iff.trans
+  apply Class.mk_mem
+  apply Iff.intro
+  intro ⟨_,_,_⟩
+  subst a
+  exact ofSet_isSet _
+  intro ⟨a,h⟩
+  exists a
+
+def Class.not_mem_empty (a: Class) : a ∉ (∅: Class) := by
+  intro h
+  have ⟨_,_,_⟩ := mk_mem.mp h
+  assumption
+
+def Class.empty_eq_ofSet_empty : ∅ = ofSet ∅ := by
+  apply sound
+  intro x
+  apply Iff.intro False.elim
+  exact Zf.not_mem_empty _
+
+def Class.ofSet.inj {a b: Zf} : ofSet a = ofSet b -> a = b := by
+  unfold ofSet ofMem
+  intro h
+  apply Zf.ext
+  exact Equiv.exact _ _ (Class.ofEquiv.inj h)
+
+def Class.ofSet_mem_ofSet {a b: Zf} : ofSet a ∈ ofSet b ↔ a ∈ b := by
+  apply Iff.trans
+  exact mk_mem
+  apply Iff.intro
+  intro ⟨z,_,h⟩
+  cases ofSet.inj h
+  assumption
+  intro mem
+  exists a
+
+def Class.isSet_empty : isSet ∅ := ⟨_,empty_eq_ofSet_empty⟩
+def Class.isProper_univ : isProper .univ := by
+  intro z h
+  have := (mem_univ (ofSet z)).mpr (ofSet_isSet _)
+  rw [h] at this
+  have : z ∈ z := ofSet_mem_ofSet.mp this
+  exact Zf.mem_wf.irrefl this
+
+
 
 def Zf.Pre.union : Zf.Pre.{u} -> Zf.Pre.{u} -> Zf.Pre.{u}
 | .intro a amem, .intro b bmem => .intro (a ⊕ b) <| fun x => match x with
@@ -614,7 +709,7 @@ def Zf.mem_sUnion {a: Zf.{u}} : ∀{x}, x ∈ ⋃₀a ↔ ∃a₀: Zf.{u}, a₀ 
 
 def Zf.sInter (a: Zf.{u}) : Zf := (⋃₀ a).sep <| fun x => ∀a₀: Zf.{u}, a₀ ∈ a -> x ∈ a₀
 
-instance : SInter Zf := ⟨.sInter⟩
+instance : SInter Zf Zf := ⟨.sInter⟩
 
 def Zf.sInter.def (a: Zf) : ⋂₀ a = a.sInter := rfl
 
@@ -728,7 +823,7 @@ def Zf.sUnion_pair_eq_union (a b: Zf) : ⋃₀ {a, b} = a ∪ b := by
   apply Or.inr; rfl
   assumption
 
-def Zf.sInter_pair_eq_inter (a b: Zf) : ⋂₀ {a, b} = a ∩ b := by
+def Zf.sInter_pair_eq_inter (a b: Zf) : ⋂₀ ({a, b}: Zf) = a ∩ b := by
   apply ext
   intro x
   have := @mem_sInter _ (Zf.insert_nonempty a {b})
@@ -778,3 +873,93 @@ def Zf.sdiff_eq_empty_iff_sub {a b: Zf} : a \ b = ∅ ↔ a ⊆ b := by
   apply y_notin_b
   apply sub
   assumption
+
+def Zf.Pre.map (f: Zf.Pre -> Zf.Pre) : Zf.Pre -> Zf.Pre
+| .intro a amem => .intro a (fun a₀ => f (amem a₀))
+
+def Zf.map : (Zf -> Zf) -> Zf -> Zf := by
+  intro f
+  apply lift (fun _ => mk _) _
+  exact Zf.Pre.map (get ∘ f ∘ mk)
+  dsimp
+  intro a b a_eq_b
+  apply sound
+  cases a with | intro a amem =>
+  cases b with | intro b bmem =>
+  unfold Pre.map
+  dsimp
+  apply And.intro
+  · intro a₀
+    have ⟨b₀,prf⟩  := a_eq_b.left a₀
+    exists b₀
+    dsimp
+    rw [sound prf]
+  · intro b₀
+    have ⟨a₀,prf⟩  := a_eq_b.right b₀
+    exists a₀
+    dsimp
+    rw [sound prf]
+
+def Zf.mk_map (f: Zf -> Zf) (a: Zf.Pre) : (mk a).map f = mk (a.map (get ∘ f ∘ mk)) := by
+  rw [map, lift_mk]
+
+def Zf.mem_map {f: Zf -> Zf} {a: Zf} : ∀{x}, x ∈ a.map f ↔ ∃a₀ ∈ a, f a₀ = x := by
+  intro x
+  induction a using ind with | mk a =>
+  induction x using ind with | mk x =>
+  cases a with | intro a amem =>
+  cases x with | intro x xmem =>
+  rw [mk_map]
+  apply Iff.intro
+  intro h
+  replace ⟨a₀,prf⟩ :=  mk_mem.mp h
+  dsimp at prf
+  exists mk (amem a₀)
+  apply And.intro
+  apply mk_mem.mpr
+  exists a₀
+  rw [←mk_get (f _)]
+  apply sound
+  exact prf.symm
+  intro ⟨a₀,a₀_in_a, fa_eq_x⟩
+  induction a₀ using ind with | mk a₀ =>
+  -- cases a₀ with | intro a₀ a₀mem =>
+  rw [←fa_eq_x]
+  rw [←mk_get (f _)]
+  apply mk_mem.mpr
+  have ⟨a₁,prf⟩ := mk_mem.mp a₀_in_a
+  exists a₁
+  dsimp
+  rw [sound prf]
+
+def Zf.sUnion_least_upper_bound (a: Zf) :
+  ∀x, ⋃₀a ⊆ x ↔ ∀a₀ ∈ a, a₀ ⊆ x := by
+  intro x
+  apply Iff.intro
+  · intro usubx a₀ a₀_in_a a₁ a₁_in_a₀
+    apply fun y h hx hy => usubx y (mem_sUnion.mpr ⟨h,hx,hy⟩) <;> assumption
+  · intro subx a₁ a₁_in_u
+    have ⟨a₀,a₀_in_a,a₁_in_a₀⟩ := mem_sUnion.mp a₁_in_u
+    apply subx <;> assumption
+
+def Zf.sUnion_upper_bound (a: Zf) : ∀a₀ ∈ a, a₀ ⊆ ⋃₀a :=
+  (Zf.sUnion_least_upper_bound a _).mp (Zf.sub.refl _)
+
+def Zf.sInter_most_lower_bound (a: Zf) (h: a.Nonempty) :
+  ∀x, x ⊆ ⋂₀a ↔ ∀a₀ ∈ a, x ⊆ a₀ := by
+  intro x
+  apply Iff.intro
+  · intro isubx a₀ a₀_in_a a₁ a₁_in_x
+    exact (mem_sInter h).mp (isubx _ a₁_in_x) a₀ a₀_in_a
+  · intro subx a₁ a₁_in_u
+    apply (mem_sInter h).mpr
+    intro a₀ a₀_in_a
+    apply subx <;> assumption
+
+def Zf.sInter_lower_bound (a: Zf) (h: a.Nonempty) : ∀a₀ ∈ a, ⋂₀a ⊆ a₀ :=
+  (Zf.sInter_most_lower_bound a h _).mp (Zf.sub.refl _)
+
+-- ⋂₀∅ should be the collection of all sets, but that's not a set
+-- and making ⋂₀ return a Class would be messy
+def Zf.sInter_empty : ⋂₀ (∅: Zf) = ∅ := by
+  sorry

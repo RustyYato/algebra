@@ -78,7 +78,8 @@ def EquivUnchecked.get_sound :
   replace r := sound _ _ _ r
   rw [mk_get, mk_get] at r
   exact r
-
+@[irreducible]
+def EquivUnchecked.lift (f: α -> β) (_all_eq: ∀a b: α, r a b -> f a = f b) (q: EquivUnchecked r) : β := f q.get
 example : (∀α: Type, (rel: α -> α -> Prop) -> ∀x: α, (EquivUnchecked.mk rel x).get = x) -> False := by
   intro mk_inj
   let rel := fun _ _: Bool => True
@@ -103,6 +104,14 @@ def Equiv.lift {s: Setoid α} (f: α -> β) (_all_eq: ∀a b: α, a ≈ b -> f a
 def Equiv.lift₂ {s₀: Setoid α₀} {s₁: Setoid α₁} (f: α₀ -> α₁ -> β) (_all_eq: ∀a b c d, a ≈ c -> b ≈ d -> f a b = f c d) (q₀: Equiv s₀) (q₁: Equiv s₁) : β := f q₀.get q₁.get
 @[irreducible]
 def Equiv.liftProp {s: Setoid α} (f: α -> Prop) (_all_eq: ∀a b: α, a ≈ b -> (f a ↔ f b)) (q: Equiv s) : Prop := f q.get
+@[irreducible]
+def Equiv.liftProp' {s: Setoid α} (f: α -> Prop) (all_eq: ∀a b: α, a ≈ b -> (f a -> f b)) (q: Equiv s) : Prop :=
+  liftProp f (by
+    intro a b a_eq_b
+    apply Iff.intro
+    apply all_eq <;> assumption
+    apply all_eq <;> (apply s.iseqv.symm; assumption))
+    q
 @[irreducible]
 def Equiv.liftProp₂ {s₀: Setoid α₀} {s₁: Setoid α₁} (f: α₀ -> α₁ -> Prop) (_all_eq: ∀a b c d, a ≈ c -> b ≈ d -> (f a b ↔ f c d)) (q₀: Equiv s₀) (q₁: Equiv s₁) : Prop := f q₀.get q₁.get
 def Equiv.exact {s: Setoid α} : ∀a b, mk s a = mk s b -> a ≈ b :=
