@@ -93,7 +93,7 @@ instance Fin.FintypeInst : Fintype (Fin n) where
     exact x.isLt
 
 def Fin.card (f: Fintype (Fin n)) : f.card = .ofNat n := by
-  rw [Subsingleton.allEq f FintypeInst]
+  rw [Fintype.card_eq _ Fin.FintypeInst]
   unfold FintypeInst Fintype.card Fintype.all
   dsimp
   rw [Finset.ofList_card, all_fins_lt_length, Nat.min_self n]

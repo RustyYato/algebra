@@ -1,6 +1,8 @@
 import Algebra.Fintype.Basic
 import Algebra.Fin.Basic
 
+namespace fin.fintype
+
 def all_fins : (n: nat) -> list (fin n)
 | .zero => .[]
 | .succ n => .cons fin.zero ((all_fins n).map fin.succ)
@@ -34,8 +36,21 @@ def all_fins_nodup : (all_fins n).nodup := by
     assumption
     apply fin.succ.inj
 
-instance : Fintype (fin n) where
-  all := .ofList (all_fins n) all_fins_nodup
+def all_fins_length : (all_fins n).length = n := by
+  induction n with
+  | zero => rfl
+  | succ n ih => rw [all_fins, list.cons_length, list.length_map, ih]
+
+end fin.fintype
+
+instance fin.FintypeInst : Fintype (fin n) where
+  all := .ofList (fin.fintype.all_fins n) fin.fintype.all_fins_nodup
   all_spec a := by
     apply (Finset.ofList_mem _ _ _).mpr
-    apply all_fins_mem
+    apply fin.fintype.all_fins_mem
+
+def fin.card (f: Fintype (fin n)) : f.card = n := by
+  rw [Fintype.card_eq _ fin.FintypeInst]
+  unfold FintypeInst Fintype.card Fintype.all
+  dsimp
+  rw [Finset.ofList_card, fin.fintype.all_fins_length]

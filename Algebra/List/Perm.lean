@@ -338,3 +338,31 @@ def list.perm.nodup {as bs: list α} :
     apply list.mem.tail
     assumption
     apply nodup.tail.tail
+
+def list.not_min_count_and_nodup'
+  {n:nat}
+  (as: list α)
+  (h: list.min_count x as n)
+  : 1 < n -> ¬as.nodup := by
+  intro n_gt_one g
+  induction h with
+  | nil => contradiction
+  | cons _ ih =>
+    apply ih
+    assumption
+    exact g.tail
+  | head h =>
+    have := mem_iff_min_count.mpr (by
+      apply h.le
+      apply nat.le_of_lt_succ
+      assumption)
+    have := g.head _ this
+    contradiction
+
+def list.not_min_count_and_nodup
+  {n:nat}
+  (as: list α)
+  (h: list.min_count x as n.succ.succ)
+  : ¬as.nodup := by
+  apply list.not_min_count_and_nodup' _ h
+  trivial
