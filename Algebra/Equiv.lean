@@ -87,6 +87,13 @@ example : (∀α: Type, (rel: α -> α -> Prop) -> ∀x: α, (EquivUnchecked.mk 
   have : a.get = b.get := by rw [this]
   rw [mk_inj, mk_inj] at this
   contradiction
+def EquivUnchecked.rec
+    { motive: EquivUnchecked rel -> Sort _}
+    (q : EquivUnchecked rel)
+    (f : (a : α) → motive (EquivUnchecked.mk rel a))
+    : motive q := by
+    rw [←mk_get q]
+    apply f
 
 def Equiv (s: Setoid α) := EquivUnchecked s.r
 def Equiv.mk (s: Setoid α) : α -> Equiv s := EquivUnchecked.mk s.r

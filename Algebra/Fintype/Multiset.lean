@@ -1,5 +1,6 @@
 import Algebra.List.Perm
 import Algebra.Equiv
+import Algebra.AxiomBlame
 
 def Multiset α := Equiv (list.perm.setoid α)
 def Multiset.mk : list α -> Multiset α := Equiv.mk (list.perm.setoid α)
@@ -29,3 +30,36 @@ def Multiset.liftProp₂_mk : liftProp₂ f all_eq (mk a) (mk b) ↔ f a b := Eq
 def Multiset.exact : mk a = mk b -> a.perm b := Equiv.exact _ _
 def Multiset.sound : a.perm b -> mk a = mk b := fun eq => Equiv.sound _ _ eq
 def Multiset.exists_rep : ∀o: Multiset α, ∃p, mk p = o := Equiv.exists_rep
+
+def Multiset.Mem (x: α) : Multiset α -> Prop := by
+  apply liftProp (x ∈ ·)
+  intro a b a_perm_b
+  exact (a_perm_b.mem x).mp
+
+instance : Membership α (Multiset α) := ⟨Multiset.Mem⟩
+
+def Multiset.mem.def (as: Multiset α) (x: α) : (x ∈ as) = as.Mem x := rfl
+
+def Multiset.mk_mem (as: list α) (x: α) :
+  x ∈ mk as ↔ x ∈ as := by
+  rw [mem.def]
+  apply liftProp_mk
+
+def Multiset.min_count (mc: Multiset α) (x: α) (n: nat) : Prop := by
+  revert mc
+  apply liftProp (list.min_count x · n)
+  intro a b a_perm_b
+  exact list.perm.min_count a_perm_b x n
+
+def Multiset.mk_min_count (as: list α) (x: α) (n: nat) :
+  (mk as).min_count x n ↔ as.min_count x n := by apply liftProp_mk
+
+instance [DecidableEq α] (ms: Multiset α) : Decidable (x ∈ ms) := by
+  apply EquivUnchecked.rec ms
+  intro a
+  exact decidable_of_iff _ (Multiset.mk_mem _ _).symm
+
+instance [DecidableEq α] (ms: Multiset α) : Decidable (Multiset.min_count ms x n) := by
+  apply EquivUnchecked.rec ms
+  intro a
+  exact decidable_of_iff _ (Multiset.mk_min_count _ _ _).symm

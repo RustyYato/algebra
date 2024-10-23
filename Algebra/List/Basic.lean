@@ -574,3 +574,14 @@ def list.mem_product {as: list α} {bs: list β} : ∀{x}, x ∈ as.product bs �
     dsimp
     rw [getElem_repeat]
     assumption
+
+instance list.dec_mem [DecidableEq α] (as: list α) (x: α) : Decidable (x ∈ as) :=
+    match as with
+    | .nil => Decidable.isFalse (nomatch ·)
+    | .cons a as =>
+      match decEq x a with
+      | .isTrue h => .isTrue (h ▸ .head _)
+      | .isFalse h =>
+      match dec_mem as x with
+      | .isTrue g => .isTrue (.tail _ _ g)
+      | .isFalse g => .isFalse (fun h => by cases h <;> contradiction)
