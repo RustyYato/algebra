@@ -60,7 +60,7 @@ def list.perm.eqv : @Equivalence (list α) list.perm where
   symm := symm
   trans := trans
 
-def list.perm.setoid : Setoid (list α) where
+def list.perm.setoid α : Setoid (list α) where
   r := list.perm
   iseqv := list.perm.eqv
 
