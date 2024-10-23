@@ -585,3 +585,39 @@ instance list.dec_mem [DecidableEq α] (as: list α) (x: α) : Decidable (x ∈ 
       match dec_mem as x with
       | .isTrue g => .isTrue (.tail _ _ g)
       | .isFalse g => .isFalse (fun h => by cases h <;> contradiction)
+
+instance list.dec_forall_mem (P: α -> Prop) [DecidablePred P] (as: list α) : Decidable (∀x ∈ as, P x) :=
+    match as with
+    | .nil => Decidable.isTrue (fun _ h => nomatch h)
+    | .cons a as =>
+      if p:P a then
+        match dec_forall_mem P as with
+        | .isTrue h =>
+          .isTrue fun _ mem =>
+            match mem with
+            | .head _ => p
+            | .tail _ _ mem => h _ mem
+        | .isFalse h => .isFalse (fun g => h (fun x h => g x (list.mem.tail _ _ h)))
+      else
+        .isFalse (fun g => p (g _ (.head _)))
+
+inductive list.pairwise (P: α -> α -> Prop) : list α -> Prop where
+| nil : pairwise P nil
+| cons : (∀x ∈ as, P a x) -> pairwise P as -> pairwise P (cons a as)
+
+def list.pairwise.head : pairwise P (.cons a as) -> (∀x ∈ as, P a x)
+| .cons h _ => h
+
+def list.pairwise.tail : pairwise P (.cons a as) -> pairwise P as
+| .cons _ t => t
+
+abbrev list.nodup : list α -> Prop := list.pairwise (· ≠ ·)
+
+instance list.dec_pairwise {P: α -> α -> Prop} [DecidableRel P] : Decidable (list.pairwise P as) :=
+  match as with
+  | .[] => .isTrue .nil
+  | .cons a as =>
+    have : Decidable (list.pairwise P as) := list.dec_pairwise
+    match inferInstanceAs (Decidable ((∀x ∈ as, P a x) ∧ list.pairwise P as)) with
+    | .isTrue h => .isTrue (.cons h.left h.right)
+    | .isFalse h => .isFalse (fun g => h ⟨g.head, g.tail⟩)

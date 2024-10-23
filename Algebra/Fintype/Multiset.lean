@@ -54,6 +54,14 @@ def Multiset.min_count (mc: Multiset α) (x: α) (n: nat) : Prop := by
 def Multiset.mk_min_count (as: list α) (x: α) (n: nat) :
   (mk as).min_count x n ↔ as.min_count x n := by apply liftProp_mk
 
+def Multiset.Nodup : Multiset α -> Prop := by
+  apply liftProp list.nodup
+  intro x y a_perm_b h
+  exact a_perm_b.nodup h
+
+def Multiset.mk_nodup (as: list α)  :
+  (mk as).Nodup ↔ as.nodup := by apply liftProp_mk
+
 instance [DecidableEq α] (ms: Multiset α) : Decidable (x ∈ ms) := by
   apply EquivUnchecked.rec ms
   intro a
@@ -63,3 +71,8 @@ instance [DecidableEq α] (ms: Multiset α) : Decidable (Multiset.min_count ms x
   apply EquivUnchecked.rec ms
   intro a
   exact decidable_of_iff _ (Multiset.mk_min_count _ _ _).symm
+
+instance [DecidableEq α] (ms: Multiset α) : Decidable (Multiset.Nodup ms) := by
+  apply EquivUnchecked.rec ms
+  intro a
+  exact decidable_of_iff _ (Multiset.mk_nodup _).symm

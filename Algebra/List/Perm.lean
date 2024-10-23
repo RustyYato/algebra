@@ -282,3 +282,59 @@ instance list.dec_perm [DecidableEq α] (as bs: list α) : Decidable (as.perm bs
         | .isFalse g => .isFalse (fun g' => g (g'.trans perm).pop_head)
       else
         .isFalse fun g => h ((g.mem a).mp (.head _))
+
+def list.nil_perm  (as: list α) : list.nil.perm as -> as = .nil := by
+  intro h
+  cases as
+  rfl
+  rename_i a as
+  have := h.symm.min_count a 1 (.head .zero)
+  contradiction
+
+def list.perm_nil (as: list α) : as.perm list.nil -> as = .nil := by
+  intro
+  apply nil_perm
+  symm
+  assumption
+
+def list.cons_perm (a: α) (as bs: list α) : (cons a as).perm bs -> ∃bs', as.perm bs' ∧ bs.perm (cons a bs') := by
+  intro h
+  have a_in_bs := (h.mem a).mp (.head _)
+  have ⟨bs',prf⟩ := cons_perm_of_mem _ _ a_in_bs
+  exists bs'
+  apply And.intro
+  exact (h.trans prf).pop_head
+  assumption
+
+def list.perm.nodup {as bs: list α} :
+  as.perm bs -> as.nodup -> bs.nodup := by
+  intro h nodup
+  induction h with
+  | trans _ _ aih bih =>
+    apply bih
+    apply aih
+    assumption
+  | nil => assumption
+  | cons h ih =>
+    apply list.pairwise.cons
+    intro x mem
+    apply nodup.head
+    apply (h.mem _).mpr
+    assumption
+    apply ih
+    exact nodup.tail
+  | swap =>
+    apply list.pairwise.cons
+    intro x mem
+    cases mem
+    symm
+    apply nodup.head
+    apply list.mem.head
+    apply nodup.tail.head
+    assumption
+    apply list.pairwise.cons
+    intro x mem
+    apply nodup.head
+    apply list.mem.tail
+    assumption
+    apply nodup.tail.tail
