@@ -1,55 +1,20 @@
-import Algebra.Fintype.Finset
+import Algebra.List.Perm
+import Algebra.Ty.Basic
 
 class Fintype (α: Type _) where
-  all: Finset α
+  all: list α
+  all_nodups: all.nodup
   all_spec: ∀x, x ∈ all
 
 instance : Fintype Bool where
-  all := .ofList .[true, false] (by decide)
+  all := .[true, false]
+  all_nodups := by decide
   all_spec := by decide
 
-instance : Subsingleton (Fintype α) where
-  allEq := by
-    intro a b
-    cases a with | mk all_a all_a_spec =>
-    cases b with | mk all_b all_b_spec =>
-    congr
-    ext a
-    apply Iff.intro <;> intro
-    apply all_b_spec
-    apply all_a_spec
-
-def Fintype.card (f: Fintype α) := f.all.card
-
-def Fintype.card_eq (f g: Fintype α) :
-  f.card = g.card := by
-  cases f with | mk f fspec =>
-  cases g with | mk g gspec =>
-  cases f with | mk f fnodup =>
-  cases g with | mk g gnodup =>
-  unfold card Finset.card
+def Fintype.perm (a b: Fintype α) : a.all.perm b.all := by
+  cases a with | mk as as_nodup as_spec =>
+  cases b with | mk bs bs_nodup bs_spec =>
   dsimp
-  induction f using Multiset.ind with | mk f =>
-  induction g using Multiset.ind with | mk g =>
-  rw [Multiset.mk_length, Multiset.mk_length]
-  dsimp at *
-  replace fspec : ∀x, x ∈ f := by
-    intro x
-    apply (Multiset.mk_mem _ _).mp
-    apply fspec
-  replace gspec : ∀x, x ∈ g := by
-    intro x
-    apply (Multiset.mk_mem _ _).mp
-    apply gspec
-  replace fnodup := (Multiset.mk_nodup _).mp fnodup
-  replace gnodup := (Multiset.mk_nodup _).mp gnodup
-  have mem_iff : ∀{x}, x ∈ f ↔ x ∈ g := by
-    intro x
-    apply Iff.intro
-    intro; apply gspec
-    intro; apply fspec
-  clear gspec fspec
-  rw [list.perm.length]
   apply list.perm_iff_forall_min_count.mpr
   intro x n
   cases n
@@ -59,16 +24,12 @@ def Fintype.card_eq (f g: Fintype α) :
   rename_i n
   cases n
   apply Iff.intro
-  intro m
+  intro
   apply list.mem_iff_min_count.mp
-  apply mem_iff.mp
-  apply list.mem_iff_min_count.mpr
-  assumption
-  intro m
+  apply bs_spec
+  intro
   apply list.mem_iff_min_count.mp
-  apply mem_iff.mpr
-  apply list.mem_iff_min_count.mpr
-  assumption
+  apply as_spec
   rename_i n
   apply Iff.intro
   intro h
@@ -77,3 +38,30 @@ def Fintype.card_eq (f g: Fintype α) :
   intro h
   have := list.not_min_count_and_nodup _ h
   contradiction
+
+def Fintype.card (f: Fintype α) := f.all.length
+
+def Fintype.card_eq (f g: Fintype α) :
+  f.card = g.card := by
+  unfold card
+  rw [list.perm.length]
+  apply perm
+
+def Fintype.of_equiv [f: Fintype α] (eq: Ty.EmbedIso α β) : Fintype β where
+  all := f.all.map eq.fwd
+  all_nodups := by
+    apply list.nodup_map
+    exact f.all_nodups
+    exact eq.fwd_inj
+  all_spec := by
+    intro x
+    apply list.mem_map.mpr
+    exists eq.rev x
+    apply And.intro
+    apply f.all_spec
+    rw [eq.rev_fwd]
+
+def Fintype.card_of_equiv (f: Fintype α) (g: Fintype β) (eq: Ty.EmbedIso α β) : f.card = g.card := by
+  rw [card_eq _ (@of_equiv α β f eq)]
+  unfold of_equiv card
+  erw [list.length_map]

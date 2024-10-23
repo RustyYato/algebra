@@ -44,13 +44,12 @@ def all_fins_length : (all_fins n).length = n := by
 end fin.fintype
 
 instance fin.FintypeInst : Fintype (fin n) where
-  all := .ofList (fin.fintype.all_fins n) fin.fintype.all_fins_nodup
-  all_spec a := by
-    apply (Finset.ofList_mem _ _ _).mpr
-    apply fin.fintype.all_fins_mem
+  all := fin.fintype.all_fins n
+  all_nodups := fin.fintype.all_fins_nodup
+  all_spec := fin.fintype.all_fins_mem
 
 def fin.card (f: Fintype (fin n)) : f.card = n := by
   rw [Fintype.card_eq _ fin.FintypeInst]
   unfold FintypeInst Fintype.card Fintype.all
   dsimp
-  rw [Finset.ofList_card, fin.fintype.all_fins_length]
+  rw [fin.fintype.all_fins_length]
