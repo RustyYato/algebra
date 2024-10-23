@@ -1,5 +1,4 @@
 import Algebra.Nat.Cmp
-import Algebra.Range.Basic
 
 inductive fin : nat -> Type where
   | zero : fin (nat.succ n)
@@ -105,16 +104,3 @@ instance Fin.TotalOrdInst : TotalOrder (fin n) where
     apply compare_eq_refl <;> assumption
 
 #print axioms Fin.TotalOrdInst
-
-def fin.to_range (x: fin n) : range 0 n := by
-  apply range.mk x.val
-  apply nat.zero_le
-  exact x.valLt
-
-#print axioms fin.to_range
-
-def range.to_fin (x: range m n) : fin n := by
-  apply fin.mk x.value
-  exact x.value_lt_max
-
-#print axioms range.to_fin
