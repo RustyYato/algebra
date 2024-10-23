@@ -92,7 +92,8 @@ def EquivUnchecked.rec
     (q : EquivUnchecked rel)
     (f : (a : α) → motive (EquivUnchecked.mk rel a))
     : motive q := by
-    rw [←mk_get q]
+    apply @Eq.ndrecOn _ (mk _ q.get)
+    apply mk_get
     apply f
 
 def Equiv (s: Setoid α) := EquivUnchecked s.r
