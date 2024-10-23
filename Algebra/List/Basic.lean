@@ -1,6 +1,7 @@
 import Algebra.List.Notation
 import Algebra.Nat.Div
 import Algebra.AxiomBlame
+import Algebra.Function.Basic
 
 def list.length : list α -> nat
 | .nil => .zero
@@ -621,3 +622,18 @@ instance list.dec_pairwise {P: α -> α -> Prop} [DecidableRel P] : Decidable (l
     match inferInstanceAs (Decidable ((∀x ∈ as, P a x) ∧ list.pairwise P as)) with
     | .isTrue h => .isTrue (.cons h.left h.right)
     | .isFalse h => .isFalse (fun g => h ⟨g.head, g.tail⟩)
+
+def list.nodup_map (f: α -> β) (as: list α) : as.nodup -> Function.Injective f -> (as.map f).nodup := by
+  intro asnodup injf
+  induction asnodup with
+  | nil => exact list.pairwise.nil
+  | cons a_not_mem _ ih =>
+    rename_i as a _
+    apply list.pairwise.cons
+    intro b b_in_map fa_ne_b
+    have ⟨a',a'_in_as,fa'_eq_b⟩ := mem_map.mp b_in_map
+    subst b
+    cases injf fa'_eq_b
+    have := a_not_mem a a'_in_as
+    contradiction
+    assumption
