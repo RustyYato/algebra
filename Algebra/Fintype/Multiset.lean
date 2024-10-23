@@ -62,17 +62,33 @@ def Multiset.Nodup : Multiset α -> Prop := by
 def Multiset.mk_nodup (as: list α)  :
   (mk as).Nodup ↔ as.nodup := by apply liftProp_mk
 
-instance [DecidableEq α] (ms: Multiset α) : Decidable (x ∈ ms) := by
+def Multiset.length (ms: Multiset α) : nat := by
+  apply lift list.length _ ms
+  intro x y perm
+  exact list.perm.length perm
+
+def Multiset.mk_length (as: list α) : (mk as).length = as.length := lift_mk
+
+instance (priority := 100) [DecidableEq α] (ms: Multiset α) : Decidable (x ∈ ms) := by
   apply EquivUnchecked.rec ms
   intro a
   exact decidable_of_iff _ (Multiset.mk_mem _ _).symm
 
-instance [DecidableEq α] (ms: Multiset α) : Decidable (Multiset.min_count ms x n) := by
+instance (priority := 100) [DecidableEq α] (ms: Multiset α) : Decidable (Multiset.min_count ms x n) := by
   apply EquivUnchecked.rec ms
   intro a
   exact decidable_of_iff _ (Multiset.mk_min_count _ _ _).symm
 
-instance [DecidableEq α] (ms: Multiset α) : Decidable (Multiset.Nodup ms) := by
+instance (priority := 100) [DecidableEq α] (ms: Multiset α) : Decidable (Multiset.Nodup ms) := by
   apply EquivUnchecked.rec ms
   intro a
+  exact decidable_of_iff _ (Multiset.mk_nodup _).symm
+
+instance [DecidableEq α] (ms: list α) : Decidable (x ∈ Multiset.mk ms) := by
+  exact decidable_of_iff _ (Multiset.mk_mem _ _).symm
+
+instance [DecidableEq α] (ms: list α) : Decidable (Multiset.min_count (.mk ms) x n) := by
+  exact decidable_of_iff _ (Multiset.mk_min_count _ _ _).symm
+
+instance [DecidableEq α] (ms: list α) : Decidable (Multiset.Nodup (.mk ms)) := by
   exact decidable_of_iff _ (Multiset.mk_nodup _).symm

@@ -91,3 +91,20 @@ def Finset.ext (as bs:Finset α) : (∀x, x ∈ as ↔ x ∈ bs) -> as = bs := b
     intro x
     symm
     apply h
+
+instance (priority := 100) [DecidableEq α] (as: Finset α) : Decidable (x ∈ as) := by
+  dsimp
+  exact inferInstance
+
+instance [DecidableEq α] (as: list α) (h: as.nodup) : Decidable (x ∈ Finset.ofList as h) := by
+  dsimp
+  unfold Finset.ofList
+  dsimp
+  exact inferInstance
+
+def Finset.ofList_mem (x: α) (as: list α) (h: as.nodup) :
+  x ∈ ofList as h ↔ x ∈ as := Multiset.mk_mem as x
+
+def Finset.card (as: Finset α) : nat := as.set.length
+
+def Finset.ofList_card (as: list α) (h: as.nodup) : (ofList as h).card = as.length := Multiset.mk_length _
