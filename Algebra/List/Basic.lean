@@ -637,3 +637,252 @@ def list.nodup_map (f: α -> β) (as: list α) : as.nodup -> Function.Injective 
     have := a_not_mem a a'_in_as
     contradiction
     assumption
+
+def list.drop (n: nat) (as: list α) : list α :=
+  match n with
+  | .zero => as
+  | .succ n =>
+    match as with
+    | .[] => .nil
+    | .cons _ as => as.drop n
+
+def list.drop_zero (as: list α) : as.drop 0 = as := rfl
+
+-- keep idx in from so it is chosen as the termination variable
+-- instead of as. this leads to a definitionaly equality with .cons
+def list.insert_at (idx: nat) (x: α)  (as: list α) : list α :=
+  match idx with
+  | .zero => .cons x as
+  | .succ idx =>
+    match as with
+    | .[] => .cons x .nil
+    | .cons a as => .cons a (as.insert_at idx x)
+
+def list.insert_at_zero (as: list α) (x: α) : as.insert_at 0 x = .cons x as := rfl
+
+def list.length_insert_at (as: list α) (idx: nat) (x: α) :
+  (as.insert_at idx x).length = as.length.succ := by
+  induction idx generalizing as with
+  | zero =>
+    unfold insert_at
+    rfl
+  | succ idx ih =>
+    cases as with
+    | nil => rfl
+    | cons a as =>
+      unfold insert_at
+      dsimp
+      rw [cons_length, ih]
+      rfl
+
+def list.insert_at_get?_lt (as: list α) (n idx: nat) (x: α) :
+  n < idx ->
+  idx ≤ as.length ->
+  (as.insert_at idx x).get? n = as.get? n := by
+  intro h g
+  induction idx generalizing as n with
+  | zero =>
+    cases n <;> contradiction
+  | succ idx ih =>
+    cases as with
+    | nil =>
+      unfold insert_at
+      have := nat.le_zero g
+      contradiction
+    | cons a as =>
+      unfold insert_at
+      dsimp
+      cases n
+      rfl
+      unfold get?
+      dsimp
+      apply ih
+      assumption
+      assumption
+
+def list.insert_at_get?_gt (as: list α) (n idx: nat) (x: α) :
+  n > idx ->
+  idx ≤ as.length ->
+  (as.insert_at idx x).get? n = as.get? n.pred := by
+  intro h g
+  induction idx generalizing as n with
+  | zero =>
+    cases n; contradiction
+    unfold insert_at
+    rfl
+  | succ idx ih =>
+    cases as with
+    | nil =>
+      have := nat.le_zero g
+      contradiction
+    | cons a as =>
+      unfold insert_at
+      dsimp
+      cases n
+      rfl
+      rename_i n
+      rw [get?]
+      dsimp
+      cases idx
+      cases n; contradiction
+      rfl
+      rename_i idx
+      cases n; contradiction
+      rename_i n
+      rw [ih]
+      rfl
+      assumption
+      assumption
+
+def list.insert_at_get?_eq (as: list α) (idx: nat) (x: α) :
+  idx ≤ as.length ->
+  (as.insert_at idx x).get? idx = x := by
+  intro h
+  induction idx generalizing as with
+  | zero =>
+    cases as <;> rfl
+  | succ idx ih =>
+    cases as
+    cases h <;> contradiction
+    unfold insert_at
+    dsimp
+    apply ih
+    assumption
+
+def list.insert_at_getElem_lt (as: list α) (n idx: nat) (x: α) :
+  (h: n < idx) ->
+  (g: idx ≤ as.length) ->
+  (as.insert_at idx x)[n]'(by
+    rw [length_insert_at]
+    exact lt_trans h (nat.lt_succ_of_le g)
+  ) = as[n]'(lt_of_lt_of_le h g) := by
+  intro h g
+  apply Option.some.inj
+  rw [getElem_eq_get?, getElem_eq_get?, Option.some_get, Option.some_get]
+  apply list.insert_at_get?_lt <;> assumption
+
+def list.insert_at_getElem_gt (as: list α) (n idx: nat) (x: α) :
+  (h: n > idx) ->
+  idx ≤ as.length ->
+  (g: n ≤ as.length) ->
+  (as.insert_at idx x)[n]'(by
+    rw [as.length_insert_at]
+    apply nat.lt_succ_of_le
+    assumption) = as[n.pred]'(by
+    cases n
+    have := nat.not_lt_zero h
+    contradiction
+    apply nat.lt_of_succ_le
+    assumption) := by
+  intro h g _
+  apply Option.some.inj
+  rw [getElem_eq_get?, getElem_eq_get?, Option.some_get, Option.some_get]
+  apply list.insert_at_get?_gt <;> assumption
+
+def list.insert_at_getElem_eq (as: list α) (idx: nat) (x: α) :
+  (h: idx ≤ as.length) ->
+  (as.insert_at idx x)[idx]'(by
+    rw [length_insert_at]
+    apply nat.lt_succ_of_le
+    assumption) = x := by
+  intro h
+  apply Option.some.inj
+  rw [getElem_eq_get?, Option.some_get]
+  apply list.insert_at_get?_eq <;> assumption
+
+-- keep idx in from so it is chosen as the termination variable
+-- instead of as. this leads to a definitionaly equality with .cons
+def list.remove (idx: nat) (as: list α) (h: idx < as.length) : list α :=
+  match idx with
+  | .zero => match as with
+    | .cons _ as => as
+  | .succ idx =>
+    match as with
+    | .cons a as => .cons a (as.remove idx h)
+
+def list.cons_remove_zero (a: α) (as: list α) : (list.cons a as).remove 0 rfl = as := rfl
+def list.cons_remove_succ (idx: nat) (a: α) (as: list α) (h: idx < as.length) : (list.cons a as).remove idx.succ h = .cons a (as.remove idx h) := rfl
+
+def list.length_remove (as: list α) (idx: nat) (h: idx < as.length) :
+  (as.remove idx h).length = as.length.pred := by
+  induction idx generalizing as with
+  | zero =>
+    match as with
+    | .cons a as => rfl
+  | succ idx ih =>
+    match as with
+    | .cons a as =>
+    unfold remove
+    dsimp
+    rw [cons_length, cons_length, ih]
+    match as with
+    | .nil => cases idx <;> contradiction
+    | .cons _ _ => rfl
+
+def list.remove_get?_lt (as: list α) (pos idx: nat) (idxLt: idx < as.length) :
+  (h: pos < idx) ->
+  (as.remove idx idxLt).get? pos = as.get? pos := by
+    intro h
+    induction idx generalizing pos as with
+    | zero => cases pos <;> contradiction
+    | succ idx ih =>
+      cases as
+      contradiction
+      unfold list.remove
+      dsimp
+      cases pos
+      rfl
+      unfold get?; dsimp
+      rw [ih _ _ _ h]
+
+def list.remove_get?_ge (as: list α) (pos idx: nat) (idxLt: idx < as.length) :
+  (h: pos ≥ idx) ->
+  (as.remove idx idxLt).get? pos = as.get? pos.succ := by
+  intro h
+  induction idx generalizing pos as with
+  | zero =>
+    cases as
+    contradiction
+    rfl
+  | succ idx ih =>
+    cases as
+    contradiction
+    rw [list.remove]
+    dsimp
+    cases pos
+    have := nat.le_zero h
+    contradiction
+    rw [get?]
+    dsimp
+    rw [ih]
+    rfl
+    assumption
+
+def list.remove_getElem_lt (as: list α) (pos idx: nat) (idxLt: idx < as.length) :
+  (h: pos < idx) ->
+  (as.remove idx idxLt)[pos]'(by
+      cases as
+      cases idx <;> contradiction
+      rw [length_remove]
+      apply lt_of_lt_of_le h
+      apply nat.le_of_lt_succ
+      assumption) = as[pos]'(lt_trans h idxLt) := by
+    intro h
+    apply Option.some.inj
+    rw [getElem_eq_get?, getElem_eq_get?, Option.some_get, Option.some_get]
+    apply remove_get?_lt
+    assumption
+
+def list.remove_getElem_ge (as: list α) (pos idx: nat) (idxLt: idx < as.length) :
+  (h: pos ≥ idx) ->
+  (g: pos.succ < as.length) ->
+  (as.remove idx idxLt)[pos]'(by
+    cases as
+    contradiction
+    rw [length_remove]
+    exact g) = as[pos.succ] := by
+  intro h g
+  apply Option.some.inj
+  rw [getElem_eq_get?, getElem_eq_get?, Option.some_get, Option.some_get]
+  apply remove_get?_ge
+  assumption

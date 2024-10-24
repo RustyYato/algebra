@@ -1,7 +1,8 @@
-import Algebra.Vector.Lemmas
+import Algebra.Vector.Basic
 import Algebra.Fin.Basic
 import Algebra.Nat.Mul
 import Algebra.Nat.WellFounded
+import Algebra.AxiomBlame
 
 -- a type in simply typed lambda calculus
 inductive LamTy where
@@ -25,6 +26,14 @@ inductive Term : TypeCtx n -> LamTy -> Type where
 | Lam : ∀(arg_ty ret_ty: LamTy), (body: Term (Vector.cons arg_ty ctx) ret_ty) -> Term ctx (.Func arg_ty ret_ty)
 -- Function application
 | App: ∀(arg_ty ret_ty: LamTy), Term ctx (.Func arg_ty ret_ty) -> Term ctx arg_ty -> Term ctx ret_ty
+
+def Term.size (term: Term ctx ty) : nat :=
+  match term with
+  | .Unit => 0
+  | .Var _ _ _ => 0
+  | .App _ _ func arg => (func.size + arg.size).succ
+  | .Lam _ _ body => body.size.succ
+  | .Abort body _ => body.size.succ
 
 def Term.is_terminal (term: Term ctx ty) : Prop :=
   match term with
@@ -60,52 +69,51 @@ def Term.weaken
     subst ty
     if h:v.val < idx.val then
       apply Term.Var (fin.mk v.val _) _ _
-      apply lt_trans v.valLt
+      apply lt_trans v.isLt
       apply nat.lt_succ_self
       rw [Vector.insert_at_get_lt]
       exact h
     else
       apply Term.Var (fin.mk v.succ.val _) _ _
-      exact v.valLt
+      exact v.isLt
       unfold fin.val fin.mk
       dsimp
       rw [Vector.insert_at_get_ge]
       rw [fin.val_mk]
       rw [fin.val_mk]
-      exact le_of_not_gt h
-
-#print axioms Term.weaken
+      apply le_of_not_lt
+      assumption
+termination_by term.size
+decreasing_by
+  any_goals apply nat.lt_succ_self
+  rw [size, ←nat.add_succ]
+  apply nat.add.lt_right_nz
+  trivial
+  rw [size, ←nat.succ_add]
+  apply nat.add.lt_left_nz
+  trivial
 
 def Term.weaken_ctx
   { n:nat }
   { ctx: TypeCtx n }
   (term: Term ctx ty)
   (newty: LamTy) :
-  Term (.cons newty ctx) ty := by
-  have := term.weaken .zero newty
-  unfold Vector.insert_at at this
-  exact this
-
-#print axioms Term.weaken_ctx
+  Term (.cons newty ctx) ty := term.weaken .zero newty
 
 def Term.extend_ctx
   { n m:nat }
   { ctx: Vector LamTy n }
   (term: Term ctx ty) (ctx': Vector LamTy m) :
   Term (ctx' ++ ctx) ty :=
-  match ctx' with
-  | .nil => term
-  | .cons ty ctx' => (term.extend_ctx ctx').weaken_ctx ty
+  ctx'.recursion ( motive := fun ctx' => Term (ctx' ++ ctx) ty )
+    term (fun ty _ ih => ih.weaken_ctx ty)
 
-#print axioms Term.weaken_ctx
-
-def Term.size (term: Term ctx ty) : nat :=
-  match term with
-  | .Unit => 0
-  | .Var _ _ _ => 0
-  | .App _ _ func arg => (func.size + arg.size).succ
-  | .Lam _ _ body => body.size.succ
-  | .Abort body _ => body.size.succ
+def Term.set_ctx
+  { m: nat }
+  (term: Term .nil ty) (ctx': Vector LamTy m) :
+  Term ctx' ty :=
+  ctx'.recursion ( motive := fun ctx' => Term ctx' ty )
+    term (fun ty _ ih => ih.weaken_ctx ty)
 
 def Term.subst_at
   { n: nat }
@@ -118,10 +126,7 @@ def Term.subst_at
   | .Abort t ty => .Abort (t.subst_at pos subst) ty
   | .App arg_ty ret_ty func arg => .App arg_ty ret_ty (func.subst_at pos subst) (arg.subst_at pos subst)
   | .Lam arg_ty ret_ty body =>
-    .Lam arg_ty ret_ty <| body.subst_at pos.succ <| by
-      unfold Vector.get Vector.remove
-      dsimp
-      exact subst.weaken_ctx arg_ty
+    .Lam arg_ty ret_ty <| body.subst_at pos.succ <| subst.weaken_ctx arg_ty
   | .Var idx ty' ty_correct => by
     match h:compare idx pos with
     | .eq =>
@@ -132,22 +137,14 @@ def Term.subst_at
       exact subst
     | .lt =>
       have : idx.val < n := by
-        apply lt_of_lt_of_le (lt_of_compare (h: compare idx.val pos.val = .lt))
-        apply le_of_lt_succ
-        exact pos.valLt
+        apply lt_of_lt_of_le
+        apply (lt_of_compare (h: compare idx.val pos.val = .lt))
+        apply nat.le_of_lt_succ
+        exact pos.isLt
       apply Term.Var (fin.mk idx.val this)
       rw [Vector.remove_get_lt]
-      conv => {
-        rhs
-        rhs
-        lhs
-        rw [fin.mk_val idx.val this]
-      }
-      subst ty'
-      congr
-      rw [fin.val_mk]
-      rw [fin.mk_val]
-      exact h
+      assumption
+      assumption
     | .gt =>
       have := gt_of_compare h
       cases idx with
@@ -155,29 +152,12 @@ def Term.subst_at
         have := nat.not_lt_zero this
         contradiction
       | succ idx =>
-      apply Term.Var (fin.mk idx.succ.val.pred _)
-      rw [Vector.remove_get_ge]
-      {
-        unfold fin.val nat.pred
-        conv in fin.mk idx.val _ => {
-          rw [fin.val_mk idx]
-        }
-        exact ty_correct
-      }
-      cases n with
-      | zero => contradiction
-      | succ n =>
+      apply Term.Var (fin.mk idx.val _)
+      rw [Vector.remove_get_ge, fin.val_mk]
+      assumption
       rw [fin.mk_val]
-      conv => {
-        lhs
-        unfold fin.val nat.pred
-      }
-      dsimp
-      apply le_of_lt_succ
-      exact this
-      intros
-      rename_i idx _ _ _
-      exact idx.valLt
+      apply nat.le_of_lt_succ
+      assumption
 termination_by term.size
 decreasing_by
   apply nat.lt_succ_self
@@ -193,14 +173,9 @@ def Term.subst
   { n: nat }
   { ctx: TypeCtx n }
   (term: Term (Vector.cons arg_ty ctx) ty)
-  (subst: Term ctx arg_ty) : Term ctx ty := by
-    have := Term.subst_at term .zero (by
-      unfold Vector.remove Vector.get
-      dsimp
-      exact subst)
-    unfold Vector.remove at this
-    dsimp at this
-    exact this
+  (subst: Term ctx arg_ty) : Term ctx ty := Term.subst_at term .zero subst
+
+#print axioms Term.subst
 
 inductive ReductionStep : Term ctx ty -> Term ctx ty -> Type where
 | Abort : ∀(body body': Term ctx .Void) ty, ReductionStep body body' -> ReductionStep (.Abort body ty) (.Abort body' ty)
@@ -575,27 +550,30 @@ def Term.void_not_hered_halt:
   intro
   contradiction
 
-def Term.cast_ctx
-  (ctx: Vector LamTy n)
-  (ctx': Vector LamTy m)
-  (h: ctx =v ctx')
-  (t: Term ctx ty):
-  Term ctx' ty := by
-  cases h
-  exact t
-
 def Term.subst_all { n: nat } { ctx: TypeCtx n } (e: Term ctx ty)
-  (bindings: BindingList ctx)
-  : Term .nil ty :=
-  match ctx with
-  | .nil => e
-  | .cons ty' ctx =>
+  (bindings: BindingList ctx) : Term .nil ty :=
   match bindings with
+  | .nil => e
   | .cons t _ _ bindings' => by
     apply (Term.subst e _).subst_all bindings'
-    apply Term.cast_ctx
-    exact Vector.append_nil ctx
-    exact t.extend_ctx ctx
+    apply t.set_ctx
+
+def Term.subst_all_unit { n: nat } { ctx: TypeCtx n }
+  (bindings: BindingList ctx)
+  : Term.Unit.subst_all bindings = Term.Unit := by
+  induction bindings with
+  | nil => rfl
+  | cons b bindings ih =>
+    unfold subst_all
+
+
+    dsimp
+    unfold subst subst_at
+    dsimp
+
+
+    rw [ih]
+    rfl
 
 def Term.hered_halt
   (e: Term ctx ty) :
@@ -607,20 +585,28 @@ def Term.hered_halt
     cases ctx
     exists .Unit
     exists .Refl
+    split
     cases bindings
     dsimp
+    sorry
   | Var idx ty ty_correct =>
-    rename_i ctx
-    have := bindings.get_halts idx
-    cases ty with
-    | Void =>
-      have := Term.void_not_hered_halt _ ty_correct.symm this
-      contradiction
-    | Unit =>
-      exists .Var idx .Unit ty_correct
-      exists .Refl
-    | Func arg_ty ret_ty =>
-      unfold hered_halts
-      apply And.intro
-      admit
-      admit
+    sorry
+    -- rename_i ctx
+    -- have := bindings.get_halts idx
+    -- cases ty with
+    -- | Void =>
+    --   have := Term.void_not_hered_halt _ ty_correct.symm this
+    --   contradiction
+    -- | Unit =>
+    --   exists .Var idx .Unit ty_correct
+    --   exists .Refl
+    -- | Func arg_ty ret_ty =>
+    --   unfold hered_halts
+    --   apply And.intro
+    --   admit
+    --   admit
+  | Abort term ty₀ ih =>
+    have : False := @ih bindings
+    contradiction
+  | Lam => sorry
+  | App => sorry
