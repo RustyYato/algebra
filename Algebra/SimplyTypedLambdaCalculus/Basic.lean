@@ -62,7 +62,17 @@ def Term.is_terminal (term: Term ctx ty) : Prop :=
     | .Lam _ _ _ => False
     | _ => func.is_terminal ∧ arg.is_terminal
 
-instance : Decidable (Term.is_terminal term) := sorry
+instance : Decidable (Term.is_terminal term) := by
+  apply term.recursion
+  intros; exact inferInstanceAs (Decidable True)
+  intros; exact inferInstanceAs (Decidable True)
+  intros _ _ _ _ h; exact h
+  intros _ _ _ _ _ h; exact h
+  intro _ _ _ _ _ _ arg_dec func_dec
+  unfold Term.is_terminal
+  split
+  exact inferInstance
+  exact inferInstance
 
 def Term.weaken
   { n:nat }
