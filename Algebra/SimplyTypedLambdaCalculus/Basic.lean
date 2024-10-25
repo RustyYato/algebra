@@ -243,8 +243,7 @@ def ReductionChain.length (red: ReductionChain a b)  : nat :=
   | .Refl => 0
   | .Cons _ list => list.length.succ
 
-instance Reduction.never_terminal:
-  a ⤳ b -> ¬a.is_terminal := by
+def Reduction.never_terminal: a ⤳ b -> ¬a.is_terminal := by
   intro red
   induction red with
   | Abort body body' ty red ih => exact ih
@@ -269,8 +268,7 @@ instance Reduction.never_terminal:
     dsimp
     exact id
 
-instance Reduction.of_not_terminal:
-  ¬a.is_terminal -> (b: Term ctx ty) × (a ⤳ b) := by
+def Reduction.of_not_terminal: ¬a.is_terminal -> (b: Term ctx ty) × (a ⤳ b) := by
   apply a.recursion
   case Unit =>
     intro n ctx not_term
@@ -318,8 +316,8 @@ instance Reduction.of_not_terminal:
     apply Reduction.AppFunc
     repeat assumption
 
-def Reduction.determanistic : a ⤳ b -> a ⤳ c -> b = c := by
-  intro a_to_b a_to_c
+def Reduction.determanistic' : Nonempty (a ⤳ b) -> Nonempty (a ⤳ c) -> b = c := by
+  intro ⟨a_to_b⟩ ⟨a_to_c⟩
   induction a_to_b with
   | Abort body body' ty red ih =>
     cases a_to_c
@@ -363,7 +361,17 @@ def Reduction.determanistic : a ⤳ b -> a ⤳ c -> b = c := by
     subst output
     rfl
 
-#print axioms Reduction.determanistic
+def Reduction.determanistic : a ⤳ b -> a ⤳ c -> b = c := fun h g => Reduction.determanistic' ⟨h⟩ ⟨g⟩
+
+def Reduction.choose (h: Nonempty (a ⤳ b)): a ⤳ b :=
+  have : ¬a.is_terminal := by
+    have ⟨h⟩ := h
+    exact h.never_terminal
+  have ⟨c,red⟩  := of_not_terminal this
+  have b_eq_c := determanistic' h ⟨red⟩
+  b_eq_c ▸ red
+
+#print axioms Reduction.choose
 
 instance Reduction.subsingleton: Subsingleton (a ⤳ b) where
   allEq := by
