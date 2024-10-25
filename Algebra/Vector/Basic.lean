@@ -83,13 +83,19 @@ def Vector.recursion_cons { motive: ∀{n}, Vector α n -> Sort _ }
   (cons: ∀{n} x (xs: Vector α n), motive xs -> motive (Vector.cons x xs)):
   Vector.recursion nil cons (.cons x xs) = cons x xs (Vector.recursion nil cons xs) := rfl
 
-def Vector.remove {n: nat} (as: Vector α n.succ) (idx: fin n.succ) : Vector α n where
+def Vector.remove {n: nat} (as: Vector α n) (idx: fin n) : Vector α n.pred where
   data := as.data.remove idx.val <| by
     rw [as.data_length]
     exact idx.isLt
-  data_length := by
-    rw [list.length_remove, as.data_length]
-    rfl
+  data_length := by rw [list.length_remove, as.data_length]
+
+-- def Vector.remove {n: nat} (as: Vector α n.succ) (idx: fin n.succ) : Vector α n where
+--   data := as.data.remove idx.val <| by
+--     rw [as.data_length]
+--     exact idx.isLt
+--   data_length := by
+--     rw [list.length_remove, as.data_length]
+--     rfl
 
 def Vector.remove_get_lt {n: nat} (as: Vector α n.succ) (pos idx: fin n.succ) :
   (h: pos.val < idx.val) ->

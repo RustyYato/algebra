@@ -27,6 +27,21 @@ inductive Term : TypeCtx n -> LamTy -> Type where
 -- Function application
 | App: ∀(arg_ty ret_ty: LamTy), Term ctx (.Func arg_ty ret_ty) -> Term ctx arg_ty -> Term ctx ret_ty
 
+def Term.recursion
+  { motive: ∀{n} (ctx: TypeCtx n) {ty}, Term ctx ty -> Sort _ }
+  (Unit: ∀{n} {ctx: TypeCtx n}, motive ctx .Unit)
+  (Var: ∀{n} {ctx: TypeCtx n}, ∀id ty h, motive ctx (.Var id ty h))
+  (Abort: ∀{n} {ctx: TypeCtx n}, ∀body ty, motive ctx body -> motive ctx (.Abort body ty))
+  (Lam: ∀{n} {ctx: TypeCtx n}, ∀arg_ty ret_ty body, motive (.cons arg_ty ctx) body -> motive ctx (.Lam arg_ty ret_ty body))
+  (App: ∀{n} {ctx: TypeCtx n}, ∀arg_ty ret_ty arg func, motive ctx arg -> motive ctx func -> motive ctx (.App arg_ty ret_ty arg func))
+  {ctx: TypeCtx n} {ty}
+  : ∀(t: Term ctx ty), motive ctx t
+| .Unit => Unit
+| .Var _ _ _ => Var _ _ _
+| .Abort _ ty => Abort _ _ (recursion Unit Var Abort Lam App _)
+| .Lam _ _ _ => Lam _ _ _ (recursion Unit Var Abort Lam App _)
+| .App _ ret_ty _ _ => App _ _ _ _ (recursion Unit Var Abort Lam App _) (recursion Unit Var Abort Lam App _)
+
 def Term.size (term: Term ctx ty) : nat :=
   match term with
   | .Unit => 0
@@ -39,12 +54,15 @@ def Term.is_terminal (term: Term ctx ty) : Prop :=
   match term with
   | .Unit => True
   | .Var _ _ _ => True
+  -- | .Abort t _ => False
   | .Abort t _ => t.is_terminal
   | .Lam _ _ body => body.is_terminal
   | .App _ _ func arg =>
     match func with
     | .Lam _ _ _ => False
     | _ => func.is_terminal ∧ arg.is_terminal
+
+instance : Decidable (Term.is_terminal term) := sorry
 
 def Term.weaken
   { n:nat }
@@ -117,10 +135,12 @@ def Term.set_ctx
 
 def Term.subst_at
   { n: nat }
-  { ctx: TypeCtx n.succ }
+  { ctx: TypeCtx n }
   (term: Term ctx ty)
-  (pos: fin n.succ)
+  (pos: fin n)
   (subst: Term (ctx.remove pos) (ctx.get pos)) : Term (ctx.remove pos) ty :=
+  match n with
+  | .succ n =>
   match term with
   | .Unit => .Unit
   | .Abort t ty => .Abort (t.subst_at pos subst) ty
@@ -211,13 +231,14 @@ def ReductionChain.refl:
 def ReductionChain.length (red: ReductionChain a b)  : nat :=
   match red with
   | .Refl => 0
-  | .Cons _ list => list.length
+  | .Cons _ list => list.length.succ
 
 instance Reduction.never_terminal:
   a ⤳ b -> ¬a.is_terminal := by
   intro red
   induction red with
   | Abort body body' ty red ih => exact ih
+  -- | Abort body body' ty red ih => exact False.elim
   | LamBody arg_ty ret_ty body body'  red ih => exact ih
   | AppFunc arg_ty ret_ty func func' arg red ih =>
     intro t
@@ -237,6 +258,55 @@ instance Reduction.never_terminal:
     unfold Term.is_terminal
     dsimp
     exact id
+
+instance Reduction.of_not_terminal:
+  ¬a.is_terminal -> (b: Term ctx ty) × (a ⤳ b) := by
+  apply a.recursion
+  case Unit =>
+    intro n ctx not_term
+    unfold Term.is_terminal at not_term
+    contradiction
+  case Var =>
+    intro n ctx id ty h not_term
+    unfold Term.is_terminal at not_term
+    contradiction
+  case Lam =>
+    intro n ctx arg_ty ret_ty body ih not_term
+    have ⟨body',red⟩  := ih not_term
+    exists body'.Lam _ _
+    apply Reduction.LamBody
+    assumption
+  case Abort =>
+    intro n ctx body ty ih not_term
+    have ⟨body',red⟩  := ih not_term
+    exists body'.Abort _
+    apply Reduction.Abort
+    assumption
+  case App =>
+    intro n ctx arg_ty ret_ty func arg func_ih arg_ih not_term
+    unfold Term.is_terminal at not_term
+    if func_term:func.is_terminal then
+    if arg_term:arg.is_terminal then
+    split at not_term
+    clear not_term func_ih arg_ih
+    rename_i func body
+    exists body.subst arg
+    apply Reduction.Apply
+    assumption
+    assumption
+    rfl
+    have := not_term ⟨func_term,arg_term⟩
+    contradiction
+    else
+    have ⟨arg',red⟩ := arg_ih arg_term
+    exists .App _ _ func arg'
+    apply Reduction.AppArg
+    repeat assumption
+    else
+    have ⟨func',red⟩ := func_ih func_term
+    exists .App _ _ func' arg
+    apply Reduction.AppFunc
+    repeat assumption
 
 def Reduction.determanistic : a ⤳ b -> a ⤳ c -> b = c := by
   intro a_to_b a_to_c
@@ -577,6 +647,174 @@ def Term.subst_all { n: nat } { ctx: TypeCtx n } (e: Term ctx ty)
     apply (Term.subst e _).subst_all bindings'
     apply t.set_ctx
 
+def Term.weaken_hered_halts_iff (e: Term ctx ty) :
+  ((e.weaken idx ty').hered_halts ↔ e.hered_halts) := by
+  induction e with
+  | Unit =>
+    unfold weaken
+    apply Iff.intro
+    · intro h
+      exists Unit
+      exists .Refl
+    · intro h
+      exists Unit
+      exists .Refl
+  | Abort body ty ih =>
+    apply Iff.intro
+    · intro h
+      unfold weaken at h
+      cases ty
+      have ⟨e',chain,e'_term⟩ := h
+
+      sorry
+    · intro h
+      sorry
+  | Lam => sorry
+  | App => sorry
+  | Var => sorry
+
+def Term.weaken_ctx_hered_halts_iff (e: Term ctx ty) :
+  ((e.weaken_ctx ty').hered_halts ↔ e.hered_halts) := by
+  apply Term.weaken_hered_halts_iff
+
+def Term.set_ctx_hered_halts_iff (e: Term .nil ty) :
+  ((e.set_ctx ctx').hered_halts ↔ e.hered_halts) := by
+  induction ctx' using Vector.ind generalizing e
+  rfl
+  rename_i ih
+  apply Iff.intro
+  · intro h
+    unfold set_ctx at h
+    have := (weaken_ctx_hered_halts_iff _).mp h
+    exact (ih _).mp this
+  · intro h
+    apply (weaken_ctx_hered_halts_iff _).mpr
+    apply (ih _).mpr
+    assumption
+
+def Term.abort_chain' (body: Term ctx .Void)  (ty: LamTy) (e: Term ctx ty):
+  (n: nat) ->
+  (h: (body.Abort ty) ⤳* e) ->
+  h.length = n ->
+  ∃body': Term ctx .Void, e = body'.Abort ty := by
+  intro n chain h
+  match n with
+  | .zero =>
+    cases chain
+    exists body
+    contradiction
+  | .succ n =>
+    cases chain
+    contradiction
+    rename_i red chain
+    cases red
+    have ⟨body',eq⟩ := abort_chain' _ _ _ n chain (nat.succ.inj h)
+    exists body'
+
+def Term.abort_chain (body: Term ctx .Void)  (ty: LamTy) (e: Term ctx ty):
+  (body.Abort ty) ⤳* e -> ∃body': Term ctx .Void, e = body'.Abort ty := by
+  intro chain
+  apply body.abort_chain' ty e _ chain
+  rfl
+
+def Term.subst_hered_halts_iff { n: nat } { ctx: TypeCtx n } (e: Term ctx ty)
+  (pos: fin n)
+  (arg: Term (ctx.remove pos) (ctx.get pos)) :
+  arg.hered_halts ->
+  ((e.subst_at pos arg).hered_halts ↔ e.hered_halts) := by
+  intro arg_hered_halts
+  induction e with
+  | Unit =>
+    rename_i n _
+    match n with
+    | .succ n =>
+    unfold subst_at
+    dsimp
+    apply Iff.intro
+    · intro h
+      exists Unit
+      exists .Refl
+    · intro h
+      exists Unit
+      exists .Refl
+  | Abort body ty ih =>
+    rename_i n _
+    match n with
+    | .succ n =>
+    unfold subst_at
+    dsimp
+    apply Iff.intro
+    · intro h
+      cases ty
+      any_goals contradiction
+      have ⟨e',chain,e'_term⟩ := h
+      have ⟨body',_⟩ := abort_chain _ _ _ chain
+      subst e'
+      contradiction
+      have ⟨⟨e',chain,e'_term⟩,_⟩  := h
+      have ⟨body',_⟩ := abort_chain _ _ _ chain
+      subst e'
+      contradiction
+    · intro h
+      cases ty
+      any_goals contradiction
+      have ⟨e',chain,e'_term⟩ := h
+      have ⟨body',_⟩ := abort_chain _ _ _ chain
+      subst e'
+      contradiction
+      have ⟨⟨e',chain,e'_term⟩,_⟩  := h
+      have ⟨body',_⟩ := abort_chain _ _ _ chain
+      subst e'
+      contradiction
+  | Lam => sorry
+  | App => sorry
+  | Var => sorry
+  -- apply Iff.intro
+  -- · intro h
+  --   sorry
+  -- · intro h
+  --   sorry
+
+def Term.subst_all_hered_halts_iff { n: nat } { ctx: TypeCtx n } (e: Term ctx ty)
+  (bindings: BindingList ctx) :
+    (e.subst_all bindings).hered_halts ↔ e.hered_halts := by
+  induction bindings with
+  | nil => rfl
+  | cons arg arg_term arg_hered_halts bindings ih =>
+    apply Iff.intro
+    · intro h
+      unfold subst_all at h
+      apply (subst_hered_halts_iff _ _ _ _).mp ((ih _).mp h)
+      apply (set_ctx_hered_halts_iff _).mpr
+      assumption
+    · intro h
+      unfold subst_all
+      apply (ih _).mpr
+      apply (subst_hered_halts_iff _ _ _ _).mpr
+      assumption
+      apply (set_ctx_hered_halts_iff _).mpr
+      assumption
+
+def Term.subst_all_red_hered_halts { n: nat } { ctx: TypeCtx n } (e e': Term ctx ty)
+  (bindings: BindingList ctx) :
+    e ⤳ e' ->
+    ((e.subst_all bindings).hered_halts ↔
+    (e'.subst_all bindings).hered_halts) := by
+  intro red
+  sorry
+def Term.subst_all_chain_hered_halts { n: nat } { ctx: TypeCtx n } (e e': Term ctx ty)
+  (bindings: BindingList ctx) :
+    e ⤳* e' ->
+    ((e.subst_all bindings).hered_halts ↔
+    (e'.subst_all bindings).hered_halts) := by
+  intro chain
+  induction chain with
+  | Refl => rfl
+  | Cons red _ ih =>
+    apply Iff.trans _ ih
+    apply subst_all_red_hered_halts
+    assumption
+
 def Term.subst_all_unit { n: nat } { ctx: TypeCtx n }
   (bindings: BindingList ctx)
   : Term.Unit.subst_all bindings = Term.Unit := by
@@ -587,6 +825,18 @@ def Term.subst_all_unit { n: nat } { ctx: TypeCtx n }
     rw [ih]
 
 #print axioms Term.subst_all_unit
+
+-- def Term.subst_all_lam { n: nat } { ctx: TypeCtx n }
+--   (bindings: BindingList ctx)
+--   (body: Term (.cons arg_ty ctx) ret_ty)
+--   : ((Term.Lam arg_ty ret_ty body): Term ctx (.Func arg_ty ret_ty)).subst_all bindings = (Term.Lam arg_ty ret_ty (body.subst_all bindings)) := by
+--   induction bindings with
+--   | nil => rfl
+--   | cons b b_is_term b_hered_halts bindings ih =>
+--     unfold subst_all subst subst_at
+--     rw [ih]
+
+-- #print axioms Term.subst_all_unit
 
 def Term.hered_halt
   (e: Term ctx ty) (bindings: BindingList ctx) :
@@ -604,16 +854,28 @@ def Term.hered_halt
     apply And.intro
     dsimp
     sorry
-    intro arg arg_hered_halts
-    have ⟨arg',arg_chain,arg'_term⟩ := arg_hered_halts.halts
-    let bindings' := bindings.cons arg' arg'_term <| (hered_halt_iff_red_chain _ _ arg_chain).mp arg_hered_halts
-    have := ih bindings'
-    apply (hered_halt_iff_red_chain _ _ _).mp _
+    · intro arg arg_hered_halts
+      have ⟨arg',arg_chain,arg'_term⟩ := arg_hered_halts.halts
+      have := ih (.cons arg' arg'_term ((hered_halt_iff_red_chain _ _ arg_chain).mp arg_hered_halts) bindings)
 
-    have := this.halts
-    unfold hered_halts
-    split
-    sorry
+      apply (hered_halt_iff_red_chain _ _ _).mpr _
+      apply body.subst_all (.cons _ _ _ bindings)
+      exact arg'
+      exact arg'_term
+      apply (hered_halt_iff_red_chain _ _ _).mp
+      exact arg_hered_halts
+      assumption
+      · induction bindings with
+        | nil =>
+          unfold subst_all
+          apply ReductionChain.Cons
+          apply Reduction.AppArg
+
+
+          sorry
+        | cons =>
+          sorry
+      · apply ih
   | App => sorry
   | Var idx ty ty_correct =>
     sorry

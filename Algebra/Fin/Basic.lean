@@ -28,6 +28,8 @@ def fin.isLt (x: fin n) : x.val < n := by
   | zero => trivial
   | succ _ ih => exact ih
 
+def fin.nonzero (x: fin n) : 0 < n := lt_of_le_of_lt (nat.zero_le _) x.isLt
+
 def fin.mk (x: nat) : x < n -> fin n := fun lt =>
   match x with
   | .zero =>
