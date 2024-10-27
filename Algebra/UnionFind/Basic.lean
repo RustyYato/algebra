@@ -412,4 +412,85 @@ def HasPathToRoot.of_equiv_and_root : Equiv items a b -> UnionFind.IsRoot items 
     apply ih
     assumption
 
+def merge_left.preserve_equiv (uf: UnionFind) (a b: Nat) (aLt: a < uf.items.length) (bLt: b < uf.items.length) :
+  ∀c d, Equiv uf.items c d -> Equiv (uf.merge_left a b aLt bLt).items c d := by
+  intro c d eq
+  induction eq with
+  | refl =>
+    apply Equiv.refl
+    rw [merge_length]
+    assumption
+  | next c d e parent eq ih =>
+    apply Equiv.trans _ ih
+    apply Equiv.next
+    apply IsParentOf.mk
+    rw [merge_length]
+    exact eq.in_bounds_left
+    unfold merge_left
+    rw [List.getElem_set_ne]
+    exact parent.spec
+    intro h
+    subst h
+    have := parent.notIsRoot <| find_is_root uf b bLt
+    contradiction
+    rw [List.length_set]
+    exact parent.in_bounds_left
+    exact parent.different
+    apply Equiv.refl
+    rw [merge_length]
+    exact parent.in_bounds_right
+  | prev c d e parent eq ih =>
+    apply Equiv.trans _ ih
+    apply Equiv.prev
+    apply IsParentOf.mk
+    rw [merge_length]
+    exact parent.in_bounds_right
+    unfold merge_left
+    rw [List.getElem_set_ne]
+    exact parent.spec
+    intro h
+    subst h
+    have := parent.notIsRoot <| find_is_root uf b bLt
+    contradiction
+    rw [List.length_set]
+    exact parent.in_bounds_left
+    exact parent.different
+    apply Equiv.refl
+    rw [merge_length]
+    exact parent.in_bounds_left
+
+def merge_left.spec (uf: UnionFind) (a b: Nat) (aLt: a < uf.items.length) (bLt: b < uf.items.length) :
+  Equiv (uf.merge_left a b aLt bLt).items a b := by
+  apply Equiv.trans
+  apply preserve_equiv
+  apply Equiv.find_right
+  assumption
+  apply flip Equiv.trans
+  apply preserve_equiv
+  apply Equiv.find_left
+  assumption
+  if h:uf.find a aLt = uf.find b bLt then
+    rw [←h]
+    apply Equiv.refl
+    rw [merge_length]
+    have := find_is_root uf a aLt
+    exact this.in_bounds
+  else
+    apply Equiv.prev _ _ _ _ _
+    exact uf.find b bLt
+    apply IsParentOf.mk
+    rw [merge_length]
+    have := find_is_root uf a aLt
+    exact this.in_bounds
+    erw [List.getElem_set_eq]
+    rw [List.length_set]
+    have := find_is_root uf b bLt
+    exact this.in_bounds
+    symm
+    assumption
+    apply Equiv.refl
+    rw [merge_length]
+    have := find_is_root uf b bLt
+    exact this.in_bounds
+
 end UnionFind
