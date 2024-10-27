@@ -23,16 +23,16 @@ structure IsParentOf (items: List Nat) (a b: Nat) : Prop where
   spec: items[a] = b
   different: a ≠ b
 
--- `RootPath items a` is the node on the path from a to b
-inductive RootPath (items: List Nat) : Nat -> Type where
-| IsRoot a : IsRoot items a -> RootPath items a
-| IsParentOf a b : IsParentOf items a b -> RootPath items b -> RootPath items a
+-- `HasPathToRoot items a` is the node on the path from a to b
+inductive HasPathToRoot (items: List Nat) : Nat -> Prop where
+| IsRoot a : IsRoot items a -> HasPathToRoot items a
+| IsParentOf a b : IsParentOf items a b -> HasPathToRoot items b -> HasPathToRoot items a
 
 -- `IsAncestorOf items a b` means that...
 -- * `a` and `b` share the same root node
 -- * `a` is strictly farther away from the root node than `b`
 inductive IsAncestorOf (items: List Nat) : Nat -> Nat -> Prop where
-| single : IsParentOf items a b -> RootPath items b -> IsAncestorOf items a b
+| single : IsParentOf items a b -> HasPathToRoot items b -> IsAncestorOf items a b
 | next : IsParentOf items a b -> IsAncestorOf items b c -> IsAncestorOf items a c
 
 inductive Equiv (items: List Nat) : Nat -> Nat -> Prop where
@@ -54,26 +54,6 @@ def IsAncestorOf.notIsRoot : IsAncestorOf items a b -> ¬IsRoot items a := by
 def IsParentOf.determine : IsParentOf items a b -> IsParentOf items a c -> b = c := by
   intro ⟨_,_,spec₀,_⟩ ⟨_,_,spec₁,_⟩
   rw [←spec₀, ←spec₁]
-
--- there is at most one way to get to a given root
-instance : Subsingleton (RootPath items x) where
-  allEq := by
-    intro a b
-    induction a with
-    | IsRoot root root_spec =>
-      cases b with
-      | IsRoot root' root'_spec => rfl
-      | IsParentOf _ _ parent  =>
-        have := parent.notIsRoot
-        contradiction
-    | IsParentOf a b' a_parent_b' _ ih  =>
-      cases b with
-      | IsRoot root' root'_spec =>
-        have := a_parent_b'.notIsRoot
-        contradiction
-      | IsParentOf _ c a_parent_c =>
-        cases a_parent_b'.determine a_parent_c
-        rw [ih]
 
 def IsAncestorOf.wf (items: List Nat) : WellFounded (flip (IsAncestorOf items)) := by
   apply WellFounded.intro
@@ -177,7 +157,7 @@ def Equiv.symm : Equiv items a b -> Equiv items b a := by
     apply Equiv.refl
     apply ab.in_bounds_right
 
-def RootPath.pop_head : UnionFind.IsParentOf items a b -> RootPath items a -> RootPath items b := by
+def HasPathToRoot.pop_head : UnionFind.IsParentOf items a b -> HasPathToRoot items a -> HasPathToRoot items b := by
   intro ab roota
   cases roota
   have := ab.notIsRoot
@@ -192,7 +172,7 @@ structure _root_.UnionFind where
   items_inbounds: ∀x ∈ items, x < items.length
   -- all items eventually reach some root node
   -- this is a Prop to ensure that it's not code-gened
-  items_rooted: ∀x < items.length, Nonempty (RootPath items x)
+  items_rooted: ∀x < items.length, HasPathToRoot items x
 
 def parent_of_next (uf: UnionFind) (n: Nat) (h: n < uf.items.length) (not_root: ¬IsRoot uf.items n) :
   IsParentOf uf.items n uf.items[n] where
@@ -228,12 +208,19 @@ decreasing_by
   cases uf.items_rooted n nLt
   apply IsAncestorOf.single
   assumption
-  apply RootPath.pop_head
+  apply HasPathToRoot.pop_head
+  assumption
+  have := this.notIsRoot
+  contradiction
+  unfold flip
+  rename_i parent'
+  cases parent'.determine this
+  apply IsAncestorOf.single
   assumption
   assumption
 
 def find_is_root (uf: UnionFind) (n: Nat) nLt : IsRoot uf.items (uf.find n nLt) := by
-  have ⟨rooted⟩ := uf.items_rooted n nLt
+  have rooted := uf.items_rooted n nLt
   induction rooted with
   | IsRoot a root =>
     unfold find
@@ -282,7 +269,7 @@ def Equiv.ofIsParent : IsParentOf items b a -> Equiv items a b := by
   exact h.in_bounds_left
 
 def Equiv.find_left (uf: UnionFind) (a: Nat) (aLt) : Equiv uf.items (uf.find a aLt) a := by
-  have ⟨rooteda⟩ := uf.items_rooted a aLt
+  have rooteda := uf.items_rooted a aLt
   induction rooteda with
   | IsRoot a roota =>
     rw [find_of_is_root roota]
@@ -305,7 +292,7 @@ def find_eq_iff_equiv (uf: UnionFind) (a b: Nat) aLt bLt : Equiv uf.items a b �
   apply Iff.intro
   · exact find_of_equiv
   · intro eq
-    have ⟨rooteda⟩ := uf.items_rooted a aLt
+    have rooteda := uf.items_rooted a aLt
     induction rooteda with
     | IsRoot a roota =>
       rw [find_of_is_root roota] at eq
@@ -354,7 +341,7 @@ def merge_left (uf: UnionFind) (a b: Nat) (aLt: a < uf.items.length) (bLt: b < u
     exact this.in_bounds
   items_rooted := by
     intro n nLt
-    have ⟨rootedn⟩ := uf.items_rooted n (by
+    have rootedn := uf.items_rooted n (by
       rw [List.length_set] at nLt
       exact nLt)
     if find_eq:uf.find a aLt = uf.find b bLt then
@@ -370,8 +357,7 @@ def merge_left (uf: UnionFind) (a b: Nat) (aLt: a < uf.items.length) (bLt: b < u
         if h₀:uf.find r rootr.in_bounds = uf.find b bLt then
           -- if this is the root that was just merged
           have := find_is_root uf a aLt
-          apply Nonempty.intro
-          apply RootPath.IsParentOf
+          apply HasPathToRoot.IsParentOf
           · apply IsParentOf.mk
             rw [List.length_set]
             exact this.in_bounds
@@ -382,7 +368,7 @@ def merge_left (uf: UnionFind) (a b: Nat) (aLt: a < uf.items.length) (bLt: b < u
             rw [find_of_is_root rootr] at h₀
             subst r
             exact Ne.symm find_eq
-          · apply RootPath.IsRoot
+          · apply HasPathToRoot.IsRoot
             apply IsRoot.mk
             rw [List.getElem_set, if_neg]
             exact this.spec
@@ -392,19 +378,17 @@ def merge_left (uf: UnionFind) (a b: Nat) (aLt: a < uf.items.length) (bLt: b < u
         else
           -- if this is a different root from the one that was just merged
           have := find_is_root uf a aLt
-          apply Nonempty.intro
-          apply RootPath.IsRoot
+          apply HasPathToRoot.IsRoot
           apply IsRoot.mk
           rw [List.getElem_set, if_neg, rootr.spec]
           rw [find_of_is_root rootr] at h₀
           exact Ne.symm h₀
           assumption
       | IsParentOf a b ab _ ih =>
-        replace ⟨ih⟩ := ih (by
+        replace ih := ih (by
           rw [List.length_set]
           exact ab.in_bounds_right)
-        apply Nonempty.intro
-        apply RootPath.IsParentOf
+        apply HasPathToRoot.IsParentOf
         · apply IsParentOf.mk
           rw [List.length_set]
           exact ab.in_bounds_right
@@ -420,6 +404,6 @@ def merge_length : (merge_left uf a b aLt bLt).items.length = uf.items.length :=
   unfold merge_left
   rw [List.length_set]
 
-def RootPath.of_equiv_and_root : Equiv items a b -> UnionFind.IsRoot items b -> Nonempty (RootPath items a) := sorry
+def HasPathToRoot.of_equiv_and_root : Equiv items a b -> UnionFind.IsRoot items b -> Nonempty (HasPathToRoot items a) := sorry
 
 end UnionFind
