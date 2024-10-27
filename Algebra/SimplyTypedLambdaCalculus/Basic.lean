@@ -859,55 +859,60 @@ def Term.subst_all_unit { n: nat } { ctx: TypeCtx n }
 def Term.hered_halt
   (e: Term ctx ty) (bindings: BindingList ctx) :
   (e.subst_all bindings).hered_halts := by
-  induction e with
-  | Unit =>
-    rw [subst_all_unit]
-    unfold hered_halts halts
-    exists Unit
-    exists .Refl
-  | Abort term ty₀ ih =>
-    have : False := @ih bindings
-    contradiction
-  | Lam arg_ty ret_ty body ih =>
-    apply And.intro
-    dsimp
-    sorry
-    · intro arg arg_hered_halts
-      have ⟨arg',arg_chain,arg'_term⟩ := arg_hered_halts.halts
-      have := ih (.cons arg' arg'_term ((hered_halt_iff_red_chain _ _ arg_chain).mp arg_hered_halts) bindings)
+  -- induction bindings with
+  -- | nil =>
 
-      apply (hered_halt_iff_red_chain _ _ _).mpr _
-      apply body.subst_all (.cons _ _ _ bindings)
-      exact arg'
-      exact arg'_term
-      apply (hered_halt_iff_red_chain _ _ _).mp
-      exact arg_hered_halts
-      assumption
-      · induction bindings with
-        | nil =>
-          unfold subst_all
-          apply ReductionChain.Cons
-          apply Reduction.AppArg
+  --   sorry
+  -- | cons arg arg_term arg_hered_halts bindings ih => sorry
+  -- induction e with
+  -- | Unit =>
+  --   rw [subst_all_unit]
+  --   unfold hered_halts halts
+  --   exists Unit
+  --   exists .Refl
+  -- | Abort term ty₀ ih =>
+  --   have : False := @ih bindings
+  --   contradiction
+  -- | Lam arg_ty ret_ty body ih =>
+  --   apply And.intro
+  --   dsimp
+  --   sorry
+  --   · intro arg arg_hered_halts
+  --     have ⟨arg',arg_chain,arg'_term⟩ := arg_hered_halts.halts
+  --     have := ih (.cons arg' arg'_term ((hered_halt_iff_red_chain _ _ arg_chain).mp arg_hered_halts) bindings)
+
+  --     apply (hered_halt_iff_red_chain _ _ _).mpr _
+  --     apply body.subst_all (.cons _ _ _ bindings)
+  --     exact arg'
+  --     exact arg'_term
+  --     apply (hered_halt_iff_red_chain _ _ _).mp
+  --     exact arg_hered_halts
+  --     assumption
+  --     · induction bindings with
+  --       | nil =>
+  --         unfold subst_all
+  --         apply ReductionChain.Cons
+  --         apply Reduction.AppArg
 
 
-          sorry
-        | cons =>
-          sorry
-      · apply ih
-  | App => sorry
-  | Var idx ty ty_correct =>
-    sorry
-    -- rename_i ctx
-    -- have := bindings.get_halts idx
-    -- cases ty with
-    -- | Void =>
-    --   have := Term.void_not_hered_halt _ ty_correct.symm this
-    --   contradiction
-    -- | Unit =>
-    --   exists .Var idx .Unit ty_correct
-    --   exists .Refl
-    -- | Func arg_ty ret_ty =>
-    --   unfold hered_halts
-    --   apply And.intro
-    --   admit
-    --   admit
+  --         sorry
+  --       | cons =>
+  --         sorry
+  --     · apply ih
+  -- | App => sorry
+  -- | Var idx ty ty_correct =>
+  --   sorry
+  --   -- rename_i ctx
+  --   -- have := bindings.get_halts idx
+  --   -- cases ty with
+  --   -- | Void =>
+  --   --   have := Term.void_not_hered_halt _ ty_correct.symm this
+  --   --   contradiction
+  --   -- | Unit =>
+  --   --   exists .Var idx .Unit ty_correct
+  --   --   exists .Refl
+  --   -- | Func arg_ty ret_ty =>
+  --   --   unfold hered_halts
+  --   --   apply And.intro
+  --   --   admit
+  --   --   admit
