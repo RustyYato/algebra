@@ -395,6 +395,21 @@ def merge_length : (merge_left uf a b aLt bLt).items.length = uf.items.length :=
   unfold merge_left
   rw [List.length_set]
 
-def HasPathToRoot.of_equiv_and_root : Equiv items a b -> UnionFind.IsRoot items b -> HasPathToRoot items a := sorry
+def HasPathToRoot.of_equiv_and_root : Equiv items a b -> UnionFind.IsRoot items b -> HasPathToRoot items a := by
+  intro eq rootb
+  induction eq with
+  | refl =>
+    apply HasPathToRoot.IsRoot
+    assumption
+  | next _ _ _ _ _ ih =>
+    apply HasPathToRoot.IsParentOf
+    assumption
+    apply ih
+    assumption
+  | prev _ _ _ _ _ ih =>
+    apply HasPathToRoot.pop_head
+    assumption
+    apply ih
+    assumption
 
 end UnionFind
