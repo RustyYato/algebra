@@ -184,27 +184,19 @@ def parent_of_next (uf: UnionFind) (n: Nat) (h: n < uf.items.length) (not_root: 
 def items.inj  : ∀(a b: UnionFind), a.items = b.items -> a = b
 | .mk as _ _, .mk bs _ _, h => by congr
 
-def find (uf: UnionFind) (n: Nat) (nLt: n < uf.items.length) : Nat :=
-  if IsRoot uf.items n then
-    n
+def recursion (uf: UnionFind) (n: Nat) (nLt: n < uf.items.length)
+  { motive: ∀n, n < uf.items.length -> Sort _ }
+  (IsRoot: ∀x, (h: IsRoot uf.items x) -> motive x h.in_bounds)
+  (IsParentOf: ∀a b, (h: IsParentOf uf.items a b) -> motive b h.in_bounds_right -> motive a h.in_bounds_left):
+  motive n nLt :=
+  if h:UnionFind.IsRoot uf.items n then
+    IsRoot n h
   else
-    uf.find uf.items[n] <| by
-      apply uf.items_inbounds
-      exact List.getElem_mem uf.items n nLt
+    have := parent_of_next uf n nLt h
+    IsParentOf n uf.items[n] this (uf.recursion uf.items[n] (uf.items_inbounds _ (List.getElem_mem uf.items n nLt)) IsRoot IsParentOf)
 
 termination_by (RootedNode.mk n: RootedNode uf.items)
 decreasing_by
-  have : IsParentOf uf.items n uf.items[n] := by
-    apply IsParentOf.mk
-    apply uf.items_inbounds
-    exact List.getElem_mem uf.items n nLt
-    rfl
-    rename_i g
-    intro h
-    apply g
-    apply IsRoot.mk
-    symm
-    assumption
   cases uf.items_rooted n nLt
   apply IsAncestorOf.single
   assumption
@@ -219,34 +211,40 @@ decreasing_by
   assumption
   assumption
 
-def find_is_root (uf: UnionFind) (n: Nat) nLt : IsRoot uf.items (uf.find n nLt) := by
-  have rooted := uf.items_rooted n nLt
-  induction rooted with
-  | IsRoot a root =>
-    unfold find
-    rw [if_pos]
-    assumption
-    exact root
-  | IsParentOf a b parent  root ih =>
-    unfold find
-    rw [if_neg]
-    have := parent_of_next uf a nLt parent.notIsRoot
-    cases this.determine parent
-    apply ih
-    exact parent.notIsRoot
+def find (uf: UnionFind) (n: Nat) (nLt: n < uf.items.length) : Nat := by
+  apply uf.recursion n nLt
+  intro x _
+  exact x
+  intro a b _ ih
+  exact ih
 
 def find_of_is_root {uf: UnionFind} {n: Nat} : (h: IsRoot uf.items n) -> uf.find n h.in_bounds = n := by
   intro root
-  unfold find
-  rw [if_pos]
+  unfold find recursion
+  dsimp
+  rw [←find, if_pos]
   assumption
 
 def find_of_is_parent {uf: UnionFind} {a b: Nat} : (h: IsParentOf uf.items a b) -> uf.find a h.in_bounds_left = uf.find b h.in_bounds_right := by
   intro parent
-  rw [find, if_neg]
+  rw [find, recursion, dif_neg]
+  dsimp
+  rw [←find]
   congr
   exact (parent_of_next uf a parent.in_bounds_left parent.notIsRoot).determine parent
   exact parent.notIsRoot
+
+def find_is_root (uf: UnionFind) (n: Nat) nLt : IsRoot uf.items (uf.find n nLt) := by
+  have rooted := uf.items_rooted n nLt
+  induction rooted with
+  | IsRoot a root =>
+    rw [find_of_is_root root]
+    exact root
+  | IsParentOf a b parent root ih =>
+    rw [find_of_is_parent parent]
+    have := parent_of_next uf a nLt parent.notIsRoot
+    cases this.determine parent
+    apply ih
 
 def find_of_ancestor {uf: UnionFind} {a b: Nat} : (h: IsAncestorOf uf.items a b) -> uf.find a h.in_bounds_left = uf.find b h.in_bounds_right := by
   intro h
