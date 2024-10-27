@@ -235,16 +235,13 @@ def find_of_is_parent {uf: UnionFind} {a b: Nat} : (h: IsParentOf uf.items a b) 
   exact parent.notIsRoot
 
 def find_is_root (uf: UnionFind) (n: Nat) nLt : IsRoot uf.items (uf.find n nLt) := by
-  have rooted := uf.items_rooted n nLt
-  induction rooted with
-  | IsRoot a root =>
+  induction n, nLt using uf.recursion with
+  | IsRoot x root =>
     rw [find_of_is_root root]
     exact root
-  | IsParentOf a b parent root ih =>
+  | IsParentOf a b parent ih =>
     rw [find_of_is_parent parent]
-    have := parent_of_next uf a nLt parent.notIsRoot
-    cases this.determine parent
-    apply ih
+    exact ih
 
 def find_of_ancestor {uf: UnionFind} {a b: Nat} : (h: IsAncestorOf uf.items a b) -> uf.find a h.in_bounds_left = uf.find b h.in_bounds_right := by
   intro h
@@ -267,20 +264,18 @@ def Equiv.ofIsParent : IsParentOf items b a -> Equiv items a b := by
   exact h.in_bounds_left
 
 def Equiv.find_left (uf: UnionFind) (a: Nat) (aLt) : Equiv uf.items (uf.find a aLt) a := by
-  have rooteda := uf.items_rooted a aLt
-  induction rooteda with
+  induction a, aLt using uf.recursion with
   | IsRoot a roota =>
     rw [find_of_is_root roota]
     apply Equiv.refl
-    assumption
-  | IsParentOf a b ab _ ih =>
-    apply Equiv.trans _ (Equiv.trans (ih _) _)
-    exact ab.in_bounds_right
-    rw [find_of_is_parent ab]
+    exact roota.in_bounds
+  | IsParentOf a b parent ih =>
+    apply Equiv.trans _ (Equiv.trans ih _)
+    rw [find_of_is_parent parent]
     apply Equiv.refl
-    have := find_is_root uf b ab.in_bounds_right
+    have := find_is_root uf b parent.in_bounds_right
     exact this.in_bounds
-    exact Equiv.ofIsParent ab
+    exact Equiv.ofIsParent parent
 
 def Equiv.find_right (uf: UnionFind) (a: Nat) (aLt) : Equiv uf.items a (uf.find a aLt) := by
   symm
@@ -290,13 +285,12 @@ def find_eq_iff_equiv (uf: UnionFind) (a b: Nat) aLt bLt : Equiv uf.items a b �
   apply Iff.intro
   · exact find_of_equiv
   · intro eq
-    have rooteda := uf.items_rooted a aLt
-    induction rooteda with
+    induction a, aLt using uf.recursion with
     | IsRoot a roota =>
       rw [find_of_is_root roota] at eq
       rw [eq]
       apply Equiv.find_left
-    | IsParentOf a c ac _ ih =>
+    | IsParentOf a c ac ih =>
       apply Equiv.trans
       symm
       exact Equiv.ofIsParent ac
@@ -339,9 +333,6 @@ def merge_left (uf: UnionFind) (a b: Nat) (aLt: a < uf.items.length) (bLt: b < u
     exact this.in_bounds
   items_rooted := by
     intro n nLt
-    have rootedn := uf.items_rooted n (by
-      rw [List.length_set] at nLt
-      exact nLt)
     if find_eq:uf.find a aLt = uf.find b bLt then
       rw [←find_eq]
       rw [set_root_self]
@@ -350,7 +341,9 @@ def merge_left (uf: UnionFind) (a b: Nat) (aLt: a < uf.items.length) (bLt: b < u
       assumption
       exact find_is_root uf a aLt
     else
-      induction rootedn with
+      have nLt' := nLt
+      rw [List.length_set] at nLt'
+      induction n, nLt' using uf.recursion with
       | IsRoot r rootr =>
         if h₀:uf.find r rootr.in_bounds = uf.find b bLt then
           -- if this is the root that was just merged
@@ -382,7 +375,7 @@ def merge_left (uf: UnionFind) (a b: Nat) (aLt: a < uf.items.length) (bLt: b < u
           rw [find_of_is_root rootr] at h₀
           exact Ne.symm h₀
           assumption
-      | IsParentOf a b ab _ ih =>
+      | IsParentOf a b ab ih =>
         replace ih := ih (by
           rw [List.length_set]
           exact ab.in_bounds_right)
@@ -402,6 +395,6 @@ def merge_length : (merge_left uf a b aLt bLt).items.length = uf.items.length :=
   unfold merge_left
   rw [List.length_set]
 
-def HasPathToRoot.of_equiv_and_root : Equiv items a b -> UnionFind.IsRoot items b -> Nonempty (HasPathToRoot items a) := sorry
+def HasPathToRoot.of_equiv_and_root : Equiv items a b -> UnionFind.IsRoot items b -> HasPathToRoot items a := sorry
 
 end UnionFind
