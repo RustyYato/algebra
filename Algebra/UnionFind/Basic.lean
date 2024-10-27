@@ -493,4 +493,6 @@ def merge_left.spec (uf: UnionFind) (a b: Nat) (aLt: a < uf.items.length) (bLt: 
     have := find_is_root uf b bLt
     exact this.in_bounds
 
+instance decEquiv (uf: UnionFind) (aLt: a < uf.items.length) (bLt: b < uf.items.length) : Decidable (Equiv uf.items a b) := decidable_of_iff _ (find_eq_iff_equiv uf _ _ aLt bLt).symm
+
 end UnionFind
