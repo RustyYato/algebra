@@ -1,3 +1,4 @@
+import Algebra.Nat.Add
 import Algebra.AxiomBlame
 
 inductive BitInt.Bits where
@@ -428,4 +429,17 @@ def BitInt.Bits.ofNat.is_minimal (n: Nat) : (ofNat n).IsMinimal := by
 
 instance BitInt.Bits.OfNatInst : OfNat BitInt n := ⟨⟨.ofNat n,ofNat.is_minimal n⟩⟩
 
--- def BitInt.Bits.bitwise (b: Bool -> Bool -> Bool) := sorry
+-- bits_maps and bits_zip_with are intentionally very simply to make it easy
+-- to prove theorems about them
+
+def BitInt.Bits.bits_maps (f: Bool -> Bool) : Bits -> Bits
+| .pos => if f false then .neg else .pos
+| .neg => if f true then .neg else .pos
+| .bit b bs => .bit (f b) (bs.bits_maps f)
+
+def BitInt.Bits.bits_zip_with (f: Bool -> Bool -> Bool) : Bits -> Bits -> Bits
+| .pos, b => b.bits_maps (f false)
+| .neg, b => b.bits_maps (f true)
+| a, .pos => a.bits_maps (f · false)
+| a, .neg => a.bits_maps (f · true)
+| .bit a as, .bit b bs => .bit (f a b) (as.bits_zip_with f bs)
