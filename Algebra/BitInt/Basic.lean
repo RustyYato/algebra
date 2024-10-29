@@ -2,26 +2,22 @@ import Algebra.Nat.Add
 import Algebra.AxiomBlame
 
 inductive BitInt.Bits where
-| pos: Bits -- non-negative
-| neg: Bits -- negative
+| nil: (is_neg: Bool) -> Bits
 | bit: Bool -> Bits -> Bits
 deriving DecidableEq
 
 instance : Repr BitInt.Bits where
   reprPrec b _prec := by
     let rec repr : BitInt.Bits -> Lean.Format
-      | .pos => "+"
-      | .neg => "-"
+      | .nil false => "+"
+      | .nil true => "-"
       | .bit b bs => (repr bs) ++ reprPrec (if b then 1 else 0) 1
     exact repr b
 
 inductive BitInt.Bits.Equiv : Bits -> Bits -> Prop
-| pos : Equiv .pos .pos
-| neg : Equiv .neg .neg
-| pos_false : Equiv .pos xs -> Equiv .pos (.bit false xs)
-| neg_true : Equiv .neg xs -> Equiv .neg (.bit true xs)
-| false_pos : Equiv xs .pos -> Equiv (.bit false xs) .pos
-| true_neg : Equiv xs .neg -> Equiv (.bit true xs) .neg
+| nil : Equiv (.nil x) (.nil x)
+| nil_bit : Equiv (.nil x) xs -> Equiv (.nil x) (.bit x xs)
+| bit_nil : Equiv xs (.nil x) -> Equiv (.bit x xs) (.nil x)
 | bit : Equiv as bs -> Equiv (.bit x as) (.bit x bs)
 
 instance BitInt.Bits.setoid : Setoid Bits where
@@ -29,58 +25,35 @@ instance BitInt.Bits.setoid : Setoid Bits where
   iseqv.refl := by
     intro x
     induction x with
-    | pos => exact .pos
-    | neg => exact .neg
+    | nil => exact .nil
     | bit b bs ih => exact ih.bit
   iseqv.symm := by
     intro x y h
     induction h with
-    | pos => exact .pos
-    | neg => exact .neg
-    | pos_false _ ih => exact ih.false_pos
-    | neg_true _ ih => exact ih.true_neg
-    | false_pos _ ih => exact ih.pos_false
-    | true_neg _ ih => exact ih.neg_true
+    | nil => exact .nil
+    | nil_bit _ ih => exact ih.bit_nil
+    | bit_nil _ ih => exact ih.nil_bit
     | bit _ ih => exact ih.bit
   iseqv.trans := by
     intro a b c ab bc
     induction ab generalizing c with
-    | pos => exact bc
-    | neg => exact bc
-    | pos_false _ ih =>
+    | nil => exact bc
+    | nil_bit _ ih =>
       cases bc
-      exact .pos
-      apply Equiv.pos_false
+      exact .nil
+      apply Equiv.nil_bit
       apply ih
       assumption
-    | neg_true _ ih =>
+    | bit_nil _ ih =>
       cases bc
-      exact .neg
-      apply Equiv.neg_true
-      apply ih
+      apply Equiv.bit_nil
       assumption
-    | false_pos _ ih =>
-      cases bc
-      apply Equiv.false_pos
-      apply ih
-      exact .pos
-      apply Equiv.bit
-      apply ih
-      assumption
-    | true_neg _ ih =>
-      cases bc
-      apply Equiv.true_neg
-      apply ih
-      exact .neg
       apply Equiv.bit
       apply ih
       assumption
     | bit _ ih =>
       cases bc
-      apply Equiv.false_pos
-      apply ih
-      assumption
-      apply Equiv.true_neg
+      apply Equiv.bit_nil
       apply ih
       assumption
       apply Equiv.bit
@@ -94,61 +67,39 @@ def BitInt.Bits.symm : ∀{a b: Bits}, a ≈ b -> b ≈ a := BitInt.Bits.setoid.
 def BitInt.Bits.trans : ∀{a b: Bits}, a ≈ b -> b ≈ c -> a ≈ c := BitInt.Bits.setoid.iseqv.trans
 
 inductive BitInt.Bits.IsMinimal : Bits -> Prop
-| pos : IsMinimal .pos
-| neg : IsMinimal .neg
-| b0 : xs ≠ .pos -> IsMinimal xs -> IsMinimal (.bit false xs)
-| b1 : xs ≠ .neg -> IsMinimal xs -> IsMinimal (.bit true xs)
+| nil : IsMinimal (.nil x)
+| bit : xs ≠ .nil x -> IsMinimal xs -> IsMinimal (.bit x xs)
 
 instance BitInt.decIsMinimal (x: Bits) : Decidable (x.IsMinimal) :=
   match x with
-  | .pos => .isTrue .pos
-  | .neg => .isTrue .neg
-  | .bit false x =>
-    match decEq x .pos with
+  | .nil _ => .isTrue .nil
+  | .bit x xs =>
+    match decEq xs (.nil x) with
     | .isTrue h => .isFalse (fun
-        | .b0 g _ => g h)
+        | .bit g _ => g h)
     | .isFalse h₀ =>
-    match decIsMinimal x with
+    match decIsMinimal xs with
     | .isFalse h => .isFalse (fun
-        | .b0 _ g => h g)
-    | .isTrue h₁ => .isTrue (.b0 h₀ h₁)
-  | .bit true x =>
-    match decEq x .neg with
-    | .isTrue h => .isFalse (fun
-        | .b1 g _ => g h)
-    | .isFalse h₀ =>
-    match decIsMinimal x with
-    | .isFalse h => .isFalse (fun
-        | .b1 _ g => h g)
-    | .isTrue h₁ => .isTrue (.b1 h₀ h₁)
+        | .bit _ g => h g)
+    | .isTrue h₁ => .isTrue (.bit h₀ h₁)
 
-def BitInt.decEqPos : ∀(a: Bits), Decidable (Bits.pos ≈ a)
-| .pos => .isTrue .pos
-| .neg => .isFalse (nomatch ·)
-| .bit false as =>
-  match decEqPos as with
-  | .isTrue h => .isTrue h.pos_false
+def BitInt.decEqNil : ∀(a: Bits) (b: Bool), Decidable (Bits.nil b ≈ a)
+| .nil true, true | .nil false, false => .isTrue .nil
+| .nil true, false | .nil false, true
+| .bit true xs, false | .bit false xs, true => .isFalse (nomatch ·)
+| .bit true xs, true | .bit false xs, false =>
+  match decEqNil xs _ with
+  | .isTrue h => .isTrue h.nil_bit
   | .isFalse h => .isFalse (fun g => by cases g; contradiction)
-| .bit true as => .isFalse (nomatch ·)
 
-def BitInt.decEqNeg : ∀(a: Bits), Decidable (Bits.neg ≈ a)
-| .neg => .isTrue .neg
-| .pos => .isFalse (nomatch ·)
-| .bit true as =>
-  match decEqNeg as with
-  | .isTrue h => .isTrue h.neg_true
-  | .isFalse h => .isFalse (fun g => by cases g; contradiction)
-| .bit false as => .isFalse (nomatch ·)
 def BitInt.decEqSymm {a b: Bits} : Decidable (b ≈ a) -> Decidable (a ≈ b)
 | .isTrue h => .isTrue (Bits.symm h)
 | .isFalse h => .isFalse (fun g => h (Bits.symm g))
 
 instance BitInt.decEquiv (a b: Bits) : Decidable (a ≈ b) :=
   match a, b with
-  | .pos, _ => BitInt.decEqPos _
-  | .neg, _ => BitInt.decEqNeg _
-  | _, .pos => BitInt.decEqSymm (BitInt.decEqPos _)
-  | _, .neg => BitInt.decEqSymm (BitInt.decEqNeg _)
+  | .nil _, _ => BitInt.decEqNil _ _
+  | _, .nil _ => BitInt.decEqSymm (BitInt.decEqNil _ _)
   | .bit true as, .bit false bs
   | .bit false as, .bit true bs => .isFalse (nomatch ·)
   | .bit false as, .bit false bs
@@ -157,22 +108,19 @@ instance BitInt.decEquiv (a b: Bits) : Decidable (a ≈ b) :=
     | .isTrue h => .isTrue h.bit
     | .isFalse h => .isFalse (fun g => by cases g; contradiction)
 
-#print axioms BitInt.decEquiv
-
 def BitInt.Bits.IsMinimal.spec (a b: Bits) : a ≈ b -> a.IsMinimal -> b.IsMinimal -> a = b := by
   intro eq amin bmin
   induction eq with
-  | pos => rfl
-  | neg => rfl
-  | pos_false _ ih | neg_true _ ih =>
+  | nil => rfl
+  | nil_bit _ ih =>
     cases bmin
     rename_i bmin
-    cases ih amin bmin
+    have := bmin.symm (ih amin (by assumption))
     contradiction
-  | false_pos _ ih | true_neg _ ih =>
+  | bit_nil _ ih =>
     cases amin
     rename_i amin
-    cases ih amin bmin
+    have := amin (ih (by assumption) bmin)
     contradiction
   | bit _ ih =>
     congr
@@ -181,68 +129,38 @@ def BitInt.Bits.IsMinimal.spec (a b: Bits) : a ≈ b -> a.IsMinimal -> b.IsMinim
     cases bmin <;> assumption
 
 def BitInt.Bits.push_bit : Bool -> Bits -> Bits
-| false, .pos => .pos
-| true, .neg => .neg
+| false, .nil false => .nil false
+| true, .nil true => .nil true
 | b, bs => .bit b bs
 
 def BitInt.Bits.push_bit.spec (b: Bool) : bs.IsMinimal -> Bits.bit b bs ≈ push_bit b bs ∧ (push_bit b bs).IsMinimal := by
   intro min
-  induction min with
-  | pos =>
+  induction min generalizing b with
+  | nil =>
+    rename_i b'
+    clear bs
+    revert b b'
+    decide
+  | bit =>
     unfold push_bit
     split
-    decide
-    contradiction
-    rename_i x _ _ h _
-    cases x
-    have := h rfl rfl
-    contradiction
-    decide
-  | neg =>
-    unfold push_bit
-    split
-    contradiction
-    decide
-    rename_i x _ _ _ h
-    cases x
-    decide
-    have := h rfl rfl
-    contradiction
-  | b0 next_not_pos min ih =>
-    cases b
+    any_goals contradiction
     apply And.intro
-    rfl
-    apply IsMinimal.b0
-    exact (nomatch ·)
-    apply IsMinimal.b0 <;> assumption
-    apply And.intro
-    rfl
-    apply IsMinimal.b1
-    exact (nomatch ·)
-    apply IsMinimal.b0 <;> assumption
-  | b1 next_not_pos min ih =>
-    cases b
-    apply And.intro
-    rfl
-    apply IsMinimal.b0
-    exact (nomatch ·)
-    apply IsMinimal.b1 <;> assumption
-    apply And.intro
-    rfl
-    apply IsMinimal.b1
-    exact (nomatch ·)
-    apply IsMinimal.b1 <;> assumption
+    apply Bits.refl
+    apply IsMinimal.bit
+    exact Bits.noConfusion
+    apply IsMinimal.bit
+    assumption
+    assumption
 
 def BitInt.Bits.minimize : Bits -> Bits
-| .pos => .pos
-| .neg => .neg
+| .nil x => .nil x
 | .bit b bs => bs.minimize.push_bit b
 
 def BitInt.Bits.minimize.spec : ∀b: Bits, b ≈ b.minimize ∧ b.minimize.IsMinimal := by
   intro b
   induction b with
-  | pos => exact ⟨.pos,.pos⟩
-  | neg => exact ⟨.neg,.neg⟩
+  | nil => exact ⟨.nil,.nil⟩
   | bit b bs ih =>
     have := push_bit.spec b ih.right
     apply And.intro _ this.right
@@ -275,16 +193,16 @@ def BitInt.bits.inj : ∀(a b: BitInt), a.bits = b.bits -> a = b
 
 def BitInt.mk (bits: Bits) : BitInt := .ofBits bits.minimize (BitInt.Bits.minimize.spec bits).right
 
-def BitInt.sound : ∀a b: BitInt, a.bits ≈ b.bits -> a = b := by
+def BitInt.sound' : ∀a b: BitInt, a.bits ≈ b.bits -> a = b := by
   intro a b eq
   apply bits.inj
   apply Bits.IsMinimal.spec
   assumption
   exact a.is_minimal
   exact b.is_minimal
-def BitInt.sound' : ∀a b: Bits, a ≈ b -> mk a = mk b := by
+def BitInt.sound : ∀a b: Bits, a ≈ b -> mk a = mk b := by
   intro a b eq
-  apply sound
+  apply sound'
   unfold mk
   dsimp
   apply Bits.trans
@@ -367,12 +285,12 @@ def BitInt.Bits.ofNat.rec_lemma : (n + 1) / 2 < n.succ := by
 
 @[reducible]
 def BitInt.Bits.ofNat : Nat -> Bits
-| 0 => .pos
+| 0 => .nil false
 | n + 1 => .bit ((n + 1) % 2 == 1) (ofNat ((n + 1) / 2))
 decreasing_by
   exact ofNat.rec_lemma
 
-def BitInt.Bits.ofNat_eq_zero_iff (n: Nat) : n = 0 ↔ BitInt.Bits.ofNat n = .pos := by
+def BitInt.Bits.ofNat_eq_zero_iff (n: Nat) : n = 0 ↔ BitInt.Bits.ofNat n = .nil false := by
   apply Iff.intro
   · intro h
     subst h
@@ -382,7 +300,7 @@ def BitInt.Bits.ofNat_eq_zero_iff (n: Nat) : n = 0 ↔ BitInt.Bits.ofNat n = .po
     rfl
     contradiction
 
-def BitInt.Bits.ofNat_ne_neg (n: Nat) : BitInt.Bits.ofNat n ≠ .neg := by
+def BitInt.Bits.ofNat_ne_neg (n: Nat) : BitInt.Bits.ofNat n ≠ .nil true := by
   intro h
   cases n
   contradiction
@@ -390,11 +308,11 @@ def BitInt.Bits.ofNat_ne_neg (n: Nat) : BitInt.Bits.ofNat n ≠ .neg := by
 
 def BitInt.Bits.ofNat.is_minimal (n: Nat) : (ofNat n).IsMinimal := by
   induction n using BitInt.Bits.ofNat.induct with
-  | case1 => exact .pos
+  | case1 => exact .nil
   | case2 n ih =>
     unfold ofNat
     cases h:(n + 1) % 2
-    apply ih.b0
+    apply ih.bit
     intro g
     have := (ofNat_eq_zero_iff ((n + 1) / 2)).mpr g
     have : n + 1 < 2 := by
@@ -419,7 +337,7 @@ def BitInt.Bits.ofNat.is_minimal (n: Nat) : (ofNat n).IsMinimal := by
       exact Nat.not_lt_zero _ this
     rename_i m
     cases m
-    apply ih.b1
+    apply ih.bit
     apply ofNat_ne_neg
     have := @Nat.mod_lt (n + 1) 2 (by trivial)
     rw [h] at this
@@ -432,14 +350,11 @@ instance BitInt.Bits.OfNatInst : OfNat BitInt n := ⟨⟨.ofNat n,ofNat.is_minim
 -- bits_maps and bits_zip_with are intentionally very simply to make it easy
 -- to prove theorems about them
 
-def BitInt.Bits.bits_maps (f: Bool -> Bool) : Bits -> Bits
-| .pos => if f false then .neg else .pos
-| .neg => if f true then .neg else .pos
-| .bit b bs => .bit (f b) (bs.bits_maps f)
+def BitInt.Bits.bits_map (f: Bool -> Bool) : Bits -> Bits
+| .nil x => .nil (f x)
+| .bit b bs => .bit (f b) (bs.bits_map f)
 
 def BitInt.Bits.bits_zip_with (f: Bool -> Bool -> Bool) : Bits -> Bits -> Bits
-| .pos, b => b.bits_maps (f false)
-| .neg, b => b.bits_maps (f true)
-| a, .pos => a.bits_maps (f · false)
-| a, .neg => a.bits_maps (f · true)
+| .nil x, b => b.bits_map (f x)
+| a, .nil x => a.bits_map (f · x)
 | .bit a as, .bit b bs => .bit (f a b) (as.bits_zip_with f bs)
