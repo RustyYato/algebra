@@ -1,4 +1,5 @@
 import Algebra.Nat.Add
+import Algebra.Nat.WellFounded
 import Algebra.AxiomBlame
 
 inductive BitInt.Bits where
@@ -177,7 +178,6 @@ def BitInt.Bits.minimize.spec : ∀b: Bits, b ≈ b.minimize ∧ b.minimize.IsMi
 -- is eerily similar to `Quot.sound`! That's becuase they have the same
 -- signature! And without a single axiom in sight.
 
-def x := { x: BitInt.Bits // x.IsMinimal }
 structure BitInt where
   ofBits ::
   bits: BitInt.Bits
@@ -353,7 +353,8 @@ def BitInt.Bits.ofNat.is_minimal (n: Nat) : (ofNat n).IsMinimal := by
     have := Nat.lt_of_succ_lt_succ this
     exact (Nat.not_lt_zero _ this).elim
 
-instance BitInt.Bits.OfNatInst : OfNat BitInt n := ⟨⟨.ofNat n,ofNat.is_minimal n⟩⟩
+instance BitInt.OfNatInst : OfNat BitInt n := ⟨⟨.ofNat n,Bits.ofNat.is_minimal n⟩⟩
+instance BitInt.Bits.OfNatInst : OfNat BitInt.Bits n := ⟨.ofNat n⟩
 
 -- bit_maps and bit_zip_with are intentionally very simply to make it easy
 -- to prove theorems about them
@@ -584,6 +585,7 @@ def BitInt.bit_zip_with_test_bit (f: Bool -> Bool -> Bool) (n: nat) (a b: BitInt
   rw [mk_bit_zip_with, mk_test_bit, mk_test_bit, mk_test_bit]
   apply BitInt.Bits.bit_zip_with_test_bit
 
+def BitInt.Bits.not : Bits -> Bits := bit_map Bool.not
 def BitInt.not : BitInt -> BitInt := bit_map Bool.not
 
 def BitInt.not_test_bit (n: nat) (a: BitInt) : a.not.test_bit n = !(a.test_bit n) := bit_map_test_bit _ n a
@@ -602,3 +604,337 @@ instance : Xor BitInt := ⟨BitInt.xor⟩
 def BitInt.and_test_bit (n: nat) (a b: BitInt) : (a &&& b).test_bit n = ((a.test_bit n) && (b.test_bit n)) := bit_zip_with_test_bit _ _ _ _
 def BitInt.or_test_bit (n: nat) (a b: BitInt) : (a ||| b).test_bit n = ((a.test_bit n) || (b.test_bit n)) := bit_zip_with_test_bit _ _ _ _
 def BitInt.xor_test_bit (n: nat) (a b: BitInt) : (a ^^^ b).test_bit n = ((a.test_bit n).xor (b.test_bit n)) := bit_zip_with_test_bit _ _ _ _
+
+def BitInt.Bits.succ: Bits -> Bits
+| .nil false => .bit true (.nil false)
+| .nil true => .nil false
+| .bit false as => .bit true as
+| .bit true as => .bit false as.succ
+
+def BitInt.Bits.pred: Bits -> Bits
+| .nil false => .nil true
+| .nil true => .bit false (.nil true)
+| .bit false as => .bit true as.pred
+| .bit true as => .bit false as
+
+-- def BitInt.Bits.neg : Bits -> Bits := BitInt.Bits.succ ∘ bit_map Bool.not
+def BitInt.Bits.neg : Bits -> Bits
+| .nil false => .nil false
+| .nil true => .bit true (.nil false)
+| .bit false bs => .bit false bs.neg
+| .bit true bs => .bit true bs.not
+
+instance : Neg BitInt.Bits := ⟨.neg⟩
+
+def BitInt.Bits.pred_succ {a: Bits} : a.pred.succ ≈ a := by
+  induction a with
+  | nil a => revert a; decide
+  | bit a as ih =>
+    cases a <;> (apply Bits.Equiv.bit)
+    assumption
+    apply Bits.refl
+
+def BitInt.Bits.succ_pred {a: Bits} : a.succ.pred ≈ a := by
+  induction a with
+  | nil a => revert a; decide
+  | bit a as ih =>
+    cases a <;> (apply Bits.Equiv.bit)
+    apply Bits.refl
+    assumption
+
+def BitInt.Bits.succ.spec {a b: Bits} : a ≈ b ↔ a.succ ≈ b.succ := by
+  induction a generalizing b with
+  | nil a =>
+      induction b with
+      | nil b => revert a b; decide
+      | bit b bs ih =>
+        apply Iff.intro
+        intro h
+        cases h
+        cases a
+        apply Bits.Equiv.bit
+        assumption
+        apply Bits.Equiv.nil_bit
+        apply ih.mp
+        assumption
+        intro h
+        cases a <;> cases b <;> rw [succ, succ] at h
+        all_goals cases h
+        apply Bits.Equiv.nil_bit
+        assumption
+        apply Bits.Equiv.nil_bit
+        apply ih.mpr
+        assumption
+  | bit a as ih =>
+    cases b with
+    | nil b =>
+        apply Iff.intro
+        intro h
+        cases h
+        cases a
+        apply Bits.Equiv.bit
+        assumption
+        apply Bits.Equiv.bit_nil
+        apply Bits.trans
+        apply ih.mp
+        assumption
+        rfl
+        intro h
+        cases a <;> cases b <;> rw [succ, succ] at h
+        all_goals cases h <;> rename_i h
+        apply Bits.Equiv.bit_nil
+        assumption
+        apply Bits.Equiv.bit_nil
+        clear ih
+        induction as with
+        | nil a =>
+          cases a <;> cases h
+          apply Bits.refl
+        | bit a as ih =>
+          cases a <;> cases h
+          apply Bits.Equiv.bit_nil
+          apply ih
+          assumption
+    | bit b bs =>
+      apply Iff.intro
+      intro h
+      cases h
+      cases a
+      apply Bits.Equiv.bit
+      assumption
+      apply Bits.Equiv.bit
+      apply ih.mp
+      assumption
+      intro h
+      cases a <;> cases b <;> cases h
+      apply Bits.Equiv.bit
+      assumption
+      apply Bits.Equiv.bit
+      apply ih.mpr
+      assumption
+
+def BitInt.Bits.pred.spec {a b: Bits} : a ≈ b ↔ a.pred ≈ b.pred := by
+  apply flip Iff.trans
+  symm
+  apply succ.spec
+  apply Iff.intro
+  intro h
+  apply Bits.trans
+  apply pred_succ
+  apply flip Bits.trans
+  symm
+  apply pred_succ
+  exact h
+  intro h
+  apply Bits.trans
+  symm
+  apply pred_succ
+  apply flip Bits.trans
+  apply pred_succ
+  assumption
+
+def BitInt.Bits.neg_eq_not_succ (a: BitInt.Bits) : -a ≈ a.not.succ := by
+  induction a with
+  | nil a => revert a; decide
+  | bit a as ih =>
+    cases a
+    apply Bits.Equiv.bit
+    assumption
+    apply Bits.Equiv.bit
+    apply bit_map.spec
+    rfl
+
+def BitInt.Bits.not_not (a: BitInt.Bits) : a.not.not = a := by
+  induction a with
+  | nil a => revert a; decide
+  | bit a as ih => rw [not, bit_map, bit_map, ←not, ih, Bool.not, Bool.not_not]
+
+def BitInt.Bits.not.spec {a b: Bits} : a ≈ b ↔ a.not ≈ b.not := by
+  apply Iff.intro
+  apply bit_map.spec
+  intro eq
+  rw [←not_not a, ←not_not b]
+  apply bit_map.spec
+  assumption
+
+def BitInt.Bits.neg_neg (a: BitInt.Bits) : - -a ≈ a := by
+  unfold Neg.neg instNegBits
+  dsimp
+  induction a with
+  | nil a => revert a; decide
+  | bit a as ih =>
+    cases a <;> apply Bits.Equiv.bit
+    assumption
+    rw [not_not]
+    apply Bits.refl
+
+def BitInt.Bits.neg.spec {a b: Bits} : a ≈ b ↔ -a ≈ -b := by
+  revert a b
+  suffices ∀a b: Bits, a ≈ b -> -a ≈ -b by
+    intro  a b
+    apply Iff.intro (this _ _)
+    intro h
+    apply Bits.trans
+    symm
+    apply neg_neg
+    apply flip Bits.trans
+    apply neg_neg
+    apply this _ _ h
+  intro a b h
+  unfold Neg.neg instNegBits
+  dsimp
+  induction h with
+  | nil => rfl
+  | nil_bit a as eq ih =>
+    cases a
+    apply Bits.Equiv.nil_bit
+    assumption
+    apply Bits.Equiv.bit
+    apply succ.spec.mpr
+    apply flip Bits.trans
+    apply Bits.trans ih (neg_eq_not_succ _)
+    rfl
+  | bit_nil a as eq ih =>
+    cases a
+    apply Bits.Equiv.bit_nil
+    assumption
+    unfold neg
+    apply Bits.Equiv.bit
+    apply Bits.trans
+    apply not.spec.mp
+    assumption
+    rfl
+  | bit a as bs eq ih =>
+    cases a <;> (apply Bits.Equiv.bit)
+    assumption
+    apply not.spec.mp
+    assumption
+
+def BitInt.Bits.succ_eq_not_neg (a: BitInt.Bits) : a.succ ≈ a.not.neg := by
+  induction a with
+  | nil a => revert a; decide
+  | bit a as ih =>
+    cases a
+    apply Bits.Equiv.bit
+    rw [←not, not_not]
+    apply Bits.refl
+    apply Bits.Equiv.bit
+    assumption
+
+def BitInt.Bits.pred_eq_neg_not (a: BitInt.Bits) : a.pred ≈ a.neg.not := by
+  apply succ.spec.mpr
+  apply Bits.trans
+  apply pred_succ
+  apply flip Bits.trans
+  apply neg_eq_not_succ
+  symm
+  apply neg_neg
+
+def BitInt.Bits.pred_eq_neg_succ_neg (a: BitInt.Bits) : a.pred ≈ a.neg.succ.neg := by
+  apply Bits.trans
+  apply pred_eq_neg_not
+  apply flip Bits.trans
+  apply neg.spec.mp
+  symm
+  apply succ_eq_not_neg
+  apply flip Bits.trans
+  symm
+  apply neg_neg
+  rfl
+
+def BitInt.Bits.nil_cmp (a: Bool) : Bits -> Ordering
+| .nil b => compare b a
+| .bit b bs => (nil_cmp a bs).then (compare a b)
+
+def BitInt.neg : BitInt -> BitInt := by
+  apply lift (mk ∘ Bits.neg)
+  intro a b eq
+  apply sound
+  apply Bits.neg.spec.mp
+  assumption
+
+def BitInt.succ : BitInt -> BitInt := by
+  apply lift (mk ∘ Bits.succ)
+  intro a b eq
+  apply sound
+  apply Bits.succ.spec.mp
+  assumption
+
+def BitInt.pred : BitInt -> BitInt := by
+  apply lift (mk ∘ Bits.pred)
+  intro a b eq
+  apply sound
+  apply Bits.pred.spec.mp
+  assumption
+
+instance : Neg BitInt := ⟨.neg⟩
+
+def BitInt.mk_neg (a: Bits) : -(mk a) = mk (-a) := by
+  unfold Neg.neg instNegBitInt instNegBits
+  dsimp
+  apply lift_mk
+def BitInt.mk_not (a: Bits) : (mk a).not = mk a.not := by
+  unfold not
+  apply lift_mk
+def BitInt.mk_succ (a: Bits) : (mk a).succ = mk a.succ := lift_mk
+def BitInt.mk_pred (a: Bits) : (mk a).pred = mk a.pred := lift_mk
+
+def BitInt.pred_succ (a: BitInt) : a.pred.succ = a := by
+  induction a using ind with | mk a =>
+  rw [mk_pred, mk_succ]
+  apply sound
+  apply Bits.pred_succ
+
+def BitInt.succ_pred (a: BitInt) : a.succ.pred = a := by
+  induction a using ind with | mk a =>
+  rw [mk_succ, mk_pred]
+  apply sound
+  apply Bits.succ_pred
+
+def BitInt.neg_eq_not_succ (a: BitInt) : -a = a.not.succ := by
+  induction a using ind with | mk a =>
+  rw [mk_neg, mk_not, mk_succ]
+  apply sound
+  apply Bits.neg_eq_not_succ
+
+def BitInt.not_not (a: BitInt) : a.not.not = a := by
+  induction a using ind with | mk a =>
+  rw [mk_not, mk_not]
+  apply sound
+  rw [Bits.not_not]
+
+def BitInt.neg_neg (a: BitInt) : - -a = a := by
+  induction a using ind with | mk a =>
+  rw [mk_neg, mk_neg]
+  apply sound
+  apply Bits.neg_neg
+
+def BitInt.succ_eq_not_neg (a: BitInt) : a.succ = -a.not := by
+  induction a using ind with | mk a =>
+  rw [mk_succ, mk_not, mk_neg]
+  apply sound
+  apply Bits.succ_eq_not_neg
+
+def BitInt.pred_eq_neg_not (a: BitInt) : a.pred = (-a).not := by
+  induction a using ind with | mk a =>
+  rw [mk_pred, mk_neg, mk_not]
+  apply sound
+  apply Bits.pred_eq_neg_not
+
+def BitInt.pred_eq_neg_succ_neg (a: BitInt) : a.pred = -(-a).succ := by
+  induction a using ind with | mk a =>
+  rw [mk_pred, mk_neg, mk_succ, mk_neg]
+  apply sound
+  apply Bits.pred_eq_neg_succ_neg
+
+instance : Repr Ordering where
+  reprPrec o := match o with
+    | .lt => reprPrec "lt"
+    | .eq => reprPrec "eq"
+    | .gt => reprPrec "gt"
+
+def BitInt.Bits.cmp : Bits -> Bits -> Ordering
+| .nil a, .nil b => compare b a
+| .nil a, bs => bs.nil_cmp a
+| as, .nil b => (as.nil_cmp b).swap
+| .bit a as, .bit b bs => (cmp as bs).then (compare a b)

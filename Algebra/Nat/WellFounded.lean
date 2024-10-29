@@ -23,7 +23,7 @@ instance nat.wf : WellFounded nat.lt := WellFounded.intro (by
 #print axioms nat.wf
 
 instance nat.wf_rel : WellFoundedRelation nat where
-  rel := nat.lt
+  rel a b := a < b
   wf := nat.wf
 
 #print axioms nat.wf_rel
