@@ -438,6 +438,11 @@ def BitInt.Bits.bit_zip_with (f: Bool -> Bool -> Bool) : Bits -> Bits -> Bits
 | a, .nil x => a.bit_map (f · x)
 | .bit a as, .bit b bs => .bit (f a b) (as.bit_zip_with f bs)
 
+def BitInt.Bits.nil_bit_zip_with (f: Bool -> Bool -> Bool) :
+  bit_zip_with f (.nil a) bs = bit_map (f a) bs := by cases bs <;> rfl
+def BitInt.Bits.bit_zip_with_nil (f: Bool -> Bool -> Bool) :
+  bit_zip_with f as (.nil b) = bit_map (f · b) as := by cases as <;> rfl
+
 def BitInt.Bits.bit_map.spec (f: Bool -> Bool) (a b: Bits) : a ≈ b -> a.bit_map f ≈ b.bit_map f := by
   intro eq
   induction eq with
@@ -462,6 +467,89 @@ def BitInt.bit_map (f: Bool -> Bool) : BitInt -> BitInt := by
   assumption
 
 def BitInt.mk_bit_map (f: Bool -> Bool) : bit_map f (mk bs) = mk (bs.bit_map f) := lift_mk
+
+def BitInt.Bits.bit_zip_with.spec (f: Bool -> Bool -> Bool) (a b c d: Bits) : a ≈ c -> b ≈ d -> a.bit_zip_with f b ≈ c.bit_zip_with f d := by
+  intro ac bd
+  induction ac generalizing b d with
+  | nil a =>
+    rw [nil_bit_zip_with, nil_bit_zip_with]
+    apply bit_map.spec
+    assumption
+  | nil_bit a cs _ ih =>
+    cases bd
+    apply Bits.Equiv.nil_bit
+    apply flip Bits.trans
+    apply bit_map.spec
+    assumption
+    rfl
+    apply Bits.Equiv.nil_bit
+    apply flip Bits.trans
+    apply ih
+    assumption
+    rfl
+    apply Bits.Equiv.bit
+    apply flip Bits.trans
+    apply bit_map.spec
+    assumption
+    apply Bits.trans
+    apply bit_map.spec
+    assumption
+    rfl
+    apply Bits.Equiv.bit
+    apply flip Bits.trans
+    apply ih
+    assumption
+    rw [nil_bit_zip_with]
+  | bit_nil _ _ _ ih =>
+    rw [nil_bit_zip_with]
+    cases bd
+    apply Bits.Equiv.bit_nil
+    apply Bits.trans
+    apply bit_map.spec
+    assumption
+    rfl
+    apply Bits.Equiv.bit
+    apply Bits.trans
+    apply bit_map.spec
+    assumption
+    apply flip Bits.trans
+    apply bit_map.spec
+    assumption
+    rfl
+    apply Bits.Equiv.bit_nil
+    apply Bits.trans
+    apply ih
+    assumption
+    rfl
+    apply Bits.Equiv.bit
+    apply Bits.trans
+    apply ih
+    assumption
+    rw [nil_bit_zip_with]
+  | bit _ _ _ _ ih =>
+    cases bd
+    all_goals apply Bits.Equiv.bit
+    apply bit_map.spec
+    assumption
+    any_goals (apply ih; assumption)
+    apply flip Bits.trans
+    apply ih; assumption
+    rw [bit_zip_with_nil]
+    apply Bits.trans
+    apply ih; assumption
+    rw [bit_zip_with_nil]
+
+def BitInt.bit_zip_with (f: Bool -> Bool -> Bool) : BitInt -> BitInt -> BitInt := by
+  apply lift₂ (fun _ _ => mk _) _
+  exact BitInt.Bits.bit_zip_with f
+  intro a b c d aeqc beqd
+  dsimp
+  apply sound
+  apply Bits.bit_zip_with.spec
+  assumption
+  assumption
+
+def BitInt.mk_bit_zip_with (f: Bool -> Bool -> Bool) : bit_zip_with f (mk as) (mk bs) = mk (as.bit_zip_with f bs) := lift₂_mk
 
 def BitInt.bit_map_test_bit (f: Bool -> Bool) (n: nat) (a: BitInt) : (a.bit_map f).test_bit n = f (a.test_bit n) := by
   induction a using ind with | mk a =>
