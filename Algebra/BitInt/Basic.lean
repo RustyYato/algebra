@@ -551,9 +551,7 @@ def BitInt.bit_zip_with (f: Bool -> Bool -> Bool) : BitInt -> BitInt -> BitInt :
 
 def BitInt.mk_bit_zip_with (f: Bool -> Bool -> Bool) : bit_zip_with f (mk as) (mk bs) = mk (as.bit_zip_with f bs) := lift₂_mk
 
-def BitInt.bit_map_test_bit (f: Bool -> Bool) (n: nat) (a: BitInt) : (a.bit_map f).test_bit n = f (a.test_bit n) := by
-  induction a using ind with | mk a =>
-  rw [mk_bit_map, mk_test_bit, mk_test_bit]
+def BitInt.Bits.bit_map_test_bit (f: Bool -> Bool) (n: nat) (a: Bits) : (a.bit_map f).test_bit n = f (a.test_bit n) := by
   induction n generalizing a with
   | zero => cases a <;> rfl
   | succ n ih =>
@@ -562,6 +560,45 @@ def BitInt.bit_map_test_bit (f: Bool -> Bool) (n: nat) (a: BitInt) : (a.bit_map 
     unfold Bits.bit_map Bits.test_bit
     apply ih
 
+def BitInt.bit_map_test_bit (f: Bool -> Bool) (n: nat) (a: BitInt) : (a.bit_map f).test_bit n = f (a.test_bit n) := by
+  induction a using ind with | mk a =>
+  rw [mk_bit_map, mk_test_bit, mk_test_bit]
+  apply BitInt.Bits.bit_map_test_bit
+
+def BitInt.Bits.bit_zip_with_test_bit (f: Bool -> Bool -> Bool) (n: nat) (a b: Bits) : (a.bit_zip_with f b).test_bit n = f (a.test_bit n) (b.test_bit n) := by
+  induction n generalizing a b with
+  | zero => cases a <;> cases b <;> rfl
+  | succ n ih =>
+    cases a <;> cases b
+    rfl
+    erw [bit_map_test_bit]
+    rfl
+    erw [bit_map_test_bit]
+    rfl
+    unfold bit_zip_with test_bit
+    apply ih
+
+def BitInt.bit_zip_with_test_bit (f: Bool -> Bool -> Bool) (n: nat) (a b: BitInt) : (a.bit_zip_with f b).test_bit n = f (a.test_bit n) (b.test_bit n) := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  rw [mk_bit_zip_with, mk_test_bit, mk_test_bit, mk_test_bit]
+  apply BitInt.Bits.bit_zip_with_test_bit
+
 def BitInt.not : BitInt -> BitInt := bit_map Bool.not
 
 def BitInt.not_test_bit (n: nat) (a: BitInt) : a.not.test_bit n = !(a.test_bit n) := bit_map_test_bit _ n a
+
+def BitInt.and : BitInt -> BitInt -> BitInt := bit_zip_with (· && ·)
+def BitInt.or : BitInt -> BitInt -> BitInt := bit_zip_with (· || ·)
+def BitInt.nand : BitInt -> BitInt -> BitInt := bit_zip_with (fun a b => !(a && b))
+def BitInt.nor : BitInt -> BitInt -> BitInt := bit_zip_with (fun a b => !(a || b))
+def BitInt.xor : BitInt -> BitInt -> BitInt := bit_zip_with Bool.xor
+def BitInt.nxor : BitInt -> BitInt -> BitInt := bit_zip_with (· == ·)
+
+instance : AndOp BitInt := ⟨BitInt.and⟩
+instance : OrOp BitInt := ⟨BitInt.or⟩
+instance : Xor BitInt := ⟨BitInt.xor⟩
+
+def BitInt.and_test_bit (n: nat) (a b: BitInt) : (a &&& b).test_bit n = ((a.test_bit n) && (b.test_bit n)) := bit_zip_with_test_bit _ _ _ _
+def BitInt.or_test_bit (n: nat) (a b: BitInt) : (a ||| b).test_bit n = ((a.test_bit n) || (b.test_bit n)) := bit_zip_with_test_bit _ _ _ _
+def BitInt.xor_test_bit (n: nat) (a b: BitInt) : (a ^^^ b).test_bit n = ((a.test_bit n).xor (b.test_bit n)) := bit_zip_with_test_bit _ _ _ _
