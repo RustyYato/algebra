@@ -242,6 +242,15 @@ def BitInt.liftProp₂_mk : liftProp₂ f all_eq (mk a) (mk b) ↔ f a b := by
   apply all_eq
   apply bits.spec
   apply bits.spec
+def BitInt.ind { motive: BitInt -> Prop } : (mk: ∀x, motive (mk x)) -> ∀x, motive x := by
+  intro h x
+  have := h x.bits
+  rw [sound' (mk x.bits)] at this
+  exact this
+  unfold mk
+  dsimp
+  symm
+  apply (Bits.minimize.spec _).left
 
 def BitInt.Bits.ofNat.rec_lemma : (n + 1) / 2 < n.succ := by
   rw [Nat.div_eq]
@@ -347,14 +356,128 @@ def BitInt.Bits.ofNat.is_minimal (n: Nat) : (ofNat n).IsMinimal := by
 
 instance BitInt.Bits.OfNatInst : OfNat BitInt n := ⟨⟨.ofNat n,ofNat.is_minimal n⟩⟩
 
--- bits_maps and bits_zip_with are intentionally very simply to make it easy
+-- bit_maps and bit_zip_with are intentionally very simply to make it easy
 -- to prove theorems about them
 
-def BitInt.Bits.bits_map (f: Bool -> Bool) : Bits -> Bits
-| .nil x => .nil (f x)
-| .bit b bs => .bit (f b) (bs.bits_map f)
+def BitInt.Bits.test_bit : nat -> Bits -> Bool
+| _, .nil x => x
+| .zero, .bit x _ => x
+| .succ n, .bit _ xs => xs.test_bit n
 
-def BitInt.Bits.bits_zip_with (f: Bool -> Bool -> Bool) : Bits -> Bits -> Bits
-| .nil x, b => b.bits_map (f x)
-| a, .nil x => a.bits_map (f · x)
-| .bit a as, .bit b bs => .bit (f a b) (as.bits_zip_with f bs)
+def BitInt.Bits.test_bit_nil : ∀{x}, test_bit n (.nil x) = x := by intro; cases n <;> rfl
+def BitInt.Bits.test_bit_bit_succ : ∀{x}{n:nat}, test_bit n.succ (.bit x xs) = test_bit n xs := by intros; rfl
+
+def BitInt.test_bit (n: nat) : BitInt -> Bool := by
+  apply lift (Bits.test_bit n) _
+  intro a b eq
+  induction eq generalizing n with
+  | nil => rfl
+  | nil_bit _ ih =>
+    cases n
+    rfl
+    unfold Bits.test_bit
+    rw [←ih, Bits.test_bit_nil]
+  | bit_nil _ ih =>
+    cases n
+    rfl
+    unfold Bits.test_bit
+    rw [ih, Bits.test_bit_nil]
+  | bit _ ih =>
+    cases n
+    rfl
+    unfold Bits.test_bit
+    apply ih
+
+def BitInt.mk_test_bit (n: nat) : test_bit n (mk bs) = bs.test_bit n := lift_mk
+
+@[ext]
+def BitInt.ext (a b: BitInt) : (∀n, a.test_bit n = b.test_bit n) -> a = b := by
+  intro h
+  cases a with | ofBits a amin =>
+  cases b with | ofBits b bmin =>
+  apply sound'
+  unfold test_bit lift liftWith bits at h
+  dsimp at h
+  dsimp
+  induction amin generalizing b with
+  | nil =>
+    rename_i a
+    induction bmin with
+    | nil =>
+      rename_i b
+      cases h 0
+      rfl
+    | bit _ _ ih =>
+      cases h 0
+      apply Bits.Equiv.nil_bit
+      apply ih
+      intro n
+      conv => { rhs; rw [←@Bits.test_bit_bit_succ _ a] }
+      rw [←h n.succ, Bits.test_bit_nil, Bits.test_bit_nil]
+  | bit _ _ ih =>
+    cases bmin with
+    | nil =>
+      rename_i as a _ _ _
+      cases h 0
+      apply Bits.Equiv.bit_nil
+      apply ih
+      exact .nil
+      intro n
+      conv => { lhs; rw [←@Bits.test_bit_bit_succ _ a] }
+      rw [h n.succ, Bits.test_bit_nil, Bits.test_bit_nil]
+    | bit =>
+      cases h 0
+      apply Bits.Equiv.bit
+      apply ih
+      assumption
+      intro n
+      apply h n.succ
+
+def BitInt.Bits.bit_map (f: Bool -> Bool) : Bits -> Bits
+| .nil x => .nil (f x)
+| .bit b bs => .bit (f b) (bs.bit_map f)
+
+def BitInt.Bits.bit_zip_with (f: Bool -> Bool -> Bool) : Bits -> Bits -> Bits
+| .nil x, b => b.bit_map (f x)
+| a, .nil x => a.bit_map (f · x)
+| .bit a as, .bit b bs => .bit (f a b) (as.bit_zip_with f bs)
+
+def BitInt.Bits.bit_map.spec (f: Bool -> Bool) (a b: Bits) : a ≈ b -> a.bit_map f ≈ b.bit_map f := by
+  intro eq
+  induction eq with
+  | nil => rfl
+  | nil_bit =>
+    apply Bits.Equiv.nil_bit
+    assumption
+  | bit_nil =>
+    apply Bits.Equiv.bit_nil
+    assumption
+  | bit _ ih =>
+    apply Bits.Equiv.bit
+    apply ih
+
+def BitInt.bit_map (f: Bool -> Bool) : BitInt -> BitInt := by
+  apply lift (fun _ => mk _) _
+  exact BitInt.Bits.bit_map f
+  intro a b aeq
+  dsimp
+  apply sound
+  apply Bits.bit_map.spec
+  assumption
+
+def BitInt.mk_bit_map (f: Bool -> Bool) : bit_map f (mk bs) = mk (bs.bit_map f) := lift_mk
+
+def BitInt.bit_map_test_bit (f: Bool -> Bool) (n: nat) (a: BitInt) : (a.bit_map f).test_bit n = f (a.test_bit n) := by
+  induction a using ind with | mk a =>
+  rw [mk_bit_map, mk_test_bit, mk_test_bit]
+  induction n generalizing a with
+  | zero => cases a <;> rfl
+  | succ n ih =>
+    cases a
+    rfl
+    unfold Bits.bit_map Bits.test_bit
+    apply ih
+
+def BitInt.not : BitInt -> BitInt := bit_map Bool.not
+
+def BitInt.not_test_bit (n: nat) (a: BitInt) : a.not.test_bit n = !(a.test_bit n) := bit_map_test_bit _ n a
