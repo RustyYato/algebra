@@ -281,6 +281,48 @@ def BitInt.sound : ∀a b: BitInt, a.bits ≈ b.bits -> a = b := by
   assumption
   exact a.is_minimal
   exact b.is_minimal
+def BitInt.sound' : ∀a b: Bits, a ≈ b -> mk a = mk b := by
+  intro a b eq
+  apply sound
+  unfold mk
+  dsimp
+  apply Bits.trans
+  symm
+  apply (Bits.minimize.spec _).left
+  apply flip Bits.trans
+  apply (Bits.minimize.spec _).left
+  exact eq
+def BitInt.exact : ∀a b: Bits, mk a = mk b -> a ≈ b := by
+  intro a b eq
+  apply Bits.trans
+  apply (Bits.minimize.spec _).left
+  apply flip Bits.trans
+  symm
+  apply (Bits.minimize.spec _).left
+  rw [BitInt.ofBits.inj eq]
+def BitInt.bits.spec (a: Bits) : (mk a).bits ≈ a := by
+  symm
+  apply (BitInt.Bits.minimize.spec _).left
+def BitInt.liftWith {r: α -> α -> Prop} (eqv: Equivalence r) : (f: Bits -> α) -> (all_eq: ∀a b, a ≈ b -> r (f a) (f b)) -> BitInt -> α := fun f _ x => f x.bits
+def BitInt.lift : (f: Bits -> α) -> (all_eq: ∀a b, a ≈ b -> f a = f b) -> BitInt -> α := liftWith ⟨Eq.refl,Eq.symm,Eq.trans⟩
+def BitInt.liftProp : (f: Bits -> Prop) -> (all_eq: ∀a b, a ≈ b -> (f a ↔ f b)) -> BitInt -> Prop := liftWith ⟨Iff.refl,Iff.symm,Iff.trans⟩
+def BitInt.liftWith₂ {r: α -> α -> Prop} (eqv: Equivalence r) : (f: Bits -> Bits -> α) -> (all_eq: ∀a b c d, a ≈ c -> b ≈ d -> r (f a b) (f c d)) -> BitInt -> BitInt -> α := fun f _ x y => f x.bits y.bits
+def BitInt.lift₂ : (f: Bits -> Bits -> α) -> (all_eq: ∀a b c d, a ≈ c -> b ≈ d -> f a b = f c d) -> BitInt -> BitInt -> α := liftWith₂ ⟨Eq.refl,Eq.symm,Eq.trans⟩
+def BitInt.liftProp₂ : (f: Bits -> Bits -> Prop) -> (all_eq: ∀a b c d, a ≈ c -> b ≈ d -> (f a b ↔ f c d)) -> BitInt -> BitInt -> Prop := liftWith₂ ⟨Iff.refl,Iff.symm,Iff.trans⟩
+def BitInt.lift_mk : lift f all_eq (mk a) = f a := by
+  apply all_eq
+  apply bits.spec
+def BitInt.lift₂_mk : lift₂ f all_eq (mk a) (mk b) = f a b := by
+  apply all_eq
+  apply bits.spec
+  apply bits.spec
+def BitInt.liftProp_mk : liftProp f all_eq (mk a) ↔ f a := by
+  apply all_eq
+  apply bits.spec
+def BitInt.liftProp₂_mk : liftProp₂ f all_eq (mk a) (mk b) ↔ f a b := by
+  apply all_eq
+  apply bits.spec
+  apply bits.spec
 
 def BitInt.Bits.ofNat.rec_lemma : (n + 1) / 2 < n.succ := by
   rw [Nat.div_eq]
@@ -385,3 +427,5 @@ def BitInt.Bits.ofNat.is_minimal (n: Nat) : (ofNat n).IsMinimal := by
     exact (Nat.not_lt_zero _ this).elim
 
 instance BitInt.Bits.OfNatInst : OfNat BitInt n := ⟨⟨.ofNat n,ofNat.is_minimal n⟩⟩
+
+-- def BitInt.Bits.bitwise (b: Bool -> Bool -> Bool) := sorry
