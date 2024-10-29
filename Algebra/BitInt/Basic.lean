@@ -15,43 +15,43 @@ instance : Repr BitInt.Bits where
     exact repr b
 
 inductive BitInt.Bits.Equiv : Bits -> Bits -> Prop
-| nil : Equiv (.nil x) (.nil x)
-| nil_bit : Equiv (.nil x) xs -> Equiv (.nil x) (.bit x xs)
-| bit_nil : Equiv xs (.nil x) -> Equiv (.bit x xs) (.nil x)
-| bit : Equiv as bs -> Equiv (.bit x as) (.bit x bs)
+| nil x : Equiv (.nil x) (.nil x)
+| nil_bit x xs : Equiv (.nil x) xs -> Equiv (.nil x) (.bit x xs)
+| bit_nil x xs : Equiv xs (.nil x) -> Equiv (.bit x xs) (.nil x)
+| bit x as bs : Equiv as bs -> Equiv (.bit x as) (.bit x bs)
 
 instance BitInt.Bits.setoid : Setoid Bits where
   r := Bits.Equiv
   iseqv.refl := by
     intro x
     induction x with
-    | nil => exact .nil
-    | bit b bs ih => exact ih.bit
+    | nil => exact .nil _
+    | bit b bs ih => exact ih.bit _
   iseqv.symm := by
     intro x y h
     induction h with
-    | nil => exact .nil
-    | nil_bit _ ih => exact ih.bit_nil
-    | bit_nil _ ih => exact ih.nil_bit
-    | bit _ ih => exact ih.bit
+    | nil => exact .nil _
+    | nil_bit _ _ _ ih => exact ih.bit_nil
+    | bit_nil _ _ _ ih => exact ih.nil_bit
+    | bit _ _ _ _ ih => exact ih.bit _
   iseqv.trans := by
     intro a b c ab bc
     induction ab generalizing c with
     | nil => exact bc
-    | nil_bit _ ih =>
+    | nil_bit _ _ _ ih =>
       cases bc
-      exact .nil
+      exact .nil _
       apply Equiv.nil_bit
       apply ih
       assumption
-    | bit_nil _ ih =>
+    | bit_nil _ _ _ ih =>
       cases bc
       apply Equiv.bit_nil
       assumption
       apply Equiv.bit
       apply ih
       assumption
-    | bit _ ih =>
+    | bit _ _ _ _ ih =>
       cases bc
       apply Equiv.bit_nil
       apply ih
@@ -67,24 +67,24 @@ def BitInt.Bits.symm : ∀{a b: Bits}, a ≈ b -> b ≈ a := BitInt.Bits.setoid.
 def BitInt.Bits.trans : ∀{a b: Bits}, a ≈ b -> b ≈ c -> a ≈ c := BitInt.Bits.setoid.iseqv.trans
 
 inductive BitInt.Bits.IsMinimal : Bits -> Prop
-| nil : IsMinimal (.nil x)
-| bit : xs ≠ .nil x -> IsMinimal xs -> IsMinimal (.bit x xs)
+| nil x : IsMinimal (.nil x)
+| bit x xs : xs ≠ .nil x -> IsMinimal xs -> IsMinimal (.bit x xs)
 
 instance BitInt.decIsMinimal (x: Bits) : Decidable (x.IsMinimal) :=
   match x with
-  | .nil _ => .isTrue .nil
+  | .nil _ => .isTrue (.nil _)
   | .bit x xs =>
     match decEq xs (.nil x) with
     | .isTrue h => .isFalse (fun
-        | .bit g _ => g h)
+        | .bit _ _ g _ => g h)
     | .isFalse h₀ =>
     match decIsMinimal xs with
     | .isFalse h => .isFalse (fun
-        | .bit _ g => h g)
-    | .isTrue h₁ => .isTrue (.bit h₀ h₁)
+        | .bit _ _ _ g => h g)
+    | .isTrue h₁ => .isTrue (.bit _ _ h₀ h₁)
 
 def BitInt.decEqNil : ∀(a: Bits) (b: Bool), Decidable (Bits.nil b ≈ a)
-| .nil true, true | .nil false, false => .isTrue .nil
+| .nil true, true | .nil false, false => .isTrue (.nil _)
 | .nil true, false | .nil false, true
 | .bit true xs, false | .bit false xs, true => .isFalse (nomatch ·)
 | .bit true xs, true | .bit false xs, false =>
@@ -105,24 +105,24 @@ instance BitInt.decEquiv (a b: Bits) : Decidable (a ≈ b) :=
   | .bit false as, .bit false bs
   | .bit true as, .bit true bs =>
     match decEquiv as bs with
-    | .isTrue h => .isTrue h.bit
+    | .isTrue h => .isTrue (h.bit _)
     | .isFalse h => .isFalse (fun g => by cases g; contradiction)
 
 def BitInt.Bits.IsMinimal.spec (a b: Bits) : a ≈ b -> a.IsMinimal -> b.IsMinimal -> a = b := by
   intro eq amin bmin
   induction eq with
   | nil => rfl
-  | nil_bit _ ih =>
+  | nil_bit _ _ _ ih =>
     cases bmin
     rename_i bmin
     have := bmin.symm (ih amin (by assumption))
     contradiction
-  | bit_nil _ ih =>
+  | bit_nil _ _ _ ih =>
     cases amin
     rename_i amin
     have := amin (ih (by assumption) bmin)
     contradiction
-  | bit _ ih =>
+  | bit _ _ _ _ ih =>
     congr
     apply ih
     cases amin <;> assumption
@@ -136,8 +136,7 @@ def BitInt.Bits.push_bit : Bool -> Bits -> Bits
 def BitInt.Bits.push_bit.spec (b: Bool) : bs.IsMinimal -> Bits.bit b bs ≈ push_bit b bs ∧ (push_bit b bs).IsMinimal := by
   intro min
   induction min generalizing b with
-  | nil =>
-    rename_i b'
+  | nil b' =>
     clear bs
     revert b b'
     decide
@@ -160,11 +159,11 @@ def BitInt.Bits.minimize : Bits -> Bits
 def BitInt.Bits.minimize.spec : ∀b: Bits, b ≈ b.minimize ∧ b.minimize.IsMinimal := by
   intro b
   induction b with
-  | nil => exact ⟨.nil,.nil⟩
+  | nil => exact ⟨.nil _,.nil _⟩
   | bit b bs ih =>
     have := push_bit.spec b ih.right
     apply And.intro _ this.right
-    apply Bits.trans ih.left.bit this.left
+    apply Bits.trans (ih.left.bit _) this.left
 
 -- at this point we've established that (BitInt.Bits, ≈) is a setoid
 -- and every BitInt.Bits can be canonicalized via `BitInt.Bits.minimize`.
@@ -317,7 +316,7 @@ def BitInt.Bits.ofNat_ne_neg (n: Nat) : BitInt.Bits.ofNat n ≠ .nil true := by
 
 def BitInt.Bits.ofNat.is_minimal (n: Nat) : (ofNat n).IsMinimal := by
   induction n using BitInt.Bits.ofNat.induct with
-  | case1 => exact .nil
+  | case1 => exact (.nil _)
   | case2 n ih =>
     unfold ofNat
     cases h:(n + 1) % 2
@@ -372,17 +371,17 @@ def BitInt.test_bit (n: nat) : BitInt -> Bool := by
   intro a b eq
   induction eq generalizing n with
   | nil => rfl
-  | nil_bit _ ih =>
+  | nil_bit _ _ _ ih =>
     cases n
     rfl
     unfold Bits.test_bit
     rw [←ih, Bits.test_bit_nil]
-  | bit_nil _ ih =>
+  | bit_nil _ _ _ ih =>
     cases n
     rfl
     unfold Bits.test_bit
     rw [ih, Bits.test_bit_nil]
-  | bit _ ih =>
+  | bit _ _ _ _ ih =>
     cases n
     rfl
     unfold Bits.test_bit
@@ -400,28 +399,25 @@ def BitInt.ext (a b: BitInt) : (∀n, a.test_bit n = b.test_bit n) -> a = b := b
   dsimp at h
   dsimp
   induction amin generalizing b with
-  | nil =>
-    rename_i a
+  | nil a =>
     induction bmin with
-    | nil =>
-      rename_i b
+    | nil b =>
       cases h 0
       rfl
-    | bit _ _ ih =>
+    | bit _ _ _ _ ih =>
       cases h 0
       apply Bits.Equiv.nil_bit
       apply ih
       intro n
       conv => { rhs; rw [←@Bits.test_bit_bit_succ _ a] }
       rw [←h n.succ, Bits.test_bit_nil, Bits.test_bit_nil]
-  | bit _ _ ih =>
+  | bit a _ _ _ ih =>
     cases bmin with
     | nil =>
-      rename_i as a _ _ _
       cases h 0
       apply Bits.Equiv.bit_nil
       apply ih
-      exact .nil
+      exact (.nil _)
       intro n
       conv => { lhs; rw [←@Bits.test_bit_bit_succ _ a] }
       rw [h n.succ, Bits.test_bit_nil, Bits.test_bit_nil]
@@ -452,7 +448,7 @@ def BitInt.Bits.bit_map.spec (f: Bool -> Bool) (a b: Bits) : a ≈ b -> a.bit_ma
   | bit_nil =>
     apply Bits.Equiv.bit_nil
     assumption
-  | bit _ ih =>
+  | bit _ _ _ _ ih =>
     apply Bits.Equiv.bit
     apply ih
 
