@@ -1163,8 +1163,7 @@ def BitInt.Bits.add_with_carry.eq_add_if (a b c) : add_with_carry a b c ≈ if c
     cases b with
     | nil b => revert a b; decide
     | bit b bs =>
-      cases a <;> cases b <;>
-      unfold add_with_carry
+      cases a <;> cases b
       apply succ.spec.mp
       rfl
       apply succ.spec.mp
@@ -1176,8 +1175,7 @@ def BitInt.Bits.add_with_carry.eq_add_if (a b c) : add_with_carry a b c ≈ if c
   | bit a as ih =>
     cases b with
     | nil b =>
-      cases a <;> cases b <;>
-      unfold add_with_carry
+      cases a <;> cases b
       apply succ.spec.mp
       rfl
       symm
@@ -1187,8 +1185,7 @@ def BitInt.Bits.add_with_carry.eq_add_if (a b c) : add_with_carry a b c ≈ if c
       symm
       apply pred_succ
     | bit b bs =>
-      unfold add_with_carry
-      cases a <;> cases b <;> unfold bit_add_carry <;> dsimp
+      cases a <;> cases b
       rfl
       apply bit_bit
       apply ih
@@ -1390,7 +1387,7 @@ def BitInt.Bits.add_zero_iff {a b: Bits} : b ≈ 0 ↔ a + b ≈ a := by
       apply Iff.intro
       intro h
       cases h
-      cases a <;> unfold add add_with_carry
+      cases a
       apply bit_nil
       assumption
       apply bit_nil
@@ -1398,7 +1395,7 @@ def BitInt.Bits.add_zero_iff {a b: Bits} : b ≈ 0 ↔ a + b ≈ a := by
       apply Bits.trans
       apply pred_succ
       assumption
-      cases a <;> unfold add add_with_carry
+      cases a
       intro h
       cases h
       apply bit_nil
@@ -1415,28 +1412,26 @@ def BitInt.Bits.add_zero_iff {a b: Bits} : b ≈ 0 ↔ a + b ≈ a := by
       intro h
       cases h
       rfl
-      cases b <;> unfold add add_with_carry nil_add <;> dsimp
+      cases b
       intros
       rfl
       intro h
       apply False.elim
-      cases a <;> unfold pred at h
+      cases a
       contradiction
       contradiction
     | bit b bs =>
       apply Iff.intro
       intro h
       cases h
-      unfold add add_with_carry bit_add_carry
-      cases a <;> dsimp
+      cases a
       apply bit_bit
       apply ih.mp
       assumption
       apply bit_bit
       apply ih.mp
       assumption
-      unfold add add_with_carry bit_add_carry
-      cases a <;> cases b <;> dsimp <;> intro h
+      cases a <;> cases b <;> intro h
       all_goals cases h
       all_goals apply bit_nil
       apply ih.mpr
@@ -1513,7 +1508,7 @@ def BitInt.Bits.add_neg_one_iff {a b: Bits} : b ≈ -1 ↔ a + b ≈ a.pred := b
       apply Iff.intro
       intro h
       cases h
-      cases a <;> unfold add add_with_carry
+      cases a
       apply bit_nil
       assumption
       apply bit_bit
@@ -1540,8 +1535,7 @@ def BitInt.Bits.add_neg_one_iff {a b: Bits} : b ≈ -1 ↔ a + b ≈ a.pred := b
       apply Iff.intro
       intro h
       cases h
-      unfold add add_with_carry bit_add_carry
-      cases a <;> dsimp
+      cases a
       apply bit_bit
       apply ih.mp
       assumption
@@ -1553,8 +1547,7 @@ def BitInt.Bits.add_neg_one_iff {a b: Bits} : b ≈ -1 ↔ a + b ≈ a.pred := b
       rw [add_with_carry.nil_right]
       rfl
       intro h
-      unfold add add_with_carry bit_add_carry at h
-      cases a <;> cases b <;> dsimp at h
+      cases a <;> cases b
       all_goals cases h
       apply bit_nil
       apply ih.mpr
@@ -1653,7 +1646,8 @@ def BitInt.Bits.add_succ (a b: Bits) : a + b.succ ≈ (a + b).succ := by
     cases b with
     | nil b => revert a b; decide
     | bit b bs =>
-      unfold add add_with_carry
+      delta add add_with_carry
+      dsimp
       cases a <;> cases b
       any_goals rfl
       any_goals (rw [succ]; dsimp)
@@ -2184,3 +2178,13 @@ def BitInt.strongInduction
     rw [←mk_pred]
     apply pred
     assumption
+
+def BitInt.add.comm (a b: BitInt) : a + b = b + a := by
+  induction a using strongInduction with
+  | zero => rw [add.zero_add, add.add_zero]
+  | succ _ ih => rw [add.succ_add, add.add_succ, ih]
+  | pred _ ih => rw [add.pred_add, add.add_pred, ih]
+
+def BitInt.Bits.add.comm (a b: Bits) : a + b ≈ b + a := by
+  apply exact
+  rw [←mk_add, ←mk_add, BitInt.add.comm]
