@@ -628,8 +628,31 @@ def BitInt.Bits.pred: Bits -> Bits
 def BitInt.Bits.neg : Bits -> Bits
 | .nil false => .nil false
 | .nil true => .bit true (.nil false)
+| .bit true (.nil false) => .nil true
 | .bit false bs => .bit false bs.neg
 | .bit true bs => .bit true bs.not
+
+-- def BitInt.Bits.neg : Bits -> Bits := BitInt.Bits.succ ∘ bit_map Bool.not
+def BitInt.Bits.neg_naive : Bits -> Bits
+| .nil false => .nil false
+| .nil true => .bit true (.nil false)
+| .bit false bs => .bit false bs.neg_naive
+| .bit true bs => .bit true bs.not
+
+def BitInt.Bits.neg_eq_neg_naive (a: Bits): a.neg ≈ a.neg_naive := by
+  induction a with
+  | nil a => revert a; decide
+  | bit a as ih =>
+    unfold neg neg_naive
+    cases a
+    dsimp
+    apply bit_bit
+    exact ih
+    cases as with
+    | nil a =>
+      revert a
+      decide
+    | bit a' as => rfl
 
 instance : Neg BitInt.Bits := ⟨.neg⟩
 
@@ -741,6 +764,8 @@ def BitInt.Bits.pred.spec {a b: Bits} : a ≈ b ↔ a.pred ≈ b.pred := by
   assumption
 
 def BitInt.Bits.neg_eq_not_succ (a: BitInt.Bits) : -a ≈ a.not.succ := by
+  apply trans
+  apply neg_eq_neg_naive
   induction a with
   | nil a => revert a; decide
   | bit a as ih =>
@@ -764,9 +789,7 @@ def BitInt.Bits.not.spec {a b: Bits} : a ≈ b ↔ a.not ≈ b.not := by
   apply bit_map.spec
   assumption
 
-def BitInt.Bits.neg_neg (a: BitInt.Bits) : - -a ≈ a := by
-  unfold Neg.neg instNegBits
-  dsimp
+def BitInt.Bits.neg_neg₀ (a: BitInt.Bits) : a.neg_naive.neg_naive ≈ a := by
   induction a with
   | nil a => revert a; decide
   | bit a as ih =>
@@ -776,19 +799,31 @@ def BitInt.Bits.neg_neg (a: BitInt.Bits) : - -a ≈ a := by
 
 def BitInt.Bits.neg.spec {a b: Bits} : a ≈ b ↔ -a ≈ -b := by
   revert a b
-  suffices ∀a b: Bits, a ≈ b -> -a ≈ -b by
+  suffices ∀a b: Bits, a ≈ b -> a.neg_naive ≈ b.neg_naive by
     intro  a b
-    apply Iff.intro (this _ _)
+    apply Iff.intro
+    intro h
+    apply trans
+    apply neg_eq_neg_naive
+    apply flip trans
+    symm
+    apply neg_eq_neg_naive
+    apply this
+    assumption
     intro h
     apply Bits.trans
     symm
-    apply neg_neg
+    apply neg_neg₀
     apply flip Bits.trans
-    apply neg_neg
-    apply this _ _ h
+    apply neg_neg₀
+    apply this
+    apply trans
+    symm
+    apply neg_eq_neg_naive
+    apply flip trans
+    apply neg_eq_neg_naive
+    assumption
   intro a b h
-  unfold Neg.neg instNegBits
-  dsimp
   induction h with
   | nil_nil => rfl
   | nil_bit a as eq ih =>
@@ -797,14 +832,14 @@ def BitInt.Bits.neg.spec {a b: Bits} : a ≈ b ↔ -a ≈ -b := by
     assumption
     apply bit_bit
     apply succ.spec.mpr
-    apply flip Bits.trans
-    apply Bits.trans ih (neg_eq_not_succ _)
-    rfl
+    apply trans ih
+    apply trans _ (neg_eq_not_succ as)
+    symm
+    apply neg_eq_neg_naive
   | bit_nil a as eq ih =>
     cases a
     apply bit_nil
     assumption
-    unfold neg
     apply bit_bit
     apply Bits.trans
     apply not.spec.mp
@@ -816,7 +851,18 @@ def BitInt.Bits.neg.spec {a b: Bits} : a ≈ b ↔ -a ≈ -b := by
     apply not.spec.mp
     assumption
 
+def BitInt.Bits.neg_neg (a: BitInt.Bits) : - -a ≈ a := by
+  apply trans
+  apply neg.spec.mp
+  apply neg_eq_neg_naive
+  apply trans
+  apply neg_eq_neg_naive
+  apply neg_neg₀
+
 def BitInt.Bits.succ_eq_not_neg (a: BitInt.Bits) : a.succ ≈ a.not.neg := by
+  apply flip trans
+  symm
+  apply neg_eq_neg_naive
   induction a with
   | nil a => revert a; decide
   | bit a as ih =>
