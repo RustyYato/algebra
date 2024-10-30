@@ -2188,3 +2188,17 @@ def BitInt.add.comm (a b: BitInt) : a + b = b + a := by
 def BitInt.Bits.add.comm (a b: Bits) : a + b ≈ b + a := by
   apply exact
   rw [←mk_add, ←mk_add, BitInt.add.comm]
+
+def BitInt.add.assoc (a b c: BitInt) : a + b + c = a + (b + c) := by
+  induction a using strongInduction with
+  | zero => rw [add.zero_add, add.zero_add]
+  | succ a ih =>
+    repeat rw [add.succ_add]
+    rw [ih]
+  | pred _ ih =>
+    repeat rw [add.pred_add]
+    rw [ih]
+
+def BitInt.Bits.add.assoc (a b c: Bits) : a + b + c ≈ a + (b + c) := by
+  apply exact
+  rw [←mk_add, ←mk_add, BitInt.add.assoc, mk_add, mk_add]
