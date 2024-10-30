@@ -1,4 +1,4 @@
-import Algebra.Nat.Div
+import Algebra.Nat.Dvd
 import Algebra.Nat.WellFounded
 import Algebra.AxiomBlame
 
@@ -410,6 +410,57 @@ def BitInt.Bits.ofNat.is_minimal (n: Nat) : (ofNat n).IsMinimal := by
     have := Nat.lt_of_succ_lt_succ this
     have := Nat.lt_of_succ_lt_succ this
     exact (Nat.not_lt_zero _ this).elim
+
+def BitInt.Bits.of_nat_eq_zero_iff (n: nat) : n = 0 ↔ BitInt.Bits.of_nat n = .nil false := by
+  apply Iff.intro
+  · intro h
+    subst h
+    rfl
+  · intro h
+    cases n
+    rfl
+    contradiction
+
+def BitInt.Bits.of_nat_ne_neg (n: nat) : BitInt.Bits.of_nat n ≠ .nil true := by
+  intro h
+  cases n
+  contradiction
+  contradiction
+
+def BitInt.Bits.of_nat.is_minimal (n: nat) : (of_nat n).IsMinimal := by
+  induction n using BitInt.Bits.of_nat.induct with
+  | case1 => exact (.nil _)
+  | case2 n ih =>
+    unfold of_nat
+    cases h:(n + 1) % 2
+    apply ih.bit
+    intro g
+    have := (of_nat_eq_zero_iff ((n + 1) / 2)).mpr g
+    rw [nat.add_one] at this
+    have : n + 1 < 2 := by
+      cases n
+      trivial
+      rename_i n
+      cases n
+      trivial
+      rw [nat.div.eq_if, if_neg, nat.add_one] at this
+      contradiction
+      exact Ordering.noConfusion
+      trivial
+    rw [nat.add_one] at this
+    match n with
+    | 0 => contradiction
+    | 1 => contradiction
+    | .succ (.succ n) => contradiction
+    rename_i m
+    cases m
+    apply ih.bit
+    apply of_nat_ne_neg
+    have := nat.mod.lt (n + 1) 2 (by trivial)
+    rw [h] at this
+    have := nat.lt_of_succ_lt_succ this
+    have := nat.lt_of_succ_lt_succ this
+    exact (nat.not_lt_zero this).elim
 
 instance BitInt.OfNatInst : OfNat BitInt n := ⟨⟨.ofNat n,Bits.ofNat.is_minimal n⟩⟩
 instance (priority := 900) BitInt.Bits.OfNatInst : OfNat BitInt.Bits n := ⟨.ofNat n⟩
@@ -2004,3 +2055,132 @@ def BitInt.Bits.cmp : Bits -> Bits -> Ordering
 
 instance : Ord BitInt.Bits where
   compare := BitInt.Bits.cmp
+
+def BitInt.Bits.of_nat.succ (a: nat):
+  of_nat a.succ ≈ (of_nat a).succ := by
+  induction a using nat.wf.induction with
+  | h a ih =>
+    cases a
+    rfl
+    rename_i a
+    unfold of_nat
+    have : (1: nat) + 1 = 2 * 1 := rfl
+    have : (a.succ + 1) / 2 = a / 2 + 1 := by
+      rw [←nat.add_one a, nat.add.assoc, this, nat.add.comm, nat.div.mul_add, nat.add.comm]
+      rfl
+    -- rw [this, nat.add_one (a /2), of_nat, ←this, nat.div_div]
+    have : ∀n: nat, n % 2 = 0 ∨ n % 2 = 1 := by
+      intro n
+      cases h:n%2
+      exact .inl rfl
+      rename_i n'
+      cases n'
+      exact .inr rfl
+      have := nat.mod.lt n 2 rfl
+      rw [h] at this
+      have := not_le_of_lt this (nat.zero_le _)
+      contradiction
+    cases this a <;> rename_i h <;> clear this
+    rw [←nat.add_one, nat.add.assoc, nat.mod.add, h, nat.mod.add a, h]
+    apply bit_bit
+    have : (a + 1) / 2 = a / 2 := by
+      rw [nat.div_def a 2, h, nat.add_zero, nat.mul.comm, nat.div.mul_add, nat.mul_div, nat.div.if_lt 1, nat.add_zero]
+      repeat rfl
+    rw [this]
+    have : (1: nat) + 1 = 2 * 1 := rfl
+    rw [this, nat.add.comm, nat.div.mul_add, nat.one_add]
+    apply trans (ih (a / 2) _)
+    rfl
+    apply nat.lt_succ_of_le
+    exact nat.div.le
+    rfl
+    have : (1: nat) + 1 = 2 := rfl
+    rw [←nat.add_one, nat.add.assoc, this, nat.mod.add, nat.mod.self, nat.add_zero, nat.mod.mod, h, nat.mod.add, h, nat.mod.if_lt 1, this, nat.mod.self]
+    apply bit_bit
+    have : (a + 2) / 2 = (a + 1) / 2 := by
+      have : (2: nat) + a = 2 * 1 + a := rfl
+      rw [nat.add.comm, this, nat.div.mul_add]
+      conv => {
+        rhs
+        rw [nat.div_def a 2 rfl]
+      }
+      clear this
+      rw [nat.add.assoc, nat.mul.comm, nat.div.mul_add, h, this, nat.div.self, nat.add.comm]
+      repeat rfl
+    rw [this]
+    rfl
+    rfl
+
+def BitInt.Bits.of_nat.neg_succ (a: nat):
+  -of_nat a.succ ≈ (-of_nat a).pred := by
+  apply trans
+  apply neg.spec.mp
+  apply BitInt.Bits.of_nat.succ
+  apply flip trans
+  symm
+  apply pred_eq_neg_succ_neg
+  apply flip trans
+  symm
+  apply neg.spec.mp
+  apply succ.spec.mp
+  apply neg_neg
+  rfl
+
+def BitInt.Bits.strongInduction
+  { motive: Bits -> Prop }
+  (zero: motive 0)
+  (succ: ∀n, n.IsMinimal -> motive n -> motive n.succ)
+  (pred: ∀n, n.IsMinimal -> motive n -> motive n.pred)
+  (eqv: ∀n m, n ≈ m -> motive n -> motive m):
+  ∀n, motive n := by
+  intro a
+  have ⟨a',prf⟩ := eqv_ofNat_or_negOfNat a
+  cases prf <;> (apply eqv; symm; assumption; rename_i prf; clear prf a)
+  · induction a' with
+    | zero => exact zero
+    | succ a' ih =>
+      apply eqv
+      symm
+      apply BitInt.Bits.of_nat.succ
+      apply succ
+      apply of_nat.is_minimal
+      assumption
+  · induction a' with
+    | zero => exact zero
+    | succ a' ih =>
+      apply eqv
+      symm
+      have : -of_nat a'.succ ≈ (-of_nat a').minimize.pred := by
+        apply trans
+        apply of_nat.neg_succ
+        apply Bits.pred.spec.mp
+        apply (minimize.spec _).left
+      apply this
+      apply pred
+      apply (minimize.spec _).right
+      apply eqv
+      apply (minimize.spec _).left
+      assumption
+
+def BitInt.strongInduction
+  { motive: BitInt -> Prop }
+  (zero: motive 0)
+  (succ: ∀n, motive n -> motive n.succ)
+  (pred: ∀n, motive n -> motive n.pred):
+  ∀n, motive n := by
+  intro n
+  induction n using ind with | mk n =>
+  induction n using Bits.strongInduction with
+  | zero => exact zero
+  | eqv _ _ h =>
+    rw [←sound]
+    assumption
+    assumption
+  | succ =>
+    rw [←mk_succ]
+    apply succ
+    assumption
+  | pred =>
+    rw [←mk_pred]
+    apply pred
+    assumption

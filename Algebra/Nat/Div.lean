@@ -735,6 +735,28 @@ def nat.mod.self (a: nat) : a % a = 0 := by
   rw [mod.if_ge, nat.sub.eq_zero.mpr, zero_mod]
   repeat rfl
 
+def nat.mod.mul_left (a k: nat) : (a * k) % k = 0 := by
+  rw [nat.mod.mul, nat.mod.self, nat.mul_zero, zero_mod]
+
+def nat.mod.mod (a k: nat) : (a % k) % k = a % k := by
+  cases k
+  rfl
+  rename_i k
+  induction a, k.succ, nat.zero_lt_succ using nat.div_mod.induction with
+  | is_lt a k a_lt_k=>
+    rw [mod.if_lt]
+    apply lt_of_le_of_lt
+    apply nat.zero_le
+    assumption
+    apply nat.mod.lt
+    apply lt_of_le_of_lt
+    apply nat.zero_le
+    assumption
+  | is_ge a b b_pos a_ge_b ih =>
+    rw [if_ge a, ih]
+    assumption
+    assumption
+
 def nat.div.mul_add (a b k: nat) : 0 < a -> (a * b + k) / a = b + k / a := by
   intro h
   induction b with

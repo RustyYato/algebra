@@ -347,20 +347,6 @@ def nat.dvd.of_div : ∀(a b k: nat), k ∣ a -> a ∣ b -> (a / k) ∣ (b / k) 
 
 #print axioms nat.dvd.of_div
 
-def nat.div.self { a: nat }: 0 < a -> a / a = 1 := by
-  intro a_nz
-  have def_a := nat.dvd.def (dvd.refl a)
-  conv at def_a => {
-    lhs
-    rw [←one_mul a]
-  }
-  apply Eq.symm
-  apply mul.cancel_right
-  assumption
-  assumption
-
-#print axioms nat.div.self
-
 def nat.div.compare_strict (a b c: nat) :
   0 < c ->
   c ∣ a ->

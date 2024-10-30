@@ -2,7 +2,7 @@ import Algebra.Nat.Cmp
 
 abbrev nat.lt (a b: nat) : Prop := a < b
 
-instance nat.wf : WellFounded nat.lt := WellFounded.intro (by
+instance nat.wf : @WellFounded nat (· < ·) := WellFounded.intro (by
   intro a
   induction a with
   | zero =>
