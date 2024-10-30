@@ -1,4 +1,4 @@
-import Algebra.Nat.Add
+import Algebra.Nat.Div
 import Algebra.Nat.WellFounded
 import Algebra.AxiomBlame
 
@@ -296,12 +296,65 @@ def BitInt.Bits.ofNat.rec_lemma : (n + 1) / 2 < n.succ := by
         intro g
         exact Nat.not_lt_of_le g.right h
 
+def BitInt.Bits.of_nat.rec_lemma (n: nat) : (n + 1) / 2 < n.succ := by
+  rw [nat.div.eq_if]
+  any_goals trivial
+  cases (inferInstance : Decidable (n + 1 < 2)) with
+  | isTrue h =>
+    rw [if_pos h]
+    apply nat.zero_lt_succ
+  | isFalse h =>
+    rw [if_neg h]
+    rw [nat.add_one]
+    apply nat.succ_lt_succ
+    cases n with
+    | zero => contradiction
+    | succ n =>
+      have : n + 1 + 1 = n + 2 := by
+        rw [nat.add.assoc]
+        rfl
+      rw [←nat.add_one, this, nat.add_sub_inv]
+      clear this h
+      induction n using nat.wf.induction with
+      | h n ih =>
+      by_cases h:n < 2
+      · rw [nat.div.eq_if, if_pos, nat.add_one]
+        apply nat.zero_lt_succ
+        assumption
+        trivial
+      · replace h := le_of_not_lt h
+        have := ih (n - 2) (nat.sub.lt_nz _ _ rfl h)
+        rw [nat.div.if_ge]
+        rw [nat.add_one]
+        apply nat.succ_lt_succ
+        apply lt_of_lt_of_le this
+        · cases n with
+          | zero => contradiction
+          | succ n =>
+          cases n with
+          | zero => contradiction
+          | succ n =>
+          apply le_of_lt
+          have : n.succ.succ - 2 = n := rfl
+          rw [this, nat.add_one]
+          apply nat.lt_succ_self
+        · trivial
+        · assumption
+
 @[reducible]
 def BitInt.Bits.ofNat : Nat -> Bits
 | 0 => .nil false
 | n + 1 => .bit ((n + 1) % 2 == 1) (ofNat ((n + 1) / 2))
 decreasing_by
   exact ofNat.rec_lemma
+
+@[reducible]
+def BitInt.Bits.of_nat : nat -> Bits
+| .zero => .nil false
+| .succ n => .bit ((n + 1) % 2 == 1) (of_nat ((n + 1) / 2))
+termination_by n => n
+decreasing_by
+  exact of_nat.rec_lemma _
 
 def BitInt.Bits.ofNat_eq_zero_iff (n: Nat) : n = 0 ↔ BitInt.Bits.ofNat n = .nil false := by
   apply Iff.intro
@@ -1874,17 +1927,68 @@ def BitInt.Bits.neg_eqv_ofNat (a: Bits) :
   symm
   apply neg_neg
 
+def BitInt.Bits.pos_eqv_of_nat (a: Bits) :
+  a.IsPositive ->
+  ∃a': nat, a ≈ of_nat a' := by
+  intro pos
+  induction pos with
+  | nil => exists 0
+  | bit a as _ ih =>
+    obtain ⟨a',prf⟩ := ih
+    exists 2 * a' + if a then 1 else 0
+    cases a
+    any_goals rw [if_pos rfl]
+    any_goals rw [if_neg Bool.noConfusion]
+    all_goals unfold of_nat
+    cases a'
+    rw [nat.zero_eq, nat.mul_zero, nat.add_zero, ←nat.zero_eq]
+    dsimp
+    apply bit_nil
+    assumption
+    rename_i n
+    have : 2 * n.succ = 1 + 1 + 2 * n := by
+      rw [nat.mul_succ]
+      rfl
+    rw [this, nat.add_zero, nat.one_add, nat.succ_add]
+    dsimp
+    have : (1: nat) + 1 = 2 := rfl
+    rw [nat.add.comm 1, nat.add.assoc, nat.mod.add,
+      nat.mod.mul, nat.mod.self, nat.zero_mul, nat.zero_mod, nat.zero_add,
+      this, nat.mod.self]
+    apply bit_bit
+    rw [nat.div.mul_add, nat.div.self, nat.add_one]
+    exact prf
+    rfl
+    rfl
+    rw [nat.add_one]
+    dsimp
+    rw [nat.mod.add, nat.mod.mul, nat.mod.self, nat.zero_mul, nat.zero_mod, nat.zero_add]
+    apply bit_bit
+    rw [nat.div.mul_add, nat.div.if_lt, nat.add_zero]
+    assumption
+    repeat rfl
+
+def BitInt.Bits.neg_eqv_of_nat (a: Bits) :
+  a.IsNegative ->
+  ∃a': nat, a ≈ -of_nat a' := by
+  intro neg
+  obtain ⟨ a', prf ⟩ := pos_eqv_of_nat _ (neg_neg_eq_pos _ neg)
+  exists a'
+  apply flip trans
+  apply Bits.neg.spec.mp
+  assumption
+  symm
+  apply neg_neg
+
 def BitInt.Bits.eqv_ofNat_or_negOfNat (a: Bits) :
-  ∃a': Nat, a ≈ ofNat a' ∨ a ≈ -ofNat a' := by
+  ∃a': nat, a ≈ of_nat a' ∨ a ≈ -of_nat a' := by
   by_cases h:a.IsNegative
-  obtain ⟨a',h⟩ := neg_eqv_ofNat _ h
+  obtain ⟨a',h⟩ := neg_eqv_of_nat _ h
   exists a'
   exact .inr h
-  obtain ⟨a',h⟩ := pos_eqv_ofNat _ ((pos_iff_not_neg _).mpr h)
+  obtain ⟨a',h⟩ := pos_eqv_of_nat _ ((pos_iff_not_neg _).mpr h)
   exists a'
   exact .inl h
-
-#axiom_blame BitInt.Bits.eqv_ofNat_or_negOfNat
 
 instance : Repr Ordering where
   reprPrec o := match o with

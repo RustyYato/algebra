@@ -2,6 +2,7 @@ import Algebra.Nat.Mul
 import Algebra.Nat.Sub
 import Algebra.Nat.WellFounded
 import Algebra.MyOption
+import Algebra.Order.Basic
 
 structure div_mod.IndCtx where
   motive: nat -> (b: nat) -> 0 < b -> Sort α
@@ -302,6 +303,19 @@ def nat.mod.lt (a b: nat) (b_nz: 0 < b) : a % b < b := by
   assumption
 
 #print axioms nat.mod.lt
+
+def nat.div.eq_if : ∀{ a b: nat } (_b_nz: 0 < b), a / b = if a < b then 0 else (a - b) / b + 1 := by
+  intro a b b_nz
+  split <;> rename_i h
+  rw [div.if_lt]
+  repeat assumption
+  rw [div.if_ge]
+  rw [nat.add_one]
+  repeat assumption
+  apply le_of_not_lt
+  assumption
+
+#print axioms nat.div.eq_if
 
 def nat.div_def (a b: nat) (b_nz: 0 < b) : a = (a / b) * b + a % b := by
   apply div_mod.induction (fun a b _ => 0 < b -> a = (a / b) * b + a % b)
@@ -611,3 +625,128 @@ def nat.div_div { a b c: nat} : a / b / c = a / (b * c) := by
     apply nat.div.mul_le
 
 #print axioms nat.div_div
+
+def nat.mod.add (a b k: nat) : (a + b) % k = (a % k + b % k) % k := by
+  cases k
+  rfl
+  rename_i k
+  induction a, k.succ, nat.zero_lt_succ using div_mod.induction with
+  | is_lt a k a_lt_k =>
+    have k_pos : 0 < k := lt_of_le_of_lt (nat.zero_le _) a_lt_k
+    rw [mod.if_lt _ _ k_pos a_lt_k]
+    clear a_lt_k
+    induction b, k, k_pos using div_mod.induction with
+    | is_lt b k b_lt_k => rw [mod.if_lt _ _ (lt_of_le_of_lt (nat.zero_le _) b_lt_k) b_lt_k]
+    | is_ge b k k_pos b_ge_k ih =>
+      rw [mod.if_ge _ _ k_pos b_ge_k, ←ih]
+      rw [mod.if_ge, nat.add_sub]
+      assumption
+      assumption
+      apply le_trans b_ge_k
+      apply nat.add.le_right
+  | is_ge a k k_pos a_ge_k ih =>
+    rw [mod.if_ge _ _ k_pos a_ge_k]
+    rw [←ih, mod.if_ge, nat.add.comm (a - k) b, nat.add_sub, nat.add.comm]
+    assumption
+    assumption
+    apply le_trans a_ge_k
+    apply nat.add.le_left
+
+def nat.mod.sub_mul (a b k: nat) : a ≥ b * k -> (a - b * k) % k = a % k := by
+  intro a_ge_bk
+  by_cases h:k ≤ 0
+  cases nat.le_zero h
+  rfl
+  have k_pos := lt_of_not_ge h
+  clear h
+  induction b generalizing a with
+  | zero => rw [zero_eq, zero_mul, sub_zero]
+  | succ b ih =>
+    by_cases h:a ≥ k
+    rw [succ_mul, sub_add, ih, if_ge a]
+    assumption
+    assumption
+    have := nat.sub.le_left  _ _ k a_ge_bk
+    rw [succ_mul, add.comm, add_sub_inv] at this
+    assumption
+    replace h := lt_of_not_ge h
+    exfalso
+    apply not_lt_of_ge _ h
+    apply le_trans  _ a_ge_bk
+    rw [succ_mul]
+    apply add.le_left
+
+def nat.mod.sub_self (a b: nat) : a ≥ b -> (a - b) % b = a % b := by
+  intro a_ge_b
+  conv in a - b => {
+    rw [←one_mul b]
+  }
+  rw [sub_mul]
+  rw [one_mul]
+  assumption
+
+def nat.mod.mul (a b k: nat) : (a * b) % k = (a % k * (b % k)) % k := by
+  cases k
+  rfl
+  rename_i k
+  induction a, k.succ, nat.zero_lt_succ using div_mod.induction with
+  | is_lt a k a_lt_k =>
+    have k_pos : 0 < k := lt_of_le_of_lt (nat.zero_le _) a_lt_k
+    rw [mod.if_lt _ _ k_pos a_lt_k]
+    clear a_lt_k
+    induction b, k, k_pos using div_mod.induction with
+    | is_lt b k b_lt_k => rw [mod.if_lt _ _ (lt_of_le_of_lt (nat.zero_le _) b_lt_k) b_lt_k]
+    | is_ge b k k_pos b_ge_k ih =>
+      cases a
+      rfl
+      rename_i a
+      rw [mod.if_ge _ _ k_pos b_ge_k, ←ih, nat.mul_sub]
+      rw [mod.if_ge, nat.mod.sub_mul]
+      conv in a.succ * b - k => {
+        rw [←one_mul k]
+      }
+      rw [nat.mod.sub_mul]
+      rw [succ_mul, one_mul]
+      apply le_trans b_ge_k
+      apply nat.add.le_left
+      apply nat.mul.le
+      rfl
+      assumption
+      assumption
+      rw [succ_mul]
+      apply le_trans b_ge_k
+      apply nat.add.le_left
+  | is_ge a k k_pos a_ge_k ih =>
+    rw [mod.if_ge _ _ k_pos a_ge_k]
+    cases b
+    rw [zero_eq, mul_zero, zero_mod, mul_zero, zero_mod]
+    rename_i b
+    rw [mul_succ, ←ih, mul_succ, mod.add, mod.add (a - k),
+      nat.sub_mul, mul.comm k b, mod.sub_mul, sub_self, ←add]
+    assumption
+    rw [mul.comm]
+    apply mul.le
+    rfl
+    assumption
+
+def nat.mod.self (a: nat) : a % a = 0 := by
+  cases a
+  rfl
+  rw [mod.if_ge, nat.sub.eq_zero.mpr, zero_mod]
+  repeat rfl
+
+def nat.div.mul_add (a b k: nat) : 0 < a -> (a * b + k) / a = b + k / a := by
+  intro h
+  induction b with
+  | zero => rw [zero_eq, mul_zero, zero_add, zero_add]
+  | succ b ih =>
+    rw [mul_succ, if_ge, add.assoc, add.comm a, add_sub_inv, ih, succ_add]
+    assumption
+    rw [add.assoc]
+    apply nat.add.le_left
+
+def nat.div.self (a: nat) : 0 < a -> a / a = 1 := by
+  intro h
+  rw [div.if_ge, sub.eq_zero.mpr, zero_div]
+  any_goals rfl
+  assumption
