@@ -978,6 +978,260 @@ def BitInt.pred_eq_neg_succ_neg (a: BitInt) : a.pred = -(-a).succ := by
   apply sound
   apply Bits.pred_eq_neg_succ_neg
 
+def bit_add_carry : Bool -> Bool -> Bool -> Bool × Bool
+| false, false, x
+| false, x, false
+| x, false, false => ⟨false,x⟩
+| true, true, x
+| true, x, true
+| x, true, true => ⟨true,x⟩
+
+def BitInt.Bits.nil_add (a: Bits) : Bool -> Bool -> Bits
+| false, false => a
+| false, true => a.succ
+| true, false => a.pred
+| true, true => a
+
+def BitInt.Bits.add_with_carry : Bits -> Bits -> Bool -> Bits
+| nil a, b, carry => b.nil_add a carry
+| a, nil b, carry => a.nil_add b carry
+| bit a as, bit b bs, c =>
+  have (carry, sum) := bit_add_carry a b c
+  bit sum (add_with_carry as bs carry)
+
+def BitInt.Bits.add : Bits -> Bits -> Bits := (add_with_carry · · false)
+
+instance : Add BitInt.Bits := ⟨.add⟩
+
+def BitInt.Bits.add.def (a b: Bits) : a + b = a.add b := rfl
+
+def BitInt.Bits.add_with_carry.eq_add_if (a b c) : add_with_carry a b c ≈ if c then (a + b).succ else a + b := by
+  cases c
+  rfl
+  rw [if_pos rfl]
+  suffices add_with_carry a b true ≈ (add_with_carry a b false).succ from this
+  induction a generalizing b with
+  | nil a =>
+    cases b with
+    | nil b => revert a b; decide
+    | bit b bs =>
+      cases a <;> cases b <;>
+      unfold add_with_carry
+      apply succ.spec.mp
+      rfl
+      apply succ.spec.mp
+      rfl
+      symm
+      apply pred_succ
+      symm
+      apply pred_succ
+  | bit a as ih =>
+    cases b with
+    | nil b =>
+      cases a <;> cases b <;>
+      unfold add_with_carry
+      apply succ.spec.mp
+      rfl
+      symm
+      apply pred_succ
+      apply succ.spec.mp
+      rfl
+      symm
+      apply pred_succ
+    | bit b bs =>
+      unfold add_with_carry
+      cases a <;> cases b <;> unfold bit_add_carry <;> dsimp
+      rfl
+      apply bit_bit
+      apply ih
+      apply bit_bit
+      apply ih
+      apply bit_bit
+      rfl
+
+def BitInt.Bits.add_with_carry.nil_left :
+  add_with_carry (nil a) b c = nil_add b a c := by cases b <;> rfl
+def BitInt.Bits.add_with_carry.nil_right :
+  add_with_carry a (nil b) c = nil_add a b c := by
+    cases a
+    rename_i a
+    revert a b c; decide
+    rfl
+
+def BitInt.Bits.add_with_carry.spec (a b c d: Bits) (carry: Bool) :
+  a ≈ c ->
+  b ≈ d ->
+  add_with_carry a b carry ≈ add_with_carry c d carry := by
+  intro ac bd
+  induction ac generalizing b d carry with
+  | nil_nil a =>
+    rw [nil_left, nil_left]
+    cases a <;> cases carry <;> unfold nil_add <;> dsimp
+    assumption
+    apply succ.spec.mp
+    assumption
+    apply pred.spec.mp
+    assumption
+    assumption
+  | nil_bit a as ac ih =>
+    rw [nil_left]
+    cases bd with
+    | nil_nil b =>
+      cases a <;> cases b <;> cases carry
+      all_goals
+        try apply succ.spec.mp
+        try apply pred.spec.mp
+        apply nil_bit
+        try assumption
+      all_goals
+        apply flip trans
+        try apply succ.spec.mp
+        try apply pred.spec.mp
+        assumption
+        rfl
+    | nil_bit b bs bd =>
+      cases a <;> cases b <;> cases carry
+      all_goals
+        try apply nil_bit
+        try apply bit_bit
+        apply flip trans
+        apply ih
+        assumption
+        rfl
+    | bit_nil b bs bd =>
+      cases a <;> cases b <;> cases carry
+      all_goals
+        apply bit_bit
+        apply trans
+        try apply succ.spec.mp
+        try apply pred.spec.mp
+        apply bd
+        apply flip trans
+        try apply succ.spec.mp
+        try apply pred.spec.mp
+        apply ac
+        rfl
+    | bit_bit b bs ds bd =>
+      cases a <;> cases b <;> cases carry
+      all_goals
+        apply bit_bit
+        apply trans
+        try apply succ.spec.mp
+        try apply pred.spec.mp
+        apply bd
+        apply flip trans
+        apply ih
+        rfl
+        rw [nil_left]
+        rfl
+  | bit_nil a as ac ih =>
+    cases bd with
+    | nil_nil b =>
+      cases a <;> cases b <;> cases carry
+      all_goals
+        try apply succ.spec.mp
+        try apply pred.spec.mp
+        apply bit_nil
+        try assumption
+      all_goals
+        apply trans
+        try apply succ.spec.mp
+        try apply pred.spec.mp
+        assumption
+        rfl
+    | nil_bit b bs bd =>
+      cases a <;> cases b <;> cases carry
+      all_goals
+        try apply succ.spec.mp
+        try apply pred.spec.mp
+        apply bit_bit
+        apply trans
+        try apply succ.spec.mp
+        try apply pred.spec.mp
+        apply ac
+        apply flip trans
+        try apply succ.spec.mp
+        try apply pred.spec.mp
+        apply bd
+        rfl
+    | bit_nil b bs bd =>
+      cases a <;> cases b <;> cases carry
+      all_goals
+        try apply bit_nil
+        try apply bit_bit
+        apply trans
+        apply ih
+        assumption
+        rfl
+    | bit_bit b bs ds bd =>
+      cases a <;> cases b <;> cases carry
+      all_goals
+        apply bit_bit
+        apply flip trans
+        try apply succ.spec.mp
+        try apply pred.spec.mp
+        apply bd
+        apply trans
+        apply ih
+        rfl
+        rw [nil_left]
+        rfl
+  | bit_bit a as cs ac ih =>
+    cases bd with
+    | nil_nil b =>
+      cases a <;> cases b <;> cases carry
+      all_goals
+        apply bit_bit
+        try apply succ.spec.mp
+        try apply pred.spec.mp
+        assumption
+    | nil_bit b bs bd =>
+      cases a <;> cases b <;> cases carry
+      all_goals
+        apply bit_bit
+        apply flip trans
+        apply ih
+        assumption
+        rw [nil_right]
+        rfl
+    | bit_nil b bs bd =>
+      cases a <;> cases b <;> cases carry
+      all_goals
+        apply bit_bit
+        apply trans
+        apply ih
+        assumption
+        rw [nil_right]
+        rfl
+    | bit_bit b bs ds bd =>
+      cases a <;> cases b <;> cases carry
+      all_goals
+        apply bit_bit
+        apply trans
+        apply ih
+        assumption
+        rfl
+
+def BitInt.Bits.add.spec (a b c d: Bits) :
+  a ≈ c ->
+  b ≈ d ->
+  a + b ≈ c + d := by
+  apply add_with_carry.spec
+
+def BitInt.Bits.add.spec_left (k a b: Bits) :
+  a ≈ b ->
+  a + k ≈ b + k := by
+  intro ac
+  apply add_with_carry.spec
+  assumption
+  rfl
+
+def BitInt.Bits.add.spec_right (k a b: Bits) :
+  a ≈ b ->
+  k + a ≈ k + b := by
+  apply add_with_carry.spec
+  rfl
+
 instance : Repr Ordering where
   reprPrec o := match o with
     | .lt => reprPrec "lt"
