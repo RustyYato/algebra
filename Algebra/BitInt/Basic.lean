@@ -204,7 +204,7 @@ def BitInt.sound' : ∀a b: BitInt, a.bits ≈ b.bits -> a = b := by
   assumption
   exact a.is_minimal
   exact b.is_minimal
-def BitInt.sound : ∀a b: Bits, a ≈ b -> mk a = mk b := by
+def BitInt.sound : ∀{a b: Bits}, a ≈ b -> mk a = mk b := by
   intro a b eq
   apply sound'
   unfold mk
@@ -215,7 +215,7 @@ def BitInt.sound : ∀a b: Bits, a ≈ b -> mk a = mk b := by
   apply flip Bits.trans
   apply (Bits.minimize.spec _).left
   exact eq
-def BitInt.exact : ∀a b: Bits, mk a = mk b -> a ≈ b := by
+def BitInt.exact : ∀{a b: Bits}, mk a = mk b -> a ≈ b := by
   intro a b eq
   apply Bits.trans
   apply (Bits.minimize.spec _).left
@@ -1690,6 +1690,14 @@ def BitInt.add.zero_add_iff (a b: BitInt) : a = 0 ↔ a + b = b := by
   apply exact
   assumption
 
+def BitInt.add.add_zero (a: BitInt) : a + 0 = a := by
+  apply (add_zero_iff _ _).mp
+  rfl
+
+def BitInt.add.zero_add (a: BitInt) : 0 + a = a := by
+  apply (zero_add_iff _ _).mp
+  rfl
+
 def BitInt.add.add_succ (a b: BitInt) : a + b.succ = (a + b).succ := by
   induction a using ind with | mk a =>
   induction b using ind with | mk b =>
@@ -1718,6 +1726,166 @@ def BitInt.add.pred_add (a b: BitInt) : a.pred + b = (a + b).pred := by
   apply sound
   exact Bits.pred_add a b
 
+inductive BitInt.Bits.IsNegative : Bits -> Prop where
+| nil : IsNegative (nil true)
+| bit a as : IsNegative as -> IsNegative (bit a as)
+inductive BitInt.Bits.IsPositive : Bits -> Prop where
+| nil : IsPositive (nil false)
+| bit a as : IsPositive as -> IsPositive (bit a as)
+
+instance BitInt.Bits.decIsNegative : ∀(a: Bits), Decidable (IsNegative a)
+| .nil false => .isFalse (nomatch ·)
+| .nil true => .isTrue .nil
+| .bit a as =>
+  match decIsNegative as with
+  | .isTrue h => .isTrue (.bit _ _ h)
+  | .isFalse h => .isFalse fun g => by cases g; contradiction
+
+instance BitInt.Bits.decIsPositive : ∀(a: Bits), Decidable (IsPositive a)
+| .nil false => .isTrue .nil
+| .nil true => .isFalse (nomatch ·)
+| .bit a as =>
+  match decIsPositive as with
+  | .isTrue h => .isTrue (.bit _ _ h)
+  | .isFalse h => .isFalse fun g => by cases g; contradiction
+
+instance BitInt.Bits.pos_or_neg : ∀(a: Bits), a.IsPositive ∨ a.IsNegative
+| .nil false => .inl .nil
+| .nil true => .inr .nil
+| .bit _ as =>
+  match pos_or_neg as with
+  | .inl h => .inl (.bit _ _ h)
+  | .inr h => .inr (.bit _ _ h)
+
+instance BitInt.Bits.not_pos_and_neg : ∀(a: Bits), a.IsPositive -> a.IsNegative -> False
+| .bit _ as, .bit _ _ pos, .bit _ _ neg => not_pos_and_neg as pos neg
+
+def BitInt.Bits.neg_iff_not_pos (a: Bits) : a.IsNegative ↔ ¬a.IsPositive := by
+  by_cases neg:a.IsNegative <;> by_cases pos:a.IsPositive
+  exfalso
+  apply not_pos_and_neg <;> assumption
+  apply Iff.intro (fun _ => pos) (fun _ => neg)
+  apply Iff.intro (fun _ => by contradiction) (fun _ => by contradiction)
+  cases a.pos_or_neg <;> contradiction
+
+def BitInt.Bits.pos_iff_not_neg (a: Bits) : a.IsPositive ↔ ¬a.IsNegative := by
+  by_cases neg:a.IsNegative <;> by_cases pos:a.IsPositive
+  exfalso
+  apply not_pos_and_neg <;> assumption
+  apply Iff.intro (fun _ => by contradiction) (fun _ => by contradiction)
+  apply Iff.intro (fun _ => neg) (fun _ => pos)
+  cases a.pos_or_neg <;> contradiction
+
+def BitInt.Bits.not_neg_eq_pos (a: Bits) :
+  a.IsNegative ->
+  a.not.IsPositive := by
+  intro neg
+  induction neg with
+  | nil => trivial
+  | bit a as _ ih =>
+    apply IsPositive.bit
+    assumption
+
+def BitInt.Bits.not_pos_eq_neg (a: Bits) :
+  a.IsPositive ->
+  a.not.IsNegative := by
+  intro neg
+  induction neg with
+  | nil => trivial
+  | bit a as _ ih =>
+    apply IsNegative.bit
+    assumption
+
+def BitInt.Bits.IsPositive.eqv (a b: Bits) :
+  a ≈ b ->
+  a.IsPositive ->
+  b.IsPositive := by
+  intro eq pos
+  induction eq with
+  | nil_nil => assumption
+  | nil_bit _ _ _ ih  =>
+    apply IsPositive.bit
+    apply ih
+    assumption
+  | bit_nil _ _ _ ih =>
+    cases pos
+    apply ih
+    assumption
+  | bit_bit _ _ _ _ ih =>
+    apply IsPositive.bit
+    apply ih
+    cases pos
+    assumption
+
+def BitInt.Bits.neg_neg_eq_pos (a: Bits) :
+  a.IsNegative ->
+  (-a).IsPositive := by
+  intro neg
+  induction neg with
+  | nil => trivial
+  | bit a as ih =>
+    cases a
+    apply IsPositive.bit
+    assumption
+    apply IsPositive.eqv
+    symm
+    apply neg_eq_neg_naive
+    apply IsPositive.bit
+    apply not_neg_eq_pos
+    assumption
+
+def BitInt.Bits.pos_eqv_ofNat (a: Bits) :
+  a.IsPositive ->
+  ∃a': Nat, a ≈ ofNat a' := by
+  intro pos
+  induction pos with
+  | nil => exists 0
+  | bit a as _ ih =>
+    obtain ⟨a',prf⟩ := ih
+    exists a' * 2 + if a then 1 else 0
+    cases a
+    any_goals rw [if_pos rfl]
+    any_goals rw [if_neg Bool.noConfusion]
+    all_goals unfold ofNat
+    cases a'
+    dsimp
+    apply bit_nil
+    assumption
+    rw [Nat.succ_mul]
+    dsimp
+    rw [Nat.add_assoc, Nat.add_mod, Nat.mul_mod]
+    apply bit_bit
+    rw [Nat.mul_comm, Nat.mul_add_div, Nat.div_self]
+    repeat trivial
+    rw [Nat.add_mod, Nat.mul_mod_left]
+    apply bit_bit
+    rw [Nat.mul_comm, Nat.mul_add_div, Nat.div_eq_of_lt]
+    repeat trivial
+
+def BitInt.Bits.neg_eqv_ofNat (a: Bits) :
+  a.IsNegative ->
+  ∃a': Nat, a ≈ -ofNat a' := by
+  intro neg
+  obtain ⟨ a', prf ⟩ := pos_eqv_ofNat _ (neg_neg_eq_pos _ neg)
+  exists a'
+  apply flip trans
+  apply Bits.neg.spec.mp
+  assumption
+  symm
+  apply neg_neg
+
+def BitInt.Bits.eqv_ofNat_or_negOfNat (a: Bits) :
+  ∃a': Nat, a ≈ ofNat a' ∨ a ≈ -ofNat a' := by
+  by_cases h:a.IsNegative
+  obtain ⟨a',h⟩ := neg_eqv_ofNat _ h
+  exists a'
+  exact .inr h
+  obtain ⟨a',h⟩ := pos_eqv_ofNat _ ((pos_iff_not_neg _).mpr h)
+  exists a'
+  exact .inl h
+
+#axiom_blame BitInt.Bits.eqv_ofNat_or_negOfNat
+
 instance : Repr Ordering where
   reprPrec o := match o with
     | .lt => reprPrec "lt"
@@ -1729,3 +1897,6 @@ def BitInt.Bits.cmp : Bits -> Bits -> Ordering
 | .nil a, bs => bs.nil_cmp a
 | as, .nil b => (as.nil_cmp b).swap
 | .bit a as, .bit b bs => (cmp as bs).then (compare a b)
+
+instance : Ord BitInt.Bits where
+  compare := BitInt.Bits.cmp
