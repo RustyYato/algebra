@@ -363,6 +363,9 @@ instance (priority := 900) BitInt.Bits.OfNatInst : OfNat BitInt.Bits n := ⟨.of
 instance BitInt.Bits.One : OfNat BitInt.Bits 1 := ⟨.bit true (.nil false)⟩
 instance BitInt.Bits.Zero : OfNat BitInt.Bits 0 := ⟨.nil false⟩
 
+def BitInt.mk_zero : 0 = mk 0 := rfl
+def BitInt.mk_one : 1 = mk 1 := rfl
+
 -- bit_maps and bit_zip_with are intentionally very simply to make it easy
 -- to prove theorems about them
 
@@ -919,6 +922,7 @@ def BitInt.pred : BitInt -> BitInt := by
   assumption
 
 instance : Neg BitInt := ⟨.neg⟩
+def BitInt.mk_neg_one : -1 = mk (-1) := rfl
 
 def BitInt.mk_neg (a: Bits) : -(mk a) = mk (-a) := by
   unfold Neg.neg instNegBitInt instNegBits
@@ -977,6 +981,46 @@ def BitInt.pred_eq_neg_succ_neg (a: BitInt) : a.pred = -(-a).succ := by
   rw [mk_pred, mk_neg, mk_succ, mk_neg]
   apply sound
   apply Bits.pred_eq_neg_succ_neg
+
+def BitInt.succ.inj (a b: BitInt) : a.succ = b.succ -> a = b := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  rw [mk_succ, mk_succ]
+  intro h
+  apply sound
+  apply Bits.succ.spec.mpr
+  apply exact
+  assumption
+
+def BitInt.pred.inj (a b: BitInt) : a.pred = b.pred -> a = b := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  rw [mk_pred, mk_pred]
+  intro h
+  apply sound
+  apply Bits.pred.spec.mpr
+  apply exact
+  assumption
+
+def BitInt.neg.inj (a b: BitInt) : -a = -b -> a = b := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  rw [mk_neg, mk_neg]
+  intro h
+  apply sound
+  apply Bits.neg.spec.mpr
+  apply exact
+  assumption
+
+def BitInt.not.inj (a b: BitInt) : a.not = b.not -> a = b := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  rw [mk_not, mk_not]
+  intro h
+  apply sound
+  apply Bits.not.spec.mpr
+  apply exact
+  assumption
 
 def bit_add_carry : Bool -> Bool -> Bool -> Bool × Bool
 | false, false, x
@@ -1231,6 +1275,448 @@ def BitInt.Bits.add.spec_right (k a b: Bits) :
   k + a ≈ k + b := by
   apply add_with_carry.spec
   rfl
+
+def BitInt.Bits.add_zero_iff {a b: Bits} : b ≈ 0 ↔ a + b ≈ a := by
+  rw [add.def]
+  induction a generalizing b with
+  | nil a =>
+    induction b with
+    | nil b => revert a b; decide
+    | bit b bs ih =>
+      apply Iff.intro
+      intro h
+      cases h
+      cases a <;> unfold add add_with_carry
+      apply bit_nil
+      assumption
+      apply bit_nil
+      apply succ.spec.mpr
+      apply Bits.trans
+      apply pred_succ
+      assumption
+      cases a <;> unfold add add_with_carry
+      intro h
+      cases h
+      apply bit_nil
+      assumption
+      intro h
+      cases b <;> cases h
+      apply bit_nil
+      apply pred.spec.mpr
+      assumption
+  | bit a as ih =>
+    cases b with
+    | nil b =>
+      apply Iff.intro
+      intro h
+      cases h
+      rfl
+      cases b <;> unfold add add_with_carry nil_add <;> dsimp
+      intros
+      rfl
+      intro h
+      apply False.elim
+      cases a <;> unfold pred at h
+      contradiction
+      contradiction
+    | bit b bs =>
+      apply Iff.intro
+      intro h
+      cases h
+      unfold add add_with_carry bit_add_carry
+      cases a <;> dsimp
+      apply bit_bit
+      apply ih.mp
+      assumption
+      apply bit_bit
+      apply ih.mp
+      assumption
+      unfold add add_with_carry bit_add_carry
+      cases a <;> cases b <;> dsimp <;> intro h
+      all_goals cases h
+      all_goals apply bit_nil
+      apply ih.mpr
+      assumption
+      apply ih.mpr
+      assumption
+
+def BitInt.Bits.zero_add_iff {a b: Bits} : a ≈ 0 ↔ a + b ≈ b := by
+  rw [add.def]
+  induction b generalizing a with
+  | nil b =>
+    induction a with
+    | nil a => revert a b; decide
+    | bit a as ih =>
+      apply Iff.intro
+      intro h
+      cases h
+      cases b
+      apply bit_nil
+      assumption
+      apply bit_nil
+      apply succ.spec.mpr
+      apply Bits.trans
+      apply pred_succ
+      assumption
+      cases b
+      intro h
+      cases h
+      apply bit_nil
+      assumption
+      intro h
+      cases a <;> cases h
+      apply bit_nil
+      apply pred.spec.mpr
+      assumption
+  | bit b bs ih =>
+    cases a with
+    | nil a =>
+      apply Iff.intro
+      intro h
+      cases h
+      rfl
+      intro h
+      cases a <;> cases b
+      all_goals cases h
+      rfl
+      rfl
+    | bit a as =>
+      apply Iff.intro
+      intro h
+      cases h
+      cases b
+      apply bit_bit
+      apply ih.mp
+      assumption
+      apply bit_bit
+      apply ih.mp
+      assumption
+      cases a <;> cases b <;> intro h
+      all_goals cases h
+      all_goals apply bit_nil
+      apply ih.mpr
+      assumption
+      apply ih.mpr
+      assumption
+
+def BitInt.Bits.add_neg_one_iff {a b: Bits} : b ≈ -1 ↔ a + b ≈ a.pred := by
+  rw [add.def]
+  induction a generalizing b with
+  | nil a =>
+    induction b with
+    | nil b => revert a b; decide
+    | bit b bs ih =>
+      apply Iff.intro
+      intro h
+      cases h
+      cases a <;> unfold add add_with_carry
+      apply bit_nil
+      assumption
+      apply bit_bit
+      assumption
+      intro h
+      cases a <;> cases b <;> cases h
+      apply bit_nil
+      assumption
+      apply bit_nil
+      assumption
+  | bit a as ih =>
+    cases b with
+    | nil b =>
+      apply Iff.intro
+      intro h
+      cases h
+      rfl
+      intro h
+      cases a <;> cases b
+      all_goals cases h
+      rfl
+      rfl
+    | bit b bs =>
+      apply Iff.intro
+      intro h
+      cases h
+      unfold add add_with_carry bit_add_carry
+      cases a <;> dsimp
+      apply bit_bit
+      apply ih.mp
+      assumption
+      apply bit_bit
+      apply trans
+      apply add_with_carry.spec
+      rfl
+      assumption
+      rw [add_with_carry.nil_right]
+      rfl
+      intro h
+      unfold add add_with_carry bit_add_carry at h
+      cases a <;> cases b <;> dsimp at h
+      all_goals cases h
+      apply bit_nil
+      apply ih.mpr
+      assumption
+      apply bit_nil
+      apply ih.mpr
+      rename_i h
+      apply flip trans
+      apply pred.spec.mp
+      apply h
+      apply flip trans
+      apply pred.spec.mp
+      symm
+      apply add_with_carry.eq_add_if
+      rw [if_pos rfl]
+      symm
+      apply succ_pred
+
+def BitInt.Bits.neg_one_add_iff {a b: Bits} : a ≈ -1 ↔ a + b ≈ b.pred := by
+  rw [add.def]
+  induction b generalizing a with
+  | nil b =>
+    induction a with
+    | nil a => revert a b; decide
+    | bit a as ih =>
+      apply Iff.intro
+      intro h
+      cases h
+      cases b <;> unfold add add_with_carry
+      apply bit_nil
+      assumption
+      unfold nil_add; dsimp
+      apply pred.spec.mp
+      apply bit_nil
+      assumption
+      intro h
+      unfold add add_with_carry at h
+      cases b <;> (unfold nil_add at h; dsimp at h)
+      cases h
+      apply bit_nil
+      assumption
+      apply pred.spec.mpr
+      assumption
+  | bit b bs ih =>
+    cases a with
+    | nil a =>
+      apply Iff.intro
+      intro h
+      cases h
+      rfl
+      unfold add add_with_carry nil_add
+      cases a <;> dsimp
+      intro h
+      cases b <;> nomatch h
+      intro
+      rfl
+    | bit a as =>
+      apply Iff.intro
+      intro h
+      cases h
+      unfold add add_with_carry bit_add_carry
+      cases b <;> dsimp
+      apply bit_bit
+      apply ih.mp
+      assumption
+      apply bit_bit
+      apply trans
+      apply add_with_carry.spec
+      assumption
+      rfl
+      rw [add_with_carry.nil_left]; rfl
+      intro h
+      cases a <;> cases b <;> cases h
+      all_goals
+        apply bit_nil
+        rename_i h
+        apply ih.mpr
+      assumption
+      apply flip trans
+      apply pred.spec.mp
+      assumption
+      apply flip trans
+      apply pred.spec.mp
+      symm
+      apply add_with_carry.eq_add_if
+      rw [if_pos rfl]
+      apply flip trans
+      symm
+      apply succ_pred
+      rfl
+
+def BitInt.Bits.add_succ (a b: Bits) : a + b.succ ≈ (a + b).succ := by
+  rw [add.def, add.def]
+  induction a generalizing b with
+  | nil a =>
+    cases b with
+    | nil b => revert a b; decide
+    | bit b bs =>
+      unfold add add_with_carry
+      cases a <;> cases b
+      any_goals rfl
+      any_goals (rw [succ]; dsimp)
+      apply flip Bits.trans
+      symm
+      apply Bits.pred_succ
+      rfl
+      apply flip Bits.trans
+      symm
+      apply Bits.pred_succ
+      apply bit_bit
+      apply succ_pred
+  | bit a as ih =>
+    cases b with
+    | nil b =>
+      cases a <;> cases b
+      all_goals apply bit_bit
+      any_goals rw [add_with_carry.nil_right]
+      any_goals rfl
+      symm
+      apply pred_succ
+    | bit b bs =>
+      cases a <;> cases b
+      all_goals apply bit_bit
+      rfl
+      apply ih
+      apply add_with_carry.eq_add_if
+      apply Bits.trans
+      apply ih
+      symm
+      apply add_with_carry.eq_add_if
+
+def BitInt.Bits.succ_add (a b: Bits) : a.succ + b ≈ (a + b).succ := by
+  rw [add.def, add.def]
+  induction a generalizing b with
+  | nil a =>
+    cases b with
+    | nil b => revert a b; decide
+    | bit b bs =>
+      cases a <;> cases b
+      all_goals apply bit_bit
+      any_goals rw [add_with_carry.nil_left]
+      any_goals rfl
+      symm
+      apply pred_succ
+  | bit a as ih =>
+    cases b with
+    | nil b =>
+      cases a <;> cases b
+      all_goals apply bit_bit
+      any_goals rfl
+      symm
+      apply pred_succ
+      apply succ_pred
+    | bit b bs =>
+      cases a <;> cases b
+      all_goals apply bit_bit
+      any_goals rfl
+      apply add_with_carry.eq_add_if
+      apply ih
+      apply flip trans
+      symm
+      apply add_with_carry.eq_add_if
+      apply ih
+
+def BitInt.Bits.add_pred (a b: Bits) : a + b.pred ≈ (a + b).pred := by
+  apply succ.spec.mpr
+  apply trans
+  symm
+  apply add_succ
+  apply trans
+  apply add.spec
+  rfl
+  apply pred_succ
+  symm
+  apply pred_succ
+
+def BitInt.Bits.pred_add (a b: Bits) : a.pred + b ≈ (a + b).pred := by
+  apply succ.spec.mpr
+  apply trans
+  symm
+  apply succ_add
+  apply trans
+  apply add.spec
+  apply pred_succ
+  rfl
+  symm
+  apply pred_succ
+
+def BitInt.add : BitInt -> BitInt -> BitInt := by
+  apply lift₂ (fun _ _ => mk _) _
+  exact Bits.add
+  intros
+  apply sound
+  apply Bits.add.spec
+  assumption
+  assumption
+
+instance : Add BitInt := ⟨.add⟩
+
+def BitInt.mk_add (a b: Bits) : mk a + mk b = mk (a + b) := by
+  unfold HAdd.hAdd instHAdd Add.add
+  apply lift₂_mk
+
+def BitInt.add.add_zero_iff (a b: BitInt) : b = 0 ↔ a + b = a := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  apply Iff.intro
+  intro h
+  rw [mk_add]
+  apply sound
+  apply BitInt.Bits.add_zero_iff.mp
+  apply exact
+  assumption
+  rw [mk_add]
+  intro h
+  rw [mk_zero]
+  apply sound
+  apply BitInt.Bits.add_zero_iff.mpr
+  apply exact
+  assumption
+
+def BitInt.add.zero_add_iff (a b: BitInt) : a = 0 ↔ a + b = b := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  apply Iff.intro
+  intro h
+  rw [mk_add]
+  apply sound
+  apply BitInt.Bits.zero_add_iff.mp
+  apply exact
+  assumption
+  rw [mk_add]
+  intro h
+  rw [mk_zero]
+  apply sound
+  apply BitInt.Bits.zero_add_iff.mpr
+  apply exact
+  assumption
+
+def BitInt.add.add_succ (a b: BitInt) : a + b.succ = (a + b).succ := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  rw [mk_succ, mk_add, mk_add, mk_succ]
+  apply sound
+  exact Bits.add_succ a b
+
+def BitInt.add.succ_add (a b: BitInt) : a.succ + b = (a + b).succ := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  rw [mk_succ, mk_add, mk_add, mk_succ]
+  apply sound
+  exact Bits.succ_add a b
+
+def BitInt.add.add_pred (a b: BitInt) : a + b.pred = (a + b).pred := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  rw [mk_pred, mk_add, mk_add, mk_pred]
+  apply sound
+  exact Bits.add_pred a b
+
+def BitInt.add.pred_add (a b: BitInt) : a.pred + b = (a + b).pred := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  rw [mk_pred, mk_add, mk_add, mk_pred]
+  apply sound
+  exact Bits.pred_add a b
 
 instance : Repr Ordering where
   reprPrec o := match o with
