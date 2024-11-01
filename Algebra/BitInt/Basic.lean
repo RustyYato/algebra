@@ -1000,6 +1000,18 @@ def BitInt.Bits.pred_eq_neg_succ_neg (a: BitInt.Bits) : a.pred ≈ a.neg.succ.ne
   apply neg_neg
   rfl
 
+def BitInt.Bits.succ_eq_neg_pred_neg (a: BitInt.Bits) : a.succ ≈ a.neg.pred.neg := by
+  apply flip Bits.trans
+  symm
+  apply neg.spec.mp
+  apply pred_eq_neg_succ_neg
+  apply flip Bits.trans
+  symm
+  apply neg_neg
+  apply succ.spec.mp
+  symm
+  apply neg_neg
+
 def BitInt.Bits.nil_cmp (a: Bool) : Bits -> Ordering
 | .nil b => compare b a
 | .bit b bs => (nil_cmp a bs).then (compare a b)
@@ -1150,6 +1162,9 @@ def BitInt.Bits.add_with_carry : Bits -> Bits -> Bool -> Bits
 def BitInt.Bits.add : Bits -> Bits -> Bits := (add_with_carry · · false)
 
 instance : Add BitInt.Bits := ⟨.add⟩
+instance : Sub BitInt.Bits where
+  sub a b := a + -b
+def BitInt.Bits.sub.def (a b: Bits) : a - b = a + -b := rfl
 
 def BitInt.Bits.add.def (a b: Bits) : a + b = a.add b := rfl
 
@@ -1498,6 +1513,14 @@ def BitInt.Bits.zero_add_iff {a b: Bits} : a ≈ 0 ↔ a + b ≈ b := by
       apply ih.mpr
       assumption
 
+def BitInt.Bits.zero_add {b: Bits} : 0 + b ≈ b := by
+  apply zero_add_iff.mp
+  rfl
+
+def BitInt.Bits.add_zero {a: Bits} : a + 0 ≈ a := by
+  apply add_zero_iff.mp
+  rfl
+
 def BitInt.Bits.add_neg_one_iff {a b: Bits} : b ≈ -1 ↔ a + b ≈ a.pred := by
   rw [add.def]
   induction a generalizing b with
@@ -1747,10 +1770,17 @@ def BitInt.add : BitInt -> BitInt -> BitInt := by
   assumption
 
 instance : Add BitInt := ⟨.add⟩
+instance : Sub BitInt where
+  sub a b := a + -b
+def BitInt.sub.def (a b: BitInt) : a - b = a + -b := rfl
 
 def BitInt.mk_add (a b: Bits) : mk a + mk b = mk (a + b) := by
   unfold HAdd.hAdd instHAdd Add.add
   apply lift₂_mk
+
+def BitInt.mk_sub (a b: Bits) : mk a - mk b = mk (a - b) := by
+  rw [sub.def, mk_neg, mk_add]
+  rfl
 
 def BitInt.add.add_zero_iff (a b: BitInt) : b = 0 ↔ a + b = a := by
   induction a using ind with | mk a =>
@@ -2202,3 +2232,749 @@ def BitInt.add.assoc (a b c: BitInt) : a + b + c = a + (b + c) := by
 def BitInt.Bits.add.assoc (a b c: Bits) : a + b + c ≈ a + (b + c) := by
   apply exact
   rw [←mk_add, ←mk_add, BitInt.add.assoc, mk_add, mk_add]
+
+def BitInt.neg.succ (a: BitInt) : -a.succ = (-a).pred := by
+  induction a using ind with | mk a =>
+  rw [mk_succ, mk_neg, mk_neg, mk_pred]
+  apply sound
+  symm
+  apply Bits.trans
+  apply Bits.pred_eq_neg_succ_neg
+  apply Bits.neg.spec.mp
+  apply Bits.succ.spec.mp
+  apply Bits.neg_neg
+
+def BitInt.neg.pred (a: BitInt) : -a.pred = (-a).succ := by
+  induction a using ind with | mk a =>
+  rw [mk_pred, mk_neg, mk_neg, mk_succ]
+  apply sound
+  apply Bits.trans
+  apply Bits.neg.spec.mp
+  apply Bits.pred_eq_neg_succ_neg
+  apply Bits.trans
+  apply Bits.neg_neg
+  apply Bits.succ.spec.mp
+  rfl
+
+def BitInt.add.neg_self_add (a: BitInt) : -a + a = 0 := by
+  induction a using strongInduction with
+  | zero => rfl
+  | succ a ih => rw [neg.succ, pred_add, add_succ, succ_pred, ih]
+  | pred a ih => rw [neg.pred, add_pred, succ_add, succ_pred, ih]
+
+def BitInt.add.add_neg_self (a: BitInt) : a + -a = 0 := by
+  rw [add.comm, neg_self_add]
+
+def BitInt.Bits.add.neg_self_add (a: Bits) : -a + a ≈ 0 := by
+  apply exact
+  rw [←mk_add, ←mk_neg]
+  apply BitInt.add.neg_self_add
+def BitInt.Bits.add.add_neg_self (a: Bits) : a + -a ≈ 0 := by
+  apply exact
+  rw [←mk_add, ←mk_neg]
+  apply BitInt.add.add_neg_self
+
+def BitInt.Bits.add.self (a: Bits) : a + a ≈ bit false a := by
+  induction a with
+  | nil a => revert a; decide
+  | bit a as ih =>
+    cases a
+    all_goals
+      apply bit_bit
+    apply ih
+    apply trans
+    apply add_with_carry.eq_add_if
+    rw [if_pos rfl]
+    apply trans
+    apply succ.spec.mp
+    apply ih
+    rfl
+
+def BitInt.neg.zero : -(0: BitInt) = 0 := rfl
+
+def BitInt.Bits.neg.eqv_zero (a: Bits) : a ≈ 0 -> -a ≈ 0 := by
+  intro eqv
+  apply exact
+  rw [←mk_neg, sound eqv]
+  rfl
+
+def BitInt.sub.sub_zero (a: BitInt) : a - 0 = a := by
+  rw [sub.def, neg.zero, add.add_zero]
+
+def BitInt.sub.sub_succ (a: BitInt) : a - b.succ = (a - b).pred := by
+  rw [sub.def, neg.succ, add.add_pred, sub.def]
+def BitInt.sub.sub_pred (a: BitInt) : a - b.pred = (a - b).succ := by
+  rw [sub.def, neg.pred, add.add_succ, sub.def]
+
+def BitInt.sub.succ_sub (a: BitInt) : a.succ - b = (a - b).succ := by
+  rw [sub.def, add.succ_add, sub.def]
+def BitInt.sub.pred_sub (a: BitInt) : a.pred - b = (a - b).pred := by
+  rw [sub.def, add.pred_add, sub.def]
+
+def BitInt.succ_eq_iff_eq_pred (a b: BitInt) : a.succ = b ↔ a = b.pred := by
+  apply Iff.intro
+  intro h
+  apply succ.inj
+  rw [pred_succ]
+  assumption
+  intro h
+  apply pred.inj
+  rw [succ_pred]
+  assumption
+
+def BitInt.pred_eq_iff_eq_succ (a b: BitInt) : a.pred = b ↔ a = b.succ := by
+  apply Iff.intro
+  intro h
+  apply pred.inj
+  rw [succ_pred]
+  assumption
+  intro h
+  apply succ.inj
+  rw [pred_succ]
+  assumption
+
+def BitInt.add_sub_assoc (a b c: BitInt) : a + b - c = a + (b - c) := by
+  rw [sub.def, add.assoc, sub.def]
+
+def BitInt.sub.self (a: BitInt) : a - a = 0 := by
+  rw [sub.def, add.add_neg_self]
+
+def BitInt.add_eq_iff_eq_sub {k a b: BitInt} : a + k = b ↔ a = b - k := by
+  apply Iff.intro
+  intro h
+  rw [←h, add_sub_assoc, sub.self, add.add_zero]
+  intro h
+  rw [h, sub.def, add.assoc, add.neg_self_add, add.add_zero]
+
+def BitInt.sub_eq_iff_eq_add {k a b: BitInt} : a - k = b ↔ a = b + k := by
+  apply Iff.intro
+  intro h
+  rw [←h, sub.def, add.assoc, add.neg_self_add, add.add_zero]
+  intro h
+  rw [h, add_sub_assoc, sub.self, add.add_zero]
+
+def BitInt.Bits.add_eq_iff_eq_sub {k a b: Bits} : a + k ≈ b ↔ a ≈ b - k := by
+  apply Iff.intro
+  intro h
+  apply exact
+  rw [←mk_sub]
+  apply BitInt.add_eq_iff_eq_sub.mp
+  rw [mk_add]
+  apply sound
+  assumption
+  intro h
+  apply exact
+  rw [←mk_add]
+  apply BitInt.add_eq_iff_eq_sub.mpr
+  rw [mk_sub]
+  apply sound
+  assumption
+
+def BitInt.Bits.sub_eq_iff_eq_add {k a b: Bits} : a - k ≈ b ↔ a ≈ b + k := by
+  apply Iff.intro
+  intro h
+  apply exact
+  rw [←mk_add]
+  apply BitInt.sub_eq_iff_eq_add.mp
+  rw [mk_sub]
+  apply sound
+  assumption
+  intro h
+  apply exact
+  rw [←mk_sub]
+  apply BitInt.sub_eq_iff_eq_add.mpr
+  rw [mk_add]
+  apply sound
+  assumption
+
+def BitInt.Bits.add.bit_add_false_bit : bit a as + bit false bs = bit a (as + bs) := by cases a <;> rfl
+
+def BitInt.add.mk_self (a: Bits) : mk a + mk a = mk (.bit false a) := by
+  rw [mk_add, sound (Bits.add.self a)]
+
+def BitInt.Bits.nil_mul : Bool -> Bits -> Bits
+| false, _ => 0
+| true, a => -a
+abbrev BitInt.Bits.bit_mul : Bool -> Bits -> Bits
+| false, _ => 0
+| true, a => a
+
+def BitInt.Bits.mul : Bits -> Bits -> Bits
+| .nil a, b => b.nil_mul a
+| a, .nil b => a.nil_mul b
+| .bit a as, .bit b bs =>
+  -- (a + 2 * as) * (b + 2 * bs)
+  -- a * (b + 2 * bs) + 2 * as * (b + 2 * bs)
+  -- a * b + 2 * a * bs + 2 * as * b + 4 * as * bs
+  have as' := as.bit_mul b
+  have bs' := bs.bit_mul a
+  .bit (a && b) <| as' + bs' + .bit false (as.mul bs)
+
+instance : Mul BitInt.Bits := ⟨.mul⟩
+
+def BitInt.Bits.mul.def (a b: Bits) : a * b = a.mul b := rfl
+
+def BitInt.Bits.mul.comm (a b: Bits) : a * b ≈ b * a := by
+  induction a generalizing b with
+  | nil a =>
+    cases b with
+    | nil b => revert a b; decide
+    | bit b bs => rfl
+  | bit a as ih =>
+    cases b with
+    | nil b => rfl
+    | bit b bs =>
+      rw [mul.def, mul.def]
+      unfold mul
+      dsimp
+      rw [Bool.and_comm]
+      apply bit_bit
+      apply exact
+      repeat rw [←mk_add]
+      rw [BitInt.add.comm (mk (Bits.bit_mul _ _))]
+      congr 1
+      apply sound
+      apply bit_bit
+      apply ih
+
+def BitInt.Bits.bit_mul.zero (a: Bits) : a ≈ 0 -> bit_mul b a ≈ 0 := by
+  intro eq
+  cases b <;> trivial
+
+def BitInt.Bits.bit_mul.false (a: Bits) : bit_mul false a = 0 := by rfl
+def BitInt.Bits.bit_mul.true (a: Bits) : bit_mul true a = a := by rfl
+def BitInt.Bits.bit_mul.bit : bit_mul a (bit b bs) ≈ bit (a && b) (bit_mul a bs) := by
+  cases a
+  rw [bit_mul.false]
+  revert b; decide
+  rw [bit_mul.true, bit_mul.true, Bool.true_and]
+
+def BitInt.Bits.mul.nil_mul : nil a * b = nil_mul a b := by cases b <;> rfl
+def BitInt.Bits.mul.mul_nil : a * nil b = Bits.nil_mul b a := by
+  cases a with
+  | nil a => revert a b; decide
+  | bit a as => rfl
+def BitInt.Bits.mul.bit_eq : Bits.bit a as ≈ Bits.bit_mul a 1 + Bits.bit false as := by
+  cases a
+  rw [bit_mul.false]
+  apply flip trans; symm
+  apply zero_add
+  rfl
+  rw [bit_mul.true]
+  have : 1 = (0: Bits).succ := rfl
+  rw [this]
+  apply flip trans; symm
+  apply succ_add
+  apply flip trans
+  apply add_succ
+  rfl
+
+def BitInt.Bits.mul.zero_mul (a: Bits) : 0 * a ≈ 0 := by cases a <;> rfl
+
+def BitInt.Bits.mul.mul_zero (a: Bits) : a * 0 ≈ 0 := by
+  rw [mul.def]
+  cases a with
+  | nil a => revert a; decide
+  | bit a as => rfl
+
+def BitInt.Bits.mul.neg_one_mul (a: Bits) : -1 * a ≈ -a := by cases a <;> rfl
+
+def BitInt.Bits.mul.mul_neg_one (a: Bits) : a * -1≈ -a := by
+  rw [mul.def]
+  cases a with
+  | nil a => revert a; decide
+  | bit a as => rfl
+def  BitInt.Bits.mul.bit_mul_bit :
+  Bits.bit a as * Bits.bit b bs =
+  (.bit (a && b) <| as.bit_mul b + bs.bit_mul a + .bit false (as.mul bs)) := rfl
+
+def BitInt.Bits.bit_mul_add_mul : bit_mul a bs + Bits.bit false as * bs ≈ Bits.bit a as * bs := by
+  cases a
+  rw [bit_mul.false]
+  apply trans
+  apply zero_add
+  rfl
+  rw [bit_mul.true]
+  cases bs with
+  | nil b =>
+    cases b
+    rfl
+    apply trans
+    apply add.spec
+    rfl
+    apply mul.mul_neg_one
+    apply flip trans
+    symm
+    apply mul.mul_neg_one
+    apply flip  trans
+    symm
+    apply neg_eq_neg_naive
+    apply trans
+    apply add.spec
+    rfl
+    apply neg_eq_neg_naive
+    apply bit_bit
+    apply trans
+    apply pred_eq_neg_not
+    apply not.spec.mp
+    apply trans
+    apply neg.spec.mp
+    symm
+    apply neg_eq_neg_naive
+    apply neg_neg
+  | bit b bs =>
+    rw [mul.bit_mul_bit, mul.bit_mul_bit, Bool.false_and, Bool.true_and,
+      add.bit_add_false_bit]
+    apply bit_bit
+    rw [bit_mul.false, bit_mul.true bs]
+    apply exact
+    repeat rw [←mk_add]
+    rw [←mk_zero, BitInt.add.add_zero, BitInt.add.comm _ (mk bs), BitInt.add.assoc]
+
+def BitInt.Bits.mul.mul_zero' (a b: Bits) : b ≈ 0 -> a * b ≈ 0 := by
+  intro eqv
+  induction b generalizing a with
+  | nil b =>
+    cases eqv
+    apply mul_zero
+  | bit b bs ih =>
+    cases eqv
+    rename_i eqv
+    cases a with
+    | nil a =>
+      rw [nil_mul]
+      cases a
+      rfl
+      apply Bits.neg.eqv_zero
+      apply bit_nil
+      assumption
+    | bit a as =>
+      replace ih := ih as eqv
+      rw [bit_mul_bit]
+      rw [Bool.and_false]
+      apply bit_nil
+      rw [bit_mul.false]
+      apply trans
+      apply add.spec
+      apply add.spec
+      rfl
+      apply bit_mul.zero
+      assumption
+      apply bit_bit
+      assumption
+      decide
+
+def BitInt.Bits.mul.bit_mul.helper₀ :
+  as * Bits.bit false bs ≈ Bits.bit false (as * bs)
+  ∧ bs * Bits.bit false as ≈ Bits.bit false (bs * as) := by
+  -- induction as, bs using mul.induct with
+  -- | case1 a bs =>
+  --   repeat rw [nil_mul]
+  --   repeat rw [mul_nil]
+  --   apply And.intro
+  --   · cases a
+  --     apply nil_bit
+  --     rfl
+  --     apply bit_bit
+  --     rfl
+  --   ·
+  --     sorry
+  -- | case2 as b h =>
+  --   repeat rw [nil_mul]
+  --   repeat rw [mul_nil]
+  --   apply And.intro
+  --   · rw
+  --     sorry
+  --   · cases b
+  --     apply nil_bit
+  --     rfl
+  --     apply bit_bit
+  --     rfl
+  -- | case3 => sorry
+
+  induction as generalizing bs with
+  | nil a =>
+    apply And.intro
+    · cases a
+      apply trans
+      apply zero_mul
+      apply nil_bit
+      symm
+      apply zero_mul
+      apply trans
+      apply neg_one_mul
+      apply bit_bit
+      symm
+      apply neg_one_mul
+    · cases a
+      apply trans
+      apply mul_zero'
+      decide
+      apply nil_bit
+      symm
+      apply mul_zero
+      apply flip trans
+      apply add.self
+      sorry
+  | bit a as ih =>
+    apply And.intro
+    · rw [bit_mul_bit, Bool.and_false, bit_mul.false]
+      apply bit_bit
+      apply trans
+      apply add.assoc
+      apply trans
+      apply zero_add
+      apply trans
+      apply add.spec
+      rfl
+      apply bit_bit
+      apply mul.comm
+      apply trans
+      apply add.spec
+      rfl
+      symm
+      apply ih.right
+      apply trans
+      apply add.spec
+      rfl
+      apply mul.comm
+      apply trans
+      apply bit_mul_add_mul
+      rfl
+    · sorry
+
+def BitInt.Bits.mul.bit_mul.helper :
+  Bits.bit x as * bs ≈ Bits.bit_mul x bs + Bits.bit false (as * bs) ∧
+  as * Bits.bit x bs ≈ Bits.bit_mul x as + Bits.bit false (as * bs)
+  := by
+  induction bs generalizing x as with
+  | nil b =>
+    apply And.intro
+    · rw [mul_nil, mul_nil]
+      cases x <;> cases b
+      all_goals
+        unfold Bits.nil_mul
+        dsimp
+      any_goals decide
+      rfl
+      rw [bit_mul.true]
+      apply trans
+      apply neg_eq_neg_naive
+      unfold neg_naive
+      apply bit_bit
+      apply flip trans
+      symm
+      apply pred_eq_neg_not
+      apply not.spec.mp
+      symm
+      apply neg_neg
+    · rw [mul_nil]
+      cases as with
+      | nil a => revert a b x; decide
+      | bit a as =>
+      rw [bit_mul_bit]
+      apply flip trans
+      symm
+      apply add.spec
+      apply bit_mul.bit
+      rfl
+      rw [Bool.and_comm, add.bit_add_false_bit]
+      apply bit_bit
+      apply exact
+      repeat rw [←mk_add]
+      rw [BitInt.add.assoc]
+      congr 1
+      cases b
+      rw [sound (bit_mul.zero _ _), ←mk_zero, add.zero_add]
+      apply sound
+      apply bit_nil
+      apply mul_zero
+      rfl
+      cases a
+      rw [bit_mul.false, ←mk_zero, add.zero_add]
+      apply sound
+      apply bit_bit
+      apply mul_neg_one
+      rw [bit_mul.true]
+      rw [mk_add]
+      apply sound
+      unfold Bits.nil_mul
+      dsimp
+      apply trans
+      apply add.spec
+      have : nil true ≈ -1 := by rfl
+      exact this
+      apply bit_bit
+      apply mul_neg_one
+      apply flip trans
+      symm
+      apply neg_eq_neg_naive
+      apply bit_bit
+      apply trans
+      apply pred_eq_neg_not
+      apply not.spec.mp
+      apply neg_neg
+  | bit b bs ih =>
+    apply And.intro
+    · rw [bit_mul_bit]
+      apply flip trans; symm
+      apply add.spec
+      apply Bits.bit_mul.bit
+      rfl
+      rw [Bits.add.bit_add_false_bit]
+      apply bit_bit
+      apply exact
+      repeat rw [←mk_add]
+      rw [BitInt.add.comm (mk (BitInt.Bits.bit_mul _ _)), BitInt.add.assoc]
+      congr
+      clear x
+      rw [sound ih.right, ←mk_add]
+      rfl
+    · cases x
+      rw [bit_mul.false]
+      apply flip trans;symm
+      apply zero_add
+      apply flip trans;symm
+      apply bit_bit
+      apply ih.right
+
+
+
+      sorry
+
+#print axioms BitInt.Bits.mul.bit_mul.helper
+
+def BitInt.Bits.mul.succ_mul (a b: Bits) : a.succ * b ≈ a * b + b := by
+  rw [mul.def]
+  induction a generalizing b with
+  | nil a =>
+    induction b with
+    | nil b => revert a b; decide
+    | bit b bs ih =>
+      cases a <;> cases b
+      any_goals
+        apply bit_bit
+        apply trans
+        apply add.assoc
+        apply trans
+        apply zero_add
+        apply add_zero_iff.mp
+        apply trans
+        apply bit_bit
+        apply zero_mul
+        apply bit_nil
+        rfl
+      all_goals
+        apply flip trans
+        symm
+        apply BitInt.Bits.add.neg_self_add
+        rfl
+  | bit a as ih =>
+    cases b with
+    | nil b =>
+      cases a <;> cases b
+      any_goals rfl
+      all_goals
+        apply flip trans
+        symm
+        apply add_neg_one_iff.mp
+        rfl
+        apply neg.spec.mpr
+        apply flip trans
+        apply succ_eq_neg_pred_neg
+        apply trans
+        apply neg_neg
+        rfl
+    | bit b bs =>
+      cases a <;> cases b
+      all_goals
+        apply bit_bit
+        try
+          apply flip trans
+          symm
+          apply add_with_carry.eq_add_if _ _ true
+          rw [if_pos rfl]
+        try rw [←add, ←add.def]
+        unfold bit_mul
+        dsimp
+        apply exact
+        repeat rw [←BitInt.mk_add]
+        repeat rw [←mk_zero]
+        repeat rw [BitInt.add.zero_add]
+        repeat rw [BitInt.add.add_zero]
+        try
+          rw [BitInt.add.comm]
+          done
+      rw [BitInt.add.assoc, BitInt.add.assoc]
+      congr 1
+      rw [BitInt.add.comm]
+      rw [BitInt.add.assoc, BitInt.add.comm, BitInt.add.assoc]
+      rw [add.mk_self, BitInt.mk_add]
+      apply sound
+      apply bit_bit
+      apply ih
+      repeat first|rw [←mk_succ]|rw [←mk_add]
+      repeat rw [BitInt.add.assoc (mk as)]
+      rw [←BitInt.add.succ_add]
+      congr 1
+      rw [BitInt.add.assoc, BitInt.add.comm, BitInt.add.assoc]
+      rw [add.mk_self, BitInt.mk_add]
+      apply sound
+      apply bit_bit
+      apply ih
+
+def BitInt.Bits.mul.pred_mul (a b: Bits) : a.pred * b ≈ a * b - b := by
+  sorry
+
+def BitInt.Bits.mul_add (a b k: Bits) : k * (a + b) ≈ k * a + k * b := by
+  induction k using strongInduction with
+  | zero =>
+    apply trans
+    apply Bits.mul.zero_mul
+    apply flip trans
+    symm
+    apply add.spec
+    apply Bits.mul.zero_mul
+    apply Bits.mul.zero_mul
+    rfl
+  | succ k kmin ih => sorry
+  | pred k kmin ih => sorry
+  | eqv k k' k_eq_k' ih =>
+    induction k_eq_k' with
+    | nil_nil k => assumption
+    | nil_bit k ks k_eq_ks ih' =>
+      replace ih' := ih' ih
+      rw [mul.def]
+
+      sorry
+    | bit_nil => sorry
+    | bit_bit => sorry
+
+
+
+def BitInt.Bits.mul.spec (a b c d: Bits):
+  a ≈ c ->
+  b ≈ d ->
+  a * b ≈ c * d := by
+  intro ac bd
+  rw [mul.def, mul.def]
+  induction ac generalizing b d with
+  | nil_nil a =>
+    cases a <;> cases b <;> cases d
+    any_goals
+      rfl
+    all_goals
+      apply neg.spec.mp
+      assumption
+  | nil_bit a as ac ih =>
+    cases a
+    apply trans
+    apply zero_mul
+    · cases bd with
+      | nil_nil b =>
+        cases b
+        rfl
+        apply nil_bit
+        apply flip trans
+        apply neg.spec.mp
+        assumption
+        rfl
+      | nil_bit b ds bd =>
+        apply nil_bit
+        cases b
+        apply nil_bit
+        apply flip trans
+        apply ih
+        assumption
+        rfl
+        unfold bit_mul
+        dsimp
+        apply exact
+        repeat rw [←mk_add]
+        rw [←mk_zero]
+        rw [BitInt.add.add_zero, ←add.mk_self, ←sound (ih _ _ bd), ←sound ac]
+        rfl
+      | bit_nil d bs bd =>
+        cases d
+        apply flip trans
+        symm
+        apply mul_zero
+        rfl
+        apply flip trans
+        symm
+        apply mul_neg_one
+        apply flip trans
+        apply neg.spec.mp
+        apply bit_bit
+        assumption
+        decide
+      | bit_bit b bs ds bd =>
+        apply nil_bit
+        apply exact
+        repeat rw [←mk_add]
+        rw [←add.mk_self, ←sound (ih _ _ bd),
+          sound (bit_mul.zero as _), bit_mul.false, ←mk_zero,
+          BitInt.add.zero_add, BitInt.add.zero_add, mk_add]
+        apply sound
+        apply flip trans
+        symm
+        apply add.spec
+        apply zero_mul
+        apply zero_mul
+        rfl
+        symm
+        assumption
+    apply trans
+    apply neg_one_mul
+    cases bd with
+    | nil_nil b =>
+      cases b
+      rfl
+      apply neg.spec.mp
+      apply nil_bit
+      assumption
+    | nil_bit b ds bd =>
+      cases b
+      apply nil_bit
+      rw [bit_mul.false, bit_mul.true]
+      apply exact
+      repeat rw [←mk_add]
+      rw [←mk_zero, BitInt.add.zero_add, ←add.mk_self, ←sound (ih _ _ bd),
+        ←sound bd]
+      rfl
+      apply bit_bit
+      apply exact
+      repeat rw [←mk_add]
+      rw [bit_mul.true, bit_mul.true, ←add.mk_self, ←sound (ih _ _ bd), ←sound ac, ←sound bd]
+      rfl
+    | bit_nil d bs bd =>
+      unfold mul nil_mul
+      cases d <;> dsimp
+      apply bit_nil
+      apply trans
+      apply neg.spec.mp
+      assumption
+      rfl
+      apply neg.spec.mp
+      apply bit_bit
+      exact trans bd ac
+    | bit_bit b bs ds bd =>
+      apply trans
+      apply neg_eq_neg_naive
+      cases b <;> apply bit_bit
+      apply trans (symm bs.neg_eq_neg_naive)
+      rw [bit_mul.false, bit_mul.true]
+      apply exact
+      repeat rw [←mk_add]
+      have : Bits.nil true = -1 := rfl
+      rw [←add.mk_self, ←mk_zero, BitInt.add.zero_add, ←sound (ih _ _ bd),
+        this, ←mul.def, sound (neg_one_mul _), ←sound bd, ←BitInt.add.assoc, ←mk_neg,
+        BitInt.add.add_neg_self (mk bs), BitInt.add.zero_add, mk_neg]
+      rfl
+
+
+
+
+      sorry
+  | bit_nil a as _ ih => sorry
+  | bit_bit a as cs _ ih => sorry
