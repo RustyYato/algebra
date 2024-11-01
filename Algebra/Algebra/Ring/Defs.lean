@@ -30,13 +30,23 @@ variable [Pow α ℤ] [Pow α₁ ℤ] [SMul ℤ α] [SMul ℤ α₀]
 variable [Neg α] [Neg α₀] [Inv α] [Inv α₁]
 variable [NatCast α] [IntCast α] [∀n, OfNat α (n+2)]
 
-variable {R: Type*} [Zero R] [One R] [Add R] [Mul R] [Sub R] [Div R]
+variable {R₀: Type*} [Zero R₀] [One R₀] [Add R₀] [Mul R₀] [Sub R₀] [Div R₀]
+variable [Pow R₀ ℕ] [SMul ℕ R₀]
+variable [Pow R₀ ℤ] [SMul ℤ R₀]
+variable [Neg R₀] [Inv R₀]
+variable [NatCast R₀] [IntCast R₀] [∀n, OfNat R₀ (n+2)]
+
+variable {M₀: Type*} [Zero M₀] [Add M₀] [Sub M₀] [SMul ℕ M₀] [SMul ℤ M₀] [Neg M₀]
+variable [SMul R₀ M₀]
+
+variable (R: Type*) [Zero R] [One R] [Add R] [Mul R] [Sub R] [Div R]
 variable [Pow R ℕ] [SMul ℕ R]
 variable [Pow R ℤ] [SMul ℤ R]
 variable [Neg R] [Inv R]
 variable [NatCast R] [IntCast R] [∀n, OfNat R (n+2)]
 
-variable {M: Type*} [Zero M] [Add M] [Sub M] [SMul ℕ M] [SMul ℤ M] [Neg M]
+variable (M: Type*) [Zero M] [Add M] [Sub M] [SMul ℕ M] [SMul ℤ M] [Neg M]
+variable [SMul R M]
 
 class IsAddSemigroup: Prop where
   add_assoc (a b c: α) : a + b + c = a + (b + c)
@@ -129,31 +139,40 @@ class IsMonoid extends IsSemigroup α, IsMulOneClass α: Prop where
   npow_zero (a: α) : a ^ 0 = 1 := by rfl
   npow_succ (n: ℕ) (a: α) : a ^ (n + 1) = a ^ n * a := by rfl
 
-def nsmul_zero [IsAddMonoid α₀] (a: α₀) : 0 • a = 0 := IsAddMonoid.nsmul_zero a
-def nsmul_succ [IsAddMonoid α₀] (n: ℕ) (a: α₀) : (n + 1) • a = n • a + a := IsAddMonoid.nsmul_succ n a
+def zero_nsmul [IsAddMonoid α₀] (a: α₀) : 0 • a = 0 := IsAddMonoid.nsmul_zero a
+def succ_nsmul [IsAddMonoid α₀] (n: ℕ) (a: α₀) : (n + 1) • a = n • a + a := IsAddMonoid.nsmul_succ n a
 def npow_zero [IsMonoid α₁] (a: α₁) : a ^ 0 = 1 := IsMonoid.npow_zero a
 def npow_succ [IsMonoid α₁] (n: ℕ) (a: α₁) : a ^ (n + 1) = a ^ n * a := IsMonoid.npow_succ n a
+def nsmul_zero [IsAddMonoid α₀] (a: ℕ) : a • (0: α₀) = 0 := by
+  induction a with
+  | zero => rw [zero_nsmul]
+  | succ a ih => rw [succ_nsmul, ih, add_zero]
+def one_npow [IsMonoid α₁] (a: ℕ) : (1: α₁) ^ a = 1 := by
+  induction a with
+  | zero => rw [npow_zero]
+  | succ a ih => rw [npow_succ, ih, mul_one]
 
-def nsmul_one [IsAddMonoid α₀] (a: α₀) : 1 • a = a := by rw [nsmul_succ, nsmul_zero, zero_add]
+def nsmul_one [IsAddMonoid α₀] (a: α₀) : 1 • a = a := by rw [succ_nsmul, zero_nsmul, zero_add]
+def one_snsmul [IsAddMonoid α₀] (a: α₀) : 1 • a = a := nsmul_one a
 def npow_one [IsMonoid α₁] (a: α₁) : a ^ 1 = a := by rw [npow_succ, npow_zero, one_mul]
 
 def nsmul_eq_nsmulRec [IsAddMonoid α₀] (n: ℕ) (a: α₀) : n • a = nsmulRec n a := by
   induction n with
-  | zero => rw [nsmul_zero]; rfl
-  | succ n ih => rw [nsmul_succ, ih]; rfl
+  | zero => rw [zero_nsmul]; rfl
+  | succ n ih => rw [succ_nsmul, ih]; rfl
 
 def npow_eq_npowRec [IsMonoid α₁] (n: ℕ) (a: α₁) : a ^ n = npowRec n a := by
   induction n with
   | zero => rw [npow_zero]; rfl
   | succ n ih => rw [npow_succ, ih]; rfl
 
-def succ_nsmul [IsAddMonoid α₀] (n: ℕ) (a: α₀) : (n + 1) • a = a + n • a := by
+def succ_nsmul' [IsAddMonoid α₀] (n: ℕ) (a: α₀) : (n + 1) • a = a + n • a := by
   have : IsAddSemigroup α₀ := IsAddMonoid.toIsAddSemigroup
   induction n with
   | zero =>
-    rw [nsmul_zero, add_zero, nsmul_succ, nsmul_zero, zero_add]
-  | succ n ih => rw [nsmul_succ n, ←add_assoc, ←ih, nsmul_succ (n + 1)]
-def succ_npow [IsMonoid α₁] (n: ℕ) (a: α₁) : a ^ (n + 1) = a * a ^ n := by
+    rw [zero_nsmul, add_zero, succ_nsmul, zero_nsmul, zero_add]
+  | succ n ih => rw [succ_nsmul n, ←add_assoc, ←ih, succ_nsmul (n + 1)]
+def npow_succ' [IsMonoid α₁] (n: ℕ) (a: α₁) : a ^ (n + 1) = a * a ^ n := by
   have : IsSemigroup α₁ := IsMonoid.toIsSemigroup
   induction n with
   | zero =>
@@ -163,13 +182,37 @@ def succ_npow [IsMonoid α₁] (n: ℕ) (a: α₁) : a ^ (n + 1) = a * a ^ n := 
 def add_nsmul [IsAddMonoid α₀] (n m: ℕ) (a: α₀) : (n + m) • a = n • a + m • a := by
   have : IsAddSemigroup α₀ := IsAddMonoid.toIsAddSemigroup
   induction m with
-  | zero => rw [Nat.add_zero, nsmul_zero, add_zero]
-  | succ m ih => rw [Nat.add_succ, nsmul_succ, nsmul_succ, ←add_assoc, ih]
-def add_npow [IsMonoid α₁] (n m: ℕ) (a: α₁) : a ^ (n + m) = a ^ n * a ^ m := by
+  | zero => rw [Nat.add_zero, zero_nsmul, add_zero]
+  | succ m ih => rw [Nat.add_succ, succ_nsmul, succ_nsmul, ←add_assoc, ih]
+def npow_add [IsMonoid α₁] (n m: ℕ) (a: α₁) : a ^ (n + m) = a ^ n * a ^ m := by
   have : IsSemigroup α₁ := IsMonoid.toIsSemigroup
   induction m with
   | zero => rw [Nat.add_zero, npow_zero, mul_one]
   | succ m ih => rw [Nat.add_succ, npow_succ, npow_succ, ←mul_assoc, ih]
+
+def nsmul_add [IsAddMonoid α₀] [IsAddCommMagma α₀] (n: ℕ) (x y: α₀) : n • (x + y) = n • x + n • y := by
+  induction n with
+  | zero => rw [zero_nsmul, zero_nsmul, zero_nsmul, add_zero]
+  | succ n ih =>
+    rw [succ_nsmul, ih, add_assoc, add_comm _ (x + y), ←add_assoc, ←add_assoc, ←succ_nsmul, add_assoc, ←succ_nsmul']
+
+def mul_npow [IsMonoid α₁] [IsCommMagma α₁] (n: ℕ) (x y: α₁) : (x * y) ^ n = x ^ n * y ^ n := by
+  induction n with
+  | zero => rw [npow_zero, npow_zero, npow_zero, mul_one]
+  | succ n ih =>
+    rw [npow_succ, ih, mul_assoc, mul_comm _ (x * y), ←mul_assoc, ←mul_assoc, ←npow_succ, mul_assoc, ←npow_succ']
+
+def mul_nsmul [IsAddMonoid α₀] (n m: ℕ) (x: α₀) : (m * n) • x = m • n • x := by
+  induction m with
+  | zero => rw [Nat.zero_mul, zero_nsmul, zero_nsmul]
+  | succ m ih => rw [succ_nsmul, Nat.succ_mul, add_nsmul, ih]
+
+def npow_mul [IsMonoid α₁] (n m: ℕ) (x: α₁) : x ^ (m * n) = (x ^ n) ^ m := by
+  induction m with
+  | zero => rw [Nat.zero_mul, npow_zero, npow_zero]
+  | succ m ih => rw [npow_succ, Nat.succ_mul, npow_add, ih]
+
+def one_nsmul [IsAddMonoid α₀] (x: α₀) : 1 • x = x := by rw [succ_nsmul, zero_nsmul, zero_add]
 
 def zsmulRec : ℤ -> α₀ -> α₀
 | .ofNat n, a => n • a
@@ -292,24 +335,25 @@ class IsAddMonoidWithOne extends IsAddMonoid α: Prop where
   ofNat_one : ofNat' α 1 = 1
   ofNat_eq_natCast (n: ℕ): ofNat' α (n + 2) = NatCast.natCast (n + 2)
 
-
-def natCast_zero [IsAddMonoidWithOne R] : NatCast.natCast 0 = (0: R) := IsAddMonoidWithOne.natCast_zero
-def natCast_succ [IsAddMonoidWithOne R] (n: ℕ) : NatCast.natCast n.succ = NatCast.natCast n + (1: R) := IsAddMonoidWithOne.natCast_succ n
-def ofNat_eq_natCast [IsAddMonoidWithOne R] (n: ℕ) : @OfNat.ofNat R (n + 2) _ = NatCast.natCast (n + 2) := IsAddMonoidWithOne.ofNat_eq_natCast n
+def natCast_zero [IsAddMonoidWithOne R₀] : NatCast.natCast 0 = (0: R₀) := IsAddMonoidWithOne.natCast_zero
+def natCast_succ [IsAddMonoidWithOne R₀] (n: ℕ) : NatCast.natCast n.succ = NatCast.natCast n + (1: R₀) := IsAddMonoidWithOne.natCast_succ n
+def ofNat_eq_natCast [IsAddMonoidWithOne R₀] (n: ℕ) : @OfNat.ofNat R₀ (n + 2) _ = NatCast.natCast (n + 2) := IsAddMonoidWithOne.ofNat_eq_natCast n
 
 class IsAddGroupWithOne extends IsAddGroup α, IsAddMonoidWithOne α: Prop where
   intCast_ofNat (n: ℕ) : IntCast.intCast n = (NatCast.natCast n: α)
   intCast_negSucc (n: ℕ) : IntCast.intCast (Int.negSucc n) = -(NatCast.natCast n.succ: α)
 
-def intCast_ofNat [IsAddGroupWithOne R] (n: ℕ) : IntCast.intCast n = (NatCast.natCast n: R) := IsAddGroupWithOne.intCast_ofNat n
-def intCast_negSucc [IsAddGroupWithOne R] (n: ℕ) : IntCast.intCast (Int.negSucc n) = -(NatCast.natCast n.succ: R) := IsAddGroupWithOne.intCast_negSucc n
+def intCast_ofNat [IsAddGroupWithOne R₀] (n: ℕ) : IntCast.intCast n = (NatCast.natCast n: R₀) := IsAddGroupWithOne.intCast_ofNat n
+def intCast_negSucc [IsAddGroupWithOne R₀] (n: ℕ) : IntCast.intCast (Int.negSucc n) = -(NatCast.natCast n.succ: R₀) := IsAddGroupWithOne.intCast_negSucc n
 
 class IsSemiring extends
   IsAddCommMagma α, IsAddMonoidWithOne α,
   IsSemigroup α, IsMulZeroClass α, IsMulOneClass α,
-  IsLeftDistrib α, IsRightDistrib α : Prop where
+  IsLeftDistrib α, IsRightDistrib α, IsMonoid α : Prop where
 
-instance [IsAddCommMagma α] [IsAddMonoidWithOne α] [IsSemigroup α] [IsMulZeroClass α] [IsMulOneClass α] [IsLeftDistrib α] [IsRightDistrib α] : IsSemiring α where
+instance [IsAddCommMagma α] [IsAddMonoidWithOne α] [IsSemigroup α] [IsMulZeroClass α] [IsMulOneClass α] [IsLeftDistrib α] [IsRightDistrib α] [IsMonoid α] : IsSemiring α where
+  npow_zero := npow_zero
+  npow_succ := npow_succ
 
 class IsRing extends IsSemiring α, IsAddGroupWithOne α : Prop where
 
@@ -321,14 +365,26 @@ instance [IsSemiring α] [IsAddGroupWithOne α] : IsRing α where
   zsmul_negSucc := zsmul_negSucc
   neg_add_cancel := neg_add_cancel
 
-def add_one_mul [IsMulOneClass R] [IsRightDistrib R] (a b: R) : (a + 1) * b = a * b + b := by rw [add_mul, one_mul]
-def mul_add_one [IsMulOneClass R] [IsLeftDistrib R] (a b: R) : a * (b + 1) = a * b + a := by rw [mul_add, mul_one]
-def one_add_mul [IsMulOneClass R] [IsRightDistrib R] (a b: R) : (1 + a) * b = b + a * b := by rw [add_mul, one_mul]
-def mul_one_add [IsMulOneClass R] [IsLeftDistrib R] (a b: R) : a * (1 + b) = a + a * b := by rw [mul_add, mul_one]
+def add_one_mul [IsMulOneClass R₀] [IsRightDistrib R₀] (a b: R₀) : (a + 1) * b = a * b + b := by rw [add_mul, one_mul]
+def mul_add_one [IsMulOneClass R₀] [IsLeftDistrib R₀] (a b: R₀) : a * (b + 1) = a * b + a := by rw [mul_add, mul_one]
+def one_add_mul [IsMulOneClass R₀] [IsRightDistrib R₀] (a b: R₀) : (1 + a) * b = b + a * b := by rw [add_mul, one_mul]
+def mul_one_add [IsMulOneClass R₀] [IsLeftDistrib R₀] (a b: R₀) : a * (1 + b) = a + a * b := by rw [mul_add, mul_one]
 
-def two_mul [IsAddMonoidWithOne R] [IsRightDistrib R] [IsMulOneClass R] (a: R) : 2 * a = a + a := by
+def two_mul [IsAddMonoidWithOne R₀] [IsRightDistrib R₀] [IsMulOneClass R₀] (a: R₀) : 2 * a = a + a := by
   rw [ofNat_eq_natCast, Nat.zero_add, natCast_succ, natCast_succ,
     natCast_zero, zero_add, add_mul, one_mul]
-def mul_two [IsAddMonoidWithOne R] [IsLeftDistrib R] [IsMulOneClass R] (a: R) : a * 2 = a + a := by
+def mul_two [IsAddMonoidWithOne R₀] [IsLeftDistrib R₀] [IsMulOneClass R₀] (a: R₀) : a * 2 = a + a := by
   rw [ofNat_eq_natCast, Nat.zero_add, natCast_succ, natCast_succ,
     natCast_zero, zero_add, mul_add, mul_one]
+
+class IsMulAction [IsMonoid R] : Prop where
+  one_smul: ∀a: M, (1: R) • a = a
+  mul_smul: ∀x y: R, ∀b: M, (x * y) • b = x • y • b
+
+class IsDistribMulAction [IsMonoid R] [IsAddMonoid M] extends IsMulAction R M : Prop where
+  smul_zero: ∀a: R, a • (0: M) = 0
+  smul_add: ∀a: R, ∀x y: M, a • (x + y) = a • x + a • y
+
+class IsModule [IsSemiring R] [IsAddCommMagma M] [IsAddMonoid M] extends IsDistribMulAction R M: Prop where
+  add_smul: ∀r s: R, ∀x: M, (r + s) • x = r • x + s • x
+  zero_smul: ∀x: M, 0 • x = 0
