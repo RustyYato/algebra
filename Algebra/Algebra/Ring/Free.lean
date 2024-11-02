@@ -150,8 +150,9 @@ instance : SMul α (FreeAlgebra α V) where
 
 instance : Pow (FreeAlgebra α V) ℕ := ⟨flip npowRec⟩
 instance : SMul ℕ (FreeAlgebra α V) := ⟨nsmulRec⟩
-instance : NatCast (FreeAlgebra α V) := ⟨natCastRec _⟩
-instance (priority := 500) : OfNat (FreeAlgebra α V) n := ⟨natCastRec _ n⟩
+instance : NatCast (FreeAlgebra α V) where
+  natCast n := mk <| .ofScalar n
+instance (priority := 500) : OfNat (FreeAlgebra α V) n := ⟨Nat.cast n⟩
 
 instance : IsAddCommMagma (FreeAlgebra α V) where
   add_comm := by
@@ -235,11 +236,18 @@ instance : IsRightDistrib (FreeAlgebra α V) where
     apply sound
     apply Rel.add_mul
 
-instance : IsSemiring (FreeAlgebra α V) where
+instance [IsNonAssocSemiring α] : IsSemiring (FreeAlgebra α V) where
   ofNat_zero := rfl
   ofNat_one := rfl
-  natCast_zero := rfl
-  natCast_succ _ := rfl
+  natCast_zero := by
+    apply sound
+    rw [Nat.cast, natCast_zero]
+    apply Rel.refl
+  natCast_succ n := by
+    erw [mk_add]
+    apply sound
+    rw [Nat.cast, natCast_succ]
+    apply Rel.add_scalar
   ofNat_eq_natCast _ := rfl
   nsmul_zero _ := rfl
   nsmul_succ _ _ := rfl
