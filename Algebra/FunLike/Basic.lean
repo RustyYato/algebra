@@ -5,6 +5,8 @@ class DFunLike (F : Sort*) (α : outParam (Sort*)) (β : outParam <| α → Sort
   coe : F → ∀ a : α, β a
   coe_inj : Function.Injective coe
 
+attribute [simp] DFunLike.coe
+
 instance [dfl: DFunLike F α β] : CoeFun F (fun _ => ∀x: α, β x) := ⟨dfl.coe⟩
 
 abbrev FunLike F α β := DFunLike F α (fun _ => β)

@@ -24,11 +24,10 @@ variable [Pow A₀ ℤ] [SMul ℤ A₀]
 variable [Neg A₀] [Inv A₀]
 variable [NatCast A₀] [IntCast A₀] [∀n, OfNat A₀ (n+2)]
 
-class HasRingHom [IsNonAssocSemiring R] [IsNonAssocSemiring A] where
-  ring_hom : R →+* A
+class HasRingHom [IsNonAssocSemiring R] [IsNonAssocSemiring A] extends R →+* A where
 
 /-- Embedding `R →+* A` given by `Algebra` structure. -/
-def algebraMap [IsNonAssocSemiring R] [IsNonAssocSemiring A] [h: HasRingHom R A] : R →+* A := h.ring_hom
+def algebraMap [IsNonAssocSemiring R] [IsNonAssocSemiring A] [h: HasRingHom R A] : R →+* A := h.toRingHom
 
 class IsAlgebra [IsCommMagma R] [IsSemiring R] [IsSemiring A] [SMul R A] [HasRingHom R A] : Prop where
   commutes : ∀r x, algebraMap R A r * x = x * algebraMap R A r

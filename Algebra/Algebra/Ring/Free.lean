@@ -110,4 +110,167 @@ def exact : mk (α := α) (V := V) a = mk b -> a ≈ b := Equiv.exact _ _
 def sound : a ≈ b -> mk a = mk (α := α) (V := V) b := Equiv.sound _ _
 def exists_rep : ∀o, ∃p, mk (α := α) (V := V) p = o := Equiv.exists_rep
 
+section Algebra
+
+variable [Zero α] [One α] [Add α] [Mul α]
+
+instance : Zero (FreeAlgebra α V) where
+  zero := .mk (.ofScalar 0)
+instance : One (FreeAlgebra α V) where
+  one := .mk (.ofScalar 1)
+
+instance : Add (FreeAlgebra α V) where
+  add := by
+    intro a b
+    apply FreeAlgebra.lift₂ (fun _ => _) _ a b
+    intro a b
+    exact .mk (.add a b)
+    intro a b c d ac bd
+    apply FreeAlgebra.sound
+    apply FreeAlgebra.Rel.add_congr
+    <;> assumption
+
+def mk_add (a b: Pre α V) : mk a + mk b = mk (a.add b) := lift₂_mk
+
+instance : Mul (FreeAlgebra α V) where
+  mul := by
+    intro a b
+    apply FreeAlgebra.lift₂ (fun _ => _) _ a b
+    intro a b
+    exact .mk (.mul a b)
+    intro a b c d ac bd
+    apply FreeAlgebra.sound
+    apply FreeAlgebra.Rel.mul_congr
+    <;> assumption
+
+def mk_mul (a b: Pre α V) : mk a * mk b = mk (a.mul b) := lift₂_mk
+
+instance : SMul α (FreeAlgebra α V) where
+  smul x a := mk (.ofScalar x) * a
+
+instance : Pow (FreeAlgebra α V) ℕ := ⟨flip npowRec⟩
+instance : SMul ℕ (FreeAlgebra α V) := ⟨nsmulRec⟩
+instance : NatCast (FreeAlgebra α V) := ⟨natCastRec _⟩
+instance (priority := 500) : OfNat (FreeAlgebra α V) n := ⟨natCastRec _ n⟩
+
+instance : IsAddCommMagma (FreeAlgebra α V) where
+  add_comm := by
+    intro a b
+    induction a using ind with | mk a =>
+    induction b using ind with | mk b =>
+    rw [mk_add, mk_add]
+    apply sound
+    apply Rel.add_comm
+
+instance : IsAddSemigroup (FreeAlgebra α V) where
+  add_assoc := by
+    intro a b c
+    induction a using ind with | mk a =>
+    induction b using ind with | mk b =>
+    induction c using ind with | mk c =>
+    repeat rw [mk_add]
+    apply sound
+    apply Rel.add_assoc
+
+def zero_add' (a: FreeAlgebra α V) : 0 + a = a := by
+  induction a using ind with | mk a =>
+  erw [mk_add]
+  apply sound
+  apply Rel.zero_add
+
+instance : IsAddZeroClass (FreeAlgebra α V) where
+  zero_add := zero_add'
+  add_zero a := by
+    rw [add_comm]
+    apply zero_add'
+
+instance : IsMulOneClass (FreeAlgebra α V) where
+  one_mul a := by
+    induction a using ind with | mk a =>
+    erw [mk_mul]
+    apply sound
+    apply Rel.one_mul
+  mul_one a := by
+    induction a using ind with | mk a =>
+    erw [mk_mul]
+    apply sound
+    apply Rel.mul_one
+
+instance : IsSemigroup (FreeAlgebra α V) where
+  mul_assoc a b c := by
+    induction a using ind with | mk a =>
+    induction b using ind with | mk b =>
+    induction c using ind with | mk c =>
+    repeat rw [mk_mul]
+    apply sound
+    apply Rel.mul_assoc
+
+instance : IsMulZeroClass (FreeAlgebra α V) where
+  zero_mul a := by
+    induction a using ind with | mk a =>
+    erw [mk_mul]
+    apply sound
+    apply Rel.zero_mul
+  mul_zero a := by
+    induction a using ind with | mk a =>
+    erw [mk_mul]
+    apply sound
+    apply Rel.mul_zero
+
+instance : IsLeftDistrib (FreeAlgebra α V) where
+  left_distrib k a b := by
+    induction a using ind with | mk a =>
+    induction b using ind with | mk b =>
+    induction k using ind with | mk k =>
+    repeat first|rw [mk_mul]|rw [mk_add]
+    apply sound
+    apply Rel.mul_add
+
+instance : IsRightDistrib (FreeAlgebra α V) where
+  right_distrib k a b := by
+    induction a using ind with | mk a =>
+    induction b using ind with | mk b =>
+    induction k using ind with | mk k =>
+    repeat first|rw [mk_mul]|rw [mk_add]
+    apply sound
+    apply Rel.add_mul
+
+instance : IsSemiring (FreeAlgebra α V) where
+  ofNat_zero := rfl
+  ofNat_one := rfl
+  natCast_zero := rfl
+  natCast_succ _ := rfl
+  ofNat_eq_natCast _ := rfl
+  nsmul_zero _ := rfl
+  nsmul_succ _ _ := rfl
+  npow_zero _ := rfl
+  npow_succ _ _ := rfl
+
+instance [IsNonAssocSemiring α] : HasRingHom α (FreeAlgebra α V) where
+  toFun a := mk <| .ofScalar a
+  map_one := rfl
+  map_zero := rfl
+  map_add a b := by
+    dsimp
+    rw [mk_add]
+    apply sound
+    apply Rel.add_scalar
+  map_mul a b := by
+    dsimp
+    rw [mk_mul]
+    apply sound
+    apply Rel.mul_scalar
+
+instance [IsCommMagma α] [IsSemiring α] :
+  IsAlgebra α (FreeAlgebra α V) where
+  smul_def _ _ := rfl
+  commutes := by
+    intro r x
+    induction x using ind with | mk x =>
+    erw [mk_mul, mk_mul]
+    apply sound
+    apply Rel.central_scalar
+
+end Algebra
+
 end FreeAlgebra
