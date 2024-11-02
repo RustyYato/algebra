@@ -245,8 +245,8 @@ class IsDivInvMonoid extends IsMonoid α: Prop where
 
 def sub_eq_add_neg [IsSubNegMonoid α₀] (a b: α₀) : a - b = a + -b := IsSubNegMonoid.sub_eq_add_neg a b
 def div_eq_mul_inv [IsDivInvMonoid α₁] (a b: α₁) : a / b = a * b⁻¹ := IsDivInvMonoid.div_eq_mul_inv a b
-def zsmul_ofNat [IsSubNegMonoid α₀] (n: ℕ) (a: α₀) : (n: ℤ) • a = n • a := IsSubNegMonoid.zsmul_ofNat n a
-def zpow_ofNat [IsDivInvMonoid α₁] (n: ℕ) (a: α₁) : a ^ (n: ℤ) = a ^ n := IsDivInvMonoid.zpow_ofNat n a
+def zsmul_ofNat [IsSubNegMonoid α₀] (n: ℕ) (a: α₀) : (Int.ofNat n) • a = n • a := IsSubNegMonoid.zsmul_ofNat n a
+def zpow_ofNat [IsDivInvMonoid α₁] (n: ℕ) (a: α₁) : a ^ (Int.ofNat n) = a ^ n := IsDivInvMonoid.zpow_ofNat n a
 def zsmul_negSucc [IsSubNegMonoid α₀] (n: ℕ) (a: α₀) : (Int.negSucc n) • a = -(n.succ • a) := IsSubNegMonoid.zsmul_negSucc n a
 def zpow_negSucc [IsDivInvMonoid α₁] (n: ℕ) (a: α₁) : a ^ (Int.negSucc n) = (a ^ n.succ)⁻¹ := IsDivInvMonoid.zpow_negSucc n a
 
@@ -343,7 +343,7 @@ class IsAddGroupWithOne extends IsAddGroup α, IsAddMonoidWithOne α: Prop where
   intCast_ofNat (n: ℕ) : IntCast.intCast n = (NatCast.natCast n: α)
   intCast_negSucc (n: ℕ) : IntCast.intCast (Int.negSucc n) = -(NatCast.natCast n.succ: α)
 
-def intCast_ofNat [IsAddGroupWithOne R₀] (n: ℕ) : IntCast.intCast n = (NatCast.natCast n: R₀) := IsAddGroupWithOne.intCast_ofNat n
+def intCast_ofNat [IsAddGroupWithOne R₀] (n: ℕ) : IntCast.intCast (Int.ofNat n) = (NatCast.natCast n: R₀) := IsAddGroupWithOne.intCast_ofNat n
 def intCast_negSucc [IsAddGroupWithOne R₀] (n: ℕ) : IntCast.intCast (Int.negSucc n) = -(NatCast.natCast n.succ: R₀) := IsAddGroupWithOne.intCast_negSucc n
 
 class IsSemiring extends
@@ -364,6 +364,39 @@ instance [IsSemiring α] [IsAddGroupWithOne α] : IsRing α where
   zsmul_ofNat := zsmul_ofNat
   zsmul_negSucc := zsmul_negSucc
   neg_add_cancel := neg_add_cancel
+
+instance [IsAddGroup α] : IsSubtractionMonoid α where
+  neg_add_rev := by
+    intro a b
+    apply neg_eq_of_add
+    rw [add_assoc, ←add_assoc b, add_neg_cancel, zero_add, add_neg_cancel]
+  neg_eq_of_add_left _ _ := neg_eq_of_add
+
+instance [IsGroup α] : IsDivisionMonoid α where
+  inv_mul_rev := by
+    intro a b
+    apply inv_eq_of_mul
+    rw [mul_assoc, ←mul_assoc b, mul_inv_cancel, one_mul, mul_inv_cancel]
+  inv_eq_of_mul_left _ _ := inv_eq_of_mul
+
+def neg_mul_left [IsAddGroup R₀] [IsRightDistrib R₀] [IsMulZeroClass R₀] (a b: R₀) : -(a * b) = -a * b := by
+  apply neg_eq_of_add
+  rw [←add_mul, add_neg_cancel, zero_mul]
+def neg_mul_right [IsAddGroup R₀] [IsLeftDistrib R₀] [IsMulZeroClass R₀] (a b: R₀) : -(a * b) = a * -b := by
+  apply neg_eq_of_add
+  rw [←mul_add, add_neg_cancel, mul_zero]
+
+def nsmul_eq_natCast_mul [IsSemiring R₀] (n: ℕ) (x: R₀) : n • x = n * x := by
+  induction n with
+  | zero => rw [zero_nsmul, Nat.cast, natCast_zero, zero_mul]
+  | succ n ih => rw [succ_nsmul, ih, Nat.cast, natCast_succ, add_mul, one_mul]
+
+def zsmul_eq_intCast_mul [IsRing R₀] (n: ℤ) (x: R₀) : n • x = n * x := by
+  cases n with
+  | ofNat n =>
+    rw [zsmul_ofNat n, Int.cast, intCast_ofNat, nsmul_eq_natCast_mul]
+  | negSucc n =>
+    rw [zsmul_negSucc, Int.cast, intCast_negSucc, nsmul_eq_natCast_mul, neg_mul_left]
 
 def add_one_mul [IsMulOneClass R₀] [IsRightDistrib R₀] (a b: R₀) : (a + 1) * b = a * b + b := by rw [add_mul, one_mul]
 def mul_add_one [IsMulOneClass R₀] [IsLeftDistrib R₀] (a b: R₀) : a * (b + 1) = a * b + a := by rw [mul_add, mul_one]
@@ -388,3 +421,14 @@ class IsDistribMulAction [IsMonoid R] [IsAddMonoid M] extends IsMulAction R M : 
 class IsModule [IsSemiring R] [IsAddCommMagma M] [IsAddMonoid M] extends IsDistribMulAction R M: Prop where
   add_smul: ∀r s: R, ∀x: M, (r + s) • x = r • x + s • x
   zero_smul: ∀x: M, 0 • x = 0
+
+class IsNonUnitalNonAssocSemiring extends IsAddCommMagma α, IsAddMonoid α, IsLeftDistrib α, IsRightDistrib α, IsMulZeroClass α: Prop
+
+class IsNonAssocSemiring extends IsNonUnitalNonAssocSemiring α, IsMulOneClass α, IsAddMonoidWithOne α: Prop
+
+instance [IsSemiring α] : IsNonAssocSemiring α where
+  natCast_zero := natCast_zero
+  natCast_succ := natCast_succ
+  ofNat_zero := IsAddMonoidWithOne.ofNat_zero
+  ofNat_one := IsAddMonoidWithOne.ofNat_one
+  ofNat_eq_natCast := IsAddMonoidWithOne.ofNat_eq_natCast
