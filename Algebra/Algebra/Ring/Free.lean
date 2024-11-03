@@ -281,4 +281,7 @@ instance [IsCommMagma α] [IsSemiring α] :
 
 end Algebra
 
+-- embed a vector into the FreeAlgebra
+def ι : V -> FreeAlgebra α V := mk ∘ .of
+
 end FreeAlgebra

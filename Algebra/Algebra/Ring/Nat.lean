@@ -27,6 +27,11 @@ instance : IsSemiring ℕ where
   npow_zero := Nat.pow_zero
   npow_succ n m := by rw [Nat.add_one, Nat.pow_succ]
 
+instance : IsAddCommMagma ℕ where
+  add_comm := Nat.add_comm
+instance : IsCommMagma ℕ where
+  mul_comm := Nat.mul_comm
+
 variable (M: Type*) [Zero M] [Add M] [Sub M] [SMul ℕ M] [SMul ℤ M] [Neg M]
 variable [SMul R M]
 
