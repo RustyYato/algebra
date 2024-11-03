@@ -2776,6 +2776,20 @@ def BitInt.Bits.mul.spec (a b c d: Bits):
     apply bit_bit
     assumption
 
+def BitInt.mul : BitInt -> BitInt -> BitInt := by
+  apply lift₂ (fun _ _ => mk _) _
+  exact BitInt.Bits.mul
+  intro a b c d ac bd
+  apply sound
+  apply BitInt.Bits.mul.spec
+  all_goals assumption
+
+instance : Mul BitInt := ⟨.mul⟩
+
+def BitInt.mk_mul (a b: Bits) : mk a * mk b = mk (a * b)  := by
+  unfold HMul.hMul instHMul Mul.mul
+  apply lift₂_mk
+
 def BitInt.Bits.mul.succ_mul (a b: Bits) : a.succ * b ≈ a * b + b := by
   rw [mul.def]
   induction a generalizing b with
@@ -2881,26 +2895,111 @@ def BitInt.Bits.mul.pred_mul (a b: Bits) : a.pred * b ≈ a * b - b := by
   rfl
   rfl
 
-def BitInt.Bits.mul_add (a b k: Bits) : k * (a + b) ≈ k * a + k * b := by
+def BitInt.mul.succ_mul (a b: BitInt) : a.succ * b = a * b + b := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  rw [mk_succ, mk_mul, mk_mul, mk_add]
+  apply sound
+  apply Bits.mul.succ_mul
+
+def BitInt.mul.pred_mul (a b: BitInt) : a.pred * b = a * b - b := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  rw [mk_pred, mk_mul, mk_mul, mk_sub]
+  apply sound
+  apply Bits.mul.pred_mul
+
+def BitInt.mul.zero_mul (a: BitInt) : 0 * a = 0 := by
+  induction a using ind with | mk a =>
+  rw [mk_zero, mk_mul]
+  apply sound
+  apply Bits.mul.zero_mul
+
+def BitInt.mul.mul_zero (a: BitInt) : a * 0 = 0 := by
+  induction a using ind with | mk a =>
+  rw [mk_zero, mk_mul]
+  apply sound
+  apply Bits.mul.mul_zero
+
+def BitInt.mul.comm (a b: BitInt) : a * b = b * a := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  rw [mk_mul, mk_mul]
+  apply sound
+  apply Bits.mul.comm
+
+def BitInt.mul.mul_succ (a b: BitInt) : a * b.succ = a * b + a := by
+  rw [comm a, succ_mul, comm]
+
+def BitInt.mul.mul_pred (a b: BitInt) : a * b.pred = a * b - a := by
+  rw [comm a, pred_mul, comm]
+
+def BitInt.add.comm_left (a b c: BitInt) : a + (b + c) = b + (a + c) := by
+  rw [←add.assoc, add.comm a, add.assoc]
+def BitInt.add.comm_right (a b c: BitInt) : a + (b + c) = b + (a + c) := by
+  rw [←add.assoc, add.comm a, add.assoc]
+
+def BitInt.add.left_comm (a b c: BitInt) : a + b + c = a + c + b := by
+  rw [add.assoc, add.comm b, ←add.assoc]
+def BitInt.add.right_comm (a b c: BitInt) : a + b + c = c + b + a := by
+  rw [add.assoc, add.comm a, add.comm b]
+
+def BitInt.neg_add (a b: BitInt) : -(a + b) = -a + -b := by
+  induction a using strongInduction with
+  | zero => rw [add.zero_add, neg.zero, add.zero_add]
+  | succ a ih => rw [add.succ_add, neg.succ, neg.succ, add.pred_add, ih]
+  | pred a ih => rw [add.pred_add, neg.pred, neg.pred, add.succ_add, ih]
+
+def BitInt.neg_sub (a b: BitInt) : -(a - b) = -a + b := by
+  rw [sub.def, neg_add, neg_neg]
+
+def BitInt.mul_add (a b k: BitInt) : k * (a + b) = k * a + k * b := by
   induction k using strongInduction with
   | zero =>
-    apply trans
-    apply Bits.mul.zero_mul
-    apply flip trans
-    symm
-    apply add.spec
-    apply Bits.mul.zero_mul
-    apply Bits.mul.zero_mul
+    repeat rw [mul.zero_mul]
     rfl
-  | succ k kmin ih => sorry
-  | pred k kmin ih => sorry
-  | eqv k k' k_eq_k' ih =>
-    induction k_eq_k' with
-    | nil_nil k => assumption
-    | nil_bit k ks k_eq_ks ih' =>
-      replace ih' := ih' ih
-      rw [mul.def]
+  | succ k ih =>
+    repeat rw [mul.succ_mul]
+    rw [ih, add.assoc, add.comm_left (k * b), ←add.assoc]
+  | pred k ih =>
+    repeat rw [mul.pred_mul]
+    repeat rw [sub.def]
+    rw [neg_add, ih, add.assoc, add.comm_left (k * b), ←add.assoc]
 
-      sorry
-    | bit_nil => sorry
-    | bit_bit => sorry
+def BitInt.add_mul (a b k: BitInt) : (a + b) * k = a * k + b * k := by
+  repeat rw [mul.comm _ k]
+  rw [mul_add]
+
+def BitInt.mul.neg_mul (a b: BitInt) : (-a) * b = -(a * b) := by
+  induction a using strongInduction with
+  | zero => rw [zero_mul, neg.zero, zero_mul]
+  | succ a ih => rw [neg.succ, pred_mul, ih, succ_mul, neg_add, sub.def]
+  | pred a ih => rw [neg.pred, succ_mul, ih, pred_mul, neg_sub]
+
+def BitInt.mul.mul_neg (a b: BitInt) : a * (-b) = -(a * b) := by
+  rw [comm, neg_mul, comm]
+
+def BitInt.mul_sub (a b k: BitInt) : k * (a - b) = k * a - k * b := by
+  rw [sub.def, sub.def, mul_add, mul.mul_neg]
+
+def BitInt.sub_mul (a b k: BitInt) : (a - b) * k = a * k - b * k := by
+  repeat rw [mul.comm _ k]
+  rw [mul_sub]
+
+def BitInt.mul.assoc (a b c: BitInt) : a * b * c = a * (b * c) := by
+  induction a using strongInduction with
+  | zero => repeat rw [mul.zero_mul]
+  | succ k ih =>
+    repeat rw [mul.succ_mul]
+    rw [add_mul, ih]
+  | pred k ih => rw [pred_mul, sub_mul, pred_mul, ih]
+
+def BitInt.mul.comm_left (a b c: BitInt) : a * (b * c) = b * (a * c) := by
+  rw [←mul.assoc, mul.comm a, mul.assoc]
+def BitInt.mul.comm_right (a b c: BitInt) : a * (b * c) = b * (a * c) := by
+  rw [←mul.assoc, mul.comm a, mul.assoc]
+
+def BitInt.mul.left_comm (a b c: BitInt) : a * b * c = a * c * b := by
+  rw [mul.assoc, mul.comm b, ←mul.assoc]
+def BitInt.mul.right_comm (a b c: BitInt) : a * b * c = c * b * a := by
+  rw [mul.assoc, mul.comm a, mul.comm b]
