@@ -1,4 +1,5 @@
 import Algebra.Algebra.Ring.Hom
+import Algebra.Algebra.Ring.StdInt
 
 variable (R: Type*) [Zero R] [One R] [Add R] [Mul R] [Sub R] [Div R]
 variable [Pow R ℕ] [SMul ℕ R]
@@ -70,3 +71,71 @@ def coe_neg (a: R₀) : ↑(-a: R₀) = (-a: A₀) := by apply map_neg
 def coe_sub (a b: R₀) : ↑(a - b: R₀) = (a - b: A₀) := by apply map_sub
 
 end Ring
+
+instance [IsSemiring A] : HasRingHom ℕ A where
+  toFun := NatCast.natCast
+  map_one := by
+    have : 1 = Nat.succ 0 := rfl
+    rw [this, natCast_succ, natCast_zero, zero_add]
+  map_zero := by
+    dsimp
+    rw [natCast_zero]
+  map_add := by
+    dsimp
+    intro x y
+    rw [natCast_add]
+  map_mul := by
+    dsimp
+    intro x y
+    rw [natCast_mul]
+
+instance (priority := 100) [IsSemiring A] : IsAlgebra ℕ A where
+  commutes := by
+    intro n a
+    unfold algebraMap HasRingHom.toRingHom instHasRingHomNat
+    dsimp
+    induction n with
+    | zero => rw [natCast_zero, mul_zero, zero_mul]
+    | succ n ih => rw [natCast_succ, add_mul, mul_add, mul_one, one_mul, ih]
+  smul_def := by
+    intro n x
+    unfold algebraMap HasRingHom.toRingHom instHasRingHomNat
+    dsimp
+    induction n with
+    | zero => rw [zero_nsmul, natCast_zero, zero_mul]
+    | succ n ih => rw [succ_nsmul, natCast_succ, ih, add_mul, one_mul]
+
+
+instance [IsRing A] : HasRingHom ℤ A where
+  toFun := IntCast.intCast
+  map_one := by
+    have : 1 = Int.ofNat (Nat.succ 0) := rfl
+    rw [this, intCast_ofNat, natCast_succ, natCast_zero, zero_add]
+  map_zero := by
+    dsimp
+    have : 0 = Int.ofNat 0 := rfl
+    rw [this, intCast_ofNat, natCast_zero]
+  map_add := by
+    dsimp
+    intro x y
+    rw [intCast_add]
+  map_mul := by
+    dsimp
+    intro x y
+    rw [intCast_mul]
+
+instance (priority := 100) [IsRing A] : IsAlgebra ℤ A where
+  commutes := by
+    intro n a
+    suffices IntCast.intCast n * a = a * IntCast.intCast n from this
+    induction n using Int.induction with
+    | zero =>  rw [intCast_zero, mul_zero, zero_mul]
+    | succ n ih => rw [intCast_succ, mul_add, add_mul, mul_one, one_mul, ih]
+    | pred n ih => rw [intCast_pred, mul_sub, sub_mul, mul_one, one_mul, ih]
+  smul_def := by
+    intro n x
+    suffices n • x = IntCast.intCast n * x from this
+    induction n using Int.induction with
+    | zero => rw [zero_zsmul, intCast_zero, zero_mul]
+    | succ n ih => rw [succ_zsmul, intCast_succ, add_mul, one_mul, ih]
+    | pred n ih => rw [pred_zsmul, intCast_pred, sub_mul, one_mul, ih]

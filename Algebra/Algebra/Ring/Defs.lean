@@ -1,5 +1,6 @@
 import Algebra.Ty.Notation
 import Algebra.StdInt.Induction
+import Algebra.AxiomBlame
 
 notation "ℕ" => Nat
 notation "ℤ" => Int
@@ -350,6 +351,8 @@ class IsAddMonoidWithOne extends IsAddMonoid α: Prop where
 
 def natCast_zero [IsAddMonoidWithOne R₀] : NatCast.natCast 0 = (0: R₀) := IsAddMonoidWithOne.natCast_zero
 def natCast_succ [IsAddMonoidWithOne R₀] (n: ℕ) : NatCast.natCast n.succ = NatCast.natCast n + (1: R₀) := IsAddMonoidWithOne.natCast_succ n
+def natCast_one [IsAddMonoidWithOne R₀] : NatCast.natCast 1 = (1: R₀) := by
+  rw [natCast_succ, natCast_zero, zero_add]
 def ofNat_eq_natCast [IsAddMonoidWithOne R₀] (n: ℕ) : @OfNat.ofNat R₀ (n + 2) _ = NatCast.natCast (n + 2) := IsAddMonoidWithOne.ofNat_eq_natCast n
 
 class IsAddGroupWithOne extends IsAddGroup α, IsAddMonoidWithOne α: Prop where
@@ -377,6 +380,20 @@ instance [IsSemiring α] [IsAddGroupWithOne α] : IsRing α where
   zsmul_ofNat := zsmul_ofNat
   zsmul_negSucc := zsmul_negSucc
   neg_add_cancel := neg_add_cancel
+
+def mul_sub [IsRing R] (k a b: R): k * (a - b) = k * a - k * b := by
+  rw [sub_eq_add_neg, sub_eq_add_neg, mul_add]
+  congr 1
+  symm
+  apply neg_eq_of_add
+  rw [←mul_add, add_neg_cancel, mul_zero]
+
+def sub_mul [IsRing R] (k a b: R): (a - b) * k = a * k - b * k := by
+  rw [sub_eq_add_neg, sub_eq_add_neg, add_mul]
+  congr 1
+  symm
+  apply neg_eq_of_add
+  rw [←add_mul, add_neg_cancel, zero_mul]
 
 instance [IsAddGroup α] : IsSubtractionMonoid α where
   neg_add_rev := by
@@ -473,6 +490,55 @@ def natCast_mul [IsSemiring R₀] (a b: ℕ) : (NatCast.natCast (a * b): R₀) =
 def neg_add_rev [IsAddGroup α₀] (a b: α₀) : -(a + b) = -b + -a := by
   apply neg_eq_of_add
   rw [add_assoc, ←add_assoc b, add_neg_cancel, zero_add, add_neg_cancel]
+
+def intCast_zero [IsRing R₀] : (IntCast.intCast 0: R₀) = 0 := by
+  have : 0 = Int.ofNat 0 := rfl
+  rw [this, intCast_ofNat, natCast_zero]
+
+def intCast_succ [IsRing R₀] (a: ℤ) : (IntCast.intCast (a + 1): R₀) = IntCast.intCast a + 1 := by
+  cases a with
+  | ofNat a =>
+    have : 1 = Int.ofNat 1 := rfl
+    rw [intCast_ofNat, this,
+      Int.ofNat_eq_coe,
+      Int.ofNat_eq_coe,
+      Int.ofNat_add_ofNat,
+      ←Int.ofNat_eq_coe, intCast_ofNat, natCast_add, natCast_one]
+  | negSucc a =>
+    cases a with
+    | zero =>
+      suffices (IntCast.intCast 0: R₀) = IntCast.intCast (Int.negSucc 0) + 1 from this
+      rw [intCast_zero, intCast_negSucc, natCast_one, neg_add_cancel]
+    | succ a =>
+      suffices (IntCast.intCast (Int.negSucc a): R₀) = IntCast.intCast (Int.negSucc (a + 1)) + 1 from this
+      rw [intCast_negSucc, intCast_negSucc, natCast_succ (a + 1),]
+      apply neg_eq_of_add
+      rw [neg_add_rev, add_assoc, add_comm _ 1, ←add_assoc (-1), neg_add_cancel, zero_add, add_neg_cancel]
+def intCast_pred [IsRing R₀] (a: ℤ) : (IntCast.intCast (a - 1): R₀) = IntCast.intCast a - 1 := by
+  suffices (IntCast.intCast (a - 1): R₀) = (IntCast.intCast (a - 1) + 1) - 1 by
+    rw [←intCast_succ, Int.sub_add_cancel] at this
+    exact this
+  rw [sub_eq_add_neg _ (1: R₀), add_assoc, add_neg_cancel, add_zero]
+
+def intCast_add [IsRing R₀] (a b: ℤ) : (IntCast.intCast (a + b): R₀) = IntCast.intCast a + IntCast.intCast b := by
+  induction b using Int.induction with
+  | zero => rw [intCast_zero, add_zero, Int.add_zero]
+  | succ b ih => rw [←Int.add_assoc, intCast_succ, intCast_succ, ih, add_assoc]
+  | pred b ih => rw [←Int.add_sub_assoc, intCast_pred, intCast_pred, ih, sub_eq_add_neg, add_assoc, sub_eq_add_neg]
+
+def intCast_neg [IsRing R₀] (a: ℤ) : (IntCast.intCast (-a): R₀) = -IntCast.intCast a := by
+  symm
+  apply neg_eq_of_add
+  rw [←intCast_add, Int.add_right_neg, intCast_zero]
+
+def intCast_sub [IsRing R₀] (a b: ℤ) : (IntCast.intCast (a - b): R₀) = IntCast.intCast a - IntCast.intCast b := by
+  rw [Int.sub_eq_add_neg, intCast_add, intCast_neg, sub_eq_add_neg]
+
+def intCast_mul [IsRing R₀] (a b: ℤ) : (IntCast.intCast (a * b): R₀) = IntCast.intCast a * IntCast.intCast b := by
+  induction b using Int.induction with
+  | zero => rw [Int.mul_zero, intCast_zero, mul_zero]
+  | succ b ih => rw [Int.mul_add, Int.mul_one, intCast_succ, mul_add, intCast_add, ih, mul_one]
+  | pred b ih => rw [Int.mul_sub, Int.mul_one, intCast_pred, mul_sub, intCast_sub, ih, mul_one]
 
 def succ_zsmul [IsAddGroup α₀]  (x: ℤ) (a: α₀) : (x + 1) • a = x • a + a := by
   cases x with

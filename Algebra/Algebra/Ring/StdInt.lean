@@ -41,10 +41,10 @@ instance : IsRing ℤ where
   intCast_ofNat n := rfl
   intCast_negSucc n := rfl
 
-instance : IsAddCommMagma ℕ where
-  add_comm := Nat.add_comm
-instance : IsCommMagma ℕ where
-  mul_comm := Nat.mul_comm
+instance : IsAddCommMagma ℤ where
+  add_comm := Int.add_comm
+instance : IsCommMagma ℤ where
+  mul_comm := Int.mul_comm
 
 variable (M: Type*) [Zero M] [Add M] [Sub M] [SMul ℕ M] [SMul ℤ M] [Neg M]
 variable [SMul R M]
