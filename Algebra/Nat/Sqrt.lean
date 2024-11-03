@@ -31,7 +31,7 @@ def nat.sqrt.gt_one : ∀x > 1,
   rw [dif_neg]
   dsimp
   rw [←sqrt]
-  apply not_lt_of_ge
+  apply not_le_of_lt
   assumption
 
 def nat.sqrt.sq_le_self (n: nat): n.sqrt² ≤ n := by
@@ -116,7 +116,7 @@ def nat.div.mul (a b c d: nat) : (a / b) * (c / d) ≤ (a * c) / (b * d) := by
     rhs
     rw [ab, cd]
   }
-  rw [mul_add, add_mul, add_mul]
+  rw [add_mul, nat.mul_add, nat.mul_add]
   conv => {
     rhs
     lhs
@@ -129,78 +129,83 @@ def nat.div.mul (a b c d: nat) : (a / b) * (c / d) ≤ (a * c) / (b * d) := by
   apply add.le_left
   trivial
 
-def nat.sqrt.spec (n x: nat): x * x ≤ n -> x ≤ n.sqrt := by
-  intro xsq_le_n
-  induction n using nat.induction generalizing x with
-  | ih n ih =>
-  replace ih := fun m => ih m
-  cases lt_or_ge 1 n
-  · rename_i one_lt_n
-    unfold sqrt induction
-    rw [←sqrt, dif_neg]
-    dsimp
-    split
-    · rename_i h
-      apply Decidable.byContradiction
-      intro g
-      replace g := lt_of_not_ge g
-      replace g := nat.succ_le_of_lt g
-      have := le_trans (mul.le _ _ _ _ g g) xsq_le_n
-      have := lt_of_lt_of_le h this
-      have := lt_irrefl _ this
-      contradiction
-    · rename_i h
-      have := ih (n / 4) (by
-        apply div.lt
-        trivial
-        match n with
-        | nat.succ n => trivial
-        ) (x / 2) (by
-        apply le_trans
-        apply nat.div.mul
-        apply div.le_div_if_mul_le
-        trivial
-        have : (2: nat) * 2 = 4 := rfl
-        rw [this]
-        rw [mul.comm]
-        apply le_trans
-        apply add.le_left _ (x * x % 4)
-        rw [←div_def]
-        assumption
-        trivial
-        )
-      have := add.le _ _ _ _ this this
-      rw [mul_two, mul_two] at this
-      match mod_def:x%2 with
-      | 0 =>
-        have two_div_x := nat.dvd.of_mod_eq_zero (by trivial) mod_def
-        rw [dvd.cancel_left _ _ two_div_x] at this
-        apply le_trans this
-        apply le_of_lt
-        apply lt_succ_self
-      | 1 =>
-        rw [nat.one_eq] at *
-        rw [nat.div_def x 2, mod_def]
-        rw [add_one]
-        apply succ_le_succ
-        rw [mul.comm]
-        assumption
-        trivial
-      | nat.succ (nat.succ z) =>
-        have := nat.mod.lt x 2 (by trivial)
-        rw [mod_def] at this
-        have := not_lt_zero <| lt_of_succ_lt_succ (lt_of_succ_lt_succ this)
+def nat.sqrt.spec (n x: nat): x * x ≤ n ↔ x ≤ n.sqrt := by
+  apply Iff.intro
+  · intro xsq_le_n
+    induction n using nat.induction generalizing x with
+    | ih n ih =>
+    replace ih := fun m => ih m
+    cases lt_or_ge 1 n
+    · rename_i one_lt_n
+      unfold sqrt induction
+      rw [←sqrt, dif_neg]
+      dsimp
+      split
+      · rename_i h
+        apply Decidable.byContradiction
+        intro g
+        replace g := lt_of_not_ge g
+        replace g := nat.succ_le_of_lt g
+        have := le_trans (mul.le _ _ _ _ g g) xsq_le_n
+        have := lt_of_lt_of_le h this
+        have := lt_irrefl this
         contradiction
-    apply not_le_of_lt
-    assumption
-  · rename_i h
-    unfold sqrt induction
-    rw [←sqrt, dif_pos]
-    · match n with
-      | 0 =>
-        match x with
-        | 0 => rfl
-      | 1 =>
-        match x with
-        | 0 | 1 => trivial
-    · assumption
+      · rename_i h
+        have := ih (n / 4) (by
+          apply div.lt
+          trivial
+          match n with
+          | nat.succ n => trivial
+          ) (x / 2) (by
+          apply le_trans
+          apply nat.div.mul
+          apply div.le_div_if_mul_le
+          trivial
+          have : (2: nat) * 2 = 4 := rfl
+          rw [this]
+          rw [mul.comm]
+          apply le_trans
+          apply add.le_left _ (x * x % 4)
+          rw [←div_def]
+          assumption
+          trivial
+          )
+        have := add.le _ _ _ _ this this
+        rw [mul_two, mul_two] at this
+        match mod_def:x%2 with
+        | 0 =>
+          have two_div_x := nat.dvd.of_mod_eq_zero (by trivial) mod_def
+          rw [dvd.cancel_left _ _ two_div_x] at this
+          apply le_trans this
+          apply le_of_lt
+          apply lt_succ_self
+        | 1 =>
+          rw [nat.one_eq] at *
+          rw [nat.div_def x 2, mod_def]
+          rw [add_one]
+          apply succ_le_succ
+          rw [mul.comm]
+          assumption
+          trivial
+        | nat.succ (nat.succ z) =>
+          have := nat.mod.lt x 2 (by trivial)
+          rw [mod_def] at this
+          have := not_lt_zero <| lt_of_succ_lt_succ (lt_of_succ_lt_succ this)
+          contradiction
+      apply not_le_of_lt
+      assumption
+    · rename_i h
+      unfold sqrt induction
+      rw [←sqrt, dif_pos]
+      · match n with
+        | 0 =>
+          match x with
+          | 0 => rfl
+        | 1 =>
+          match x with
+          | 0 | 1 => trivial
+      · assumption
+  · intro x_le_sqrt
+    apply le_trans
+    apply nat.mul.le <;> assumption
+    apply nat.sqrt.sq_le_self
