@@ -105,7 +105,6 @@ instance (priority := 100) [IsSemiring A] : IsAlgebra ℕ A where
     | zero => rw [zero_nsmul, natCast_zero, zero_mul]
     | succ n ih => rw [succ_nsmul, natCast_succ, ih, add_mul, one_mul]
 
-
 instance [IsRing A] : HasRingHom ℤ A where
   toFun := IntCast.intCast
   map_one := by

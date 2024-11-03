@@ -134,11 +134,11 @@ def npowRec : ℕ -> α₁ -> α₁
 | n + 1, a => npowRec n a * a
 
 class IsAddMonoid extends IsAddSemigroup α, IsAddZeroClass α: Prop where
-  nsmul_zero (a: α) : 0 • a = 0 := by rfl
-  nsmul_succ (n: ℕ) (a: α) : (n + 1) • a = n • a + a := by rfl
+  nsmul_zero (a: α) : 0 • a = 0 := by intros; rfl
+  nsmul_succ (n: ℕ) (a: α) : (n + 1) • a = n • a + a := by intros; rfl
 class IsMonoid extends IsSemigroup α, IsMulOneClass α: Prop where
-  npow_zero (a: α) : a ^ 0 = 1 := by rfl
-  npow_succ (n: ℕ) (a: α) : a ^ (n + 1) = a ^ n * a := by rfl
+  npow_zero (a: α) : a ^ 0 = 1 := by intros; rfl
+  npow_succ (n: ℕ) (a: α) : a ^ (n + 1) = a ^ n * a := by intros; rfl
 
 def zero_nsmul [IsAddMonoid α₀] (a: α₀) : 0 • a = 0 := IsAddMonoid.nsmul_zero a
 def succ_nsmul [IsAddMonoid α₀] (n: ℕ) (a: α₀) : (n + 1) • a = n • a + a := IsAddMonoid.nsmul_succ n a
