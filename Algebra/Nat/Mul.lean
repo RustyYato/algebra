@@ -86,6 +86,11 @@ def nat.mul.assoc (a b c: nat) : (a * b) * c = a * (b * c) := by
 
 #print axioms nat.mul.assoc
 
+def nat.mul.comm_left (a b c: nat) : a * (b * c) = b * (a * c) := by
+  rw [←mul.assoc, mul.comm a, mul.assoc]
+def nat.mul.comm_right (a b c: nat) : a * (b * c) = c * (b * a) := by
+  rw [mul.comm b, mul.comm_left, mul.comm b]
+
 def nat.mul.ge (a b: nat) (b_nz: 0 < b) : a ≤ a * b := by
   match b with
   | .zero => contradiction
