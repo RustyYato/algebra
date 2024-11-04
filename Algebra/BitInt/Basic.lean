@@ -3249,9 +3249,8 @@ def BitInt.Bits.length : Bits -> nat
 | .bit _ bs => bs.length.succ
 
 def BitInt.Bits.sqrt : ∀(a: Bits), a.IsPositive -> Bits × Bits
-| .nil false, _
-| .bit false (.nil false), _ => (0, 0)
-| .bit true (.nil false), _ => (1, 1)
+| .nil _, _ => (0, 0)
+| .bit x (.nil _), _ => if x then (1, 1) else (0, 0)
 | .bit a₀ (.bit a₁ as), as_pos =>
   let a: Bits := .bit a₀ (.bit a₁ as)
   have ⟨asqrt,asqrt_sq⟩ := sqrt as ((Bits.IsPositive.shr a 2).mp as_pos)
@@ -3262,3 +3261,113 @@ def BitInt.Bits.sqrt : ∀(a: Bits), a.IsPositive -> Bits × Bits
     (asqrt.succ,asuccsqrt_sq)
   else
     (asqrt,asqrt_sq)
+
+def Ordering.then_swap_self : ∀(o: Ordering), o.then o.swap = o := by decide
+
+def Ordering.swap_self_then : ∀(o: Ordering), o.swap.then o = o.swap := by decide
+
+def Ordering.then_swap : ∀(a b: Ordering), (a.then b).swap = a.swap.then b.swap := by decide
+
+def Ordering.swap_swap : ∀o: Ordering, o.swap.swap = o := by decide
+
+def Ordering.swap_inj : ∀a b: Ordering, a.swap = b.swap -> a = b := by decide
+
+def BitInt.Bits.cmp.nil_cmp : (nil a).cmp as = nil_cmp a as := by cases as <;> rfl
+
+def BitInt.Bits.cmp.cmp_nil : as.cmp (nil a) = (Bits.nil_cmp a as).swap := by
+  cases as with
+  | nil a' => revert a a'; decide
+  | bit a' as => rfl
+
+def BitInt.Bits.nil_cmp.spec (a b: Bits) :
+  a ≈ b ->
+  Bits.nil_cmp x a = Bits.nil_cmp x b := by
+  intro aeqb
+  induction aeqb with
+  | nil_nil a => rfl
+  | nil_bit a as ab ih =>
+    unfold nil_cmp
+    rw [←ih, nil_cmp, swap_compare' (a := x), Ordering.then_swap_self]
+  | bit_nil a as ab ih =>
+    unfold nil_cmp
+    rw [ih, nil_cmp, swap_compare' (a := x), Ordering.then_swap_self]
+  | bit_bit a as bs ab ih =>
+    unfold nil_cmp
+    rw [ih]
+
+def BitInt.Bits.cmp.bit_cmp_spec (a b: Bits) :
+  Bits.cmp (bit x a) b = (a.cmp b).then (Bits.nil_cmp x b) := by
+  cases b with
+  | nil b =>
+    rw [cmp_nil, cmp_nil]
+    apply Ordering.swap_inj
+    rw [Ordering.swap_swap, Ordering.then_swap, Ordering.swap_swap,
+      ]
+    sorry
+  | bit b bs => sorry
+
+def BitInt.Bits.cmp.spec (a b c d: Bits) :
+  a ≈ c -> b ≈ d ->
+  cmp a b = cmp c d := by
+  intro ac bd
+  induction ac generalizing b d with
+  | nil_nil a =>
+    rw [nil_cmp, nil_cmp]
+    rw [nil_cmp.spec]
+    assumption
+  | bit_nil a as ac ih =>
+    rw [nil_cmp, ←nil_cmp.spec _ _ bd]
+
+    cases bd with
+    | nil_nil b =>
+      rw [cmp_nil, Bits.nil_cmp, Bits.nil_cmp]
+      have := ih (nil b) (nil b) (by rfl)
+      rw [cmp_nil] at this
+      rw [Ordering.then_swap, this, cmp,  Ordering.then_swap_self]
+    | bit_nil b bs bd =>
+      rw [cmp, Bits.nil_cmp, ih _ _ bd, cmp,
+        swap_compare' (a := a), Ordering.then_swap_self]
+    | nil_bit b bs bd =>
+      have := ih _ _ bd
+      rw [cmp_nil] at this
+      rw [cmp_nil, Bits.nil_cmp]
+      rw [Ordering.then_swap, this, nil_cmp, Bits.nil_cmp,
+        swap_compare' (a := b), Ordering.swap_swap]
+    | bit_bit b bs ds bd =>
+      rw [cmp, Bits.nil_cmp, ih _ _ bd, nil_cmp]
+  | nil_bit a as ac ih =>
+    cases bd with
+    | nil_nil b =>
+      have := ih (nil b) _ (by rfl)
+      rw [cmp, cmp_nil] at this
+      rw [cmp, cmp_nil, Bits.nil_cmp, Ordering.then_swap,
+        ←this, Ordering.then_swap_self]
+    | bit_nil b bs bd =>
+      have := ih _ _ bd
+      rw [nil_cmp, cmp_nil] at this
+      rw [nil_cmp, cmp_nil]
+      unfold Bits.nil_cmp
+      rw [this, Ordering.then_swap, ←swap_compare']
+    | nil_bit b bs bd =>
+      have := ih _ _ bd
+      rw [cmp_nil] at this
+      rw [cmp_nil, Bits.nil_cmp, cmp,
+        ←this, Bits.nil_cmp, Ordering.swap_self_then]
+    | bit_bit b bs ds bd =>
+      rw [nil_cmp, cmp, Bits.nil_cmp, ←ih _ _ bd, nil_cmp]
+  | bit_bit a as cs ac ih =>
+    cases bd with
+    | nil_nil b =>
+      rw [cmp_nil, cmp_nil]
+      congr 1
+      sorry
+    | bit_nil b bs bd => sorry
+    | nil_bit b bs bd => sorry
+    | bit_bit b bs ds bd => sorry
+
+
+#print axioms BitInt.Bits.cmp.spec
+
+def BitInt.cmp : BitInt -> BitInt -> Ordering := by
+  apply lift₂ compare
+  apply BitInt.Bits.cmp.spec
