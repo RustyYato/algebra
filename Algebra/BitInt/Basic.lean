@@ -226,10 +226,10 @@ def BitInt.exact : ∀{a b: Bits}, mk a = mk b -> a ≈ b := by
 def BitInt.bits.spec (a: Bits) : (mk a).bits ≈ a := by
   symm
   apply (BitInt.Bits.minimize.spec _).left
-def BitInt.liftWith {r: α -> α -> Prop} (eqv: Equivalence r) : (f: Bits -> α) -> (all_eq: ∀a b, a ≈ b -> r (f a) (f b)) -> BitInt -> α := fun f _ x => f x.bits
+def BitInt.liftWith {r: α -> α -> Prop} (_eqv: Equivalence r) : (f: Bits -> α) -> (all_eq: ∀a b, a ≈ b -> r (f a) (f b)) -> BitInt -> α := fun f _ x => f x.bits
 def BitInt.lift : (f: Bits -> α) -> (all_eq: ∀a b, a ≈ b -> f a = f b) -> BitInt -> α := liftWith ⟨Eq.refl,Eq.symm,Eq.trans⟩
 def BitInt.liftProp : (f: Bits -> Prop) -> (all_eq: ∀a b, a ≈ b -> (f a ↔ f b)) -> BitInt -> Prop := liftWith ⟨Iff.refl,Iff.symm,Iff.trans⟩
-def BitInt.liftWith₂ {r: α -> α -> Prop} (eqv: Equivalence r) : (f: Bits -> Bits -> α) -> (all_eq: ∀a b c d, a ≈ c -> b ≈ d -> r (f a b) (f c d)) -> BitInt -> BitInt -> α := fun f _ x y => f x.bits y.bits
+def BitInt.liftWith₂ {r: α -> α -> Prop} (_eqv: Equivalence r) : (f: Bits -> Bits -> α) -> (all_eq: ∀a b c d, a ≈ c -> b ≈ d -> r (f a b) (f c d)) -> BitInt -> BitInt -> α := fun f _ x y => f x.bits y.bits
 def BitInt.lift₂ : (f: Bits -> Bits -> α) -> (all_eq: ∀a b c d, a ≈ c -> b ≈ d -> f a b = f c d) -> BitInt -> BitInt -> α := liftWith₂ ⟨Eq.refl,Eq.symm,Eq.trans⟩
 def BitInt.liftProp₂ : (f: Bits -> Bits -> Prop) -> (all_eq: ∀a b c d, a ≈ c -> b ≈ d -> (f a b ↔ f c d)) -> BitInt -> BitInt -> Prop := liftWith₂ ⟨Iff.refl,Iff.symm,Iff.trans⟩
 def BitInt.lift_mk : lift f all_eq (mk a) = f a := by
@@ -3248,29 +3248,17 @@ def BitInt.Bits.length : Bits -> nat
 | .nil _ => 0
 | .bit _ bs => bs.length.succ
 
-def BitInt.Bits.sqrt (a: Bits) (a_pos: a.IsPositive) : Bits × Bits :=
-  if h:a ≈ 0 ∨ a ≈ 1 then (a, a) else
-  have ⟨asqrt,asqrt_sq⟩ := (sqrt (a.shr 2) ((Bits.IsPositive.shr a 2).mp a_pos))
+def BitInt.Bits.sqrt : ∀(a: Bits), a.IsPositive -> Bits × Bits
+| .nil false, _
+| .bit false (.nil false), _ => (0, 0)
+| .bit true (.nil false), _ => (1, 1)
+| .bit a₀ (.bit a₁ as), as_pos =>
+  let a: Bits := .bit a₀ (.bit a₁ as)
+  have ⟨asqrt,asqrt_sq⟩ := sqrt as ((Bits.IsPositive.shr a 2).mp as_pos)
   have asqrt := bit false asqrt
   have asqrt_sq := bit false (bit false asqrt_sq)
   have asuccsqrt_sq := (asqrt_sq + (bit false asqrt)).succ
-
   if asuccsqrt_sq ≤ a then
     (asqrt.succ,asuccsqrt_sq)
   else
     (asqrt,asqrt_sq)
-termination_by a.length
-decreasing_by
-  have : 2 = nat.succ (nat.succ nat.zero) := rfl
-  rw [this]
-  cases a with
-  | nil a =>
-    cases a_pos
-    exact (h (.inl (by rfl))).elim
-  | bit a as =>
-    cases as with
-    | nil a => apply nat.zero_lt_succ
-    | bit a as =>
-      apply lt_trans
-      apply nat.lt_succ_self
-      apply nat.lt_succ_self
