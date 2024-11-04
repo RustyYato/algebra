@@ -3,15 +3,19 @@ import Algebra.Nat.Dvd
 def nat.square : nat -> nat := fun x => x * x
 postfix:max "²" => nat.square
 
-def nat.sqrt : nat -> nat :=
-  nat.induction (fun _ => nat) <| fun n ih =>
-    if h:n ≤ 1 then n else
-    let small := 2 * ih (n / 4) (by
-      refine div.lt n 4 rfl ?_
-      match n with
-      | nat.succ n => trivial)
-    let large := small.succ
-    if n < large² then small else large
+def nat.sqrt (n: nat) : nat :=
+  if h:n ≤ 1 then n else
+  let small := 2 * sqrt (n / 4)
+  let large := small.succ
+  if n < large² then small else large
+termination_by n
+decreasing_by
+  apply div.lt n 4 rfl
+  apply lt_of_le_of_ne
+  apply nat.zero_le
+  intro h
+  subst n
+  contradiction
 
 def nat.sqrt.zero : nat.sqrt 0 = 0 := by rfl
 def nat.sqrt.one : nat.sqrt 1 = 1 := by rfl
@@ -27,10 +31,8 @@ def nat.sqrt.gt_one : ∀x > 1,
   (2 * nat.sqrt (x / 4)).succ := by
   intro x h
   conv => { lhs; rw [sqrt] }
-  unfold induction
   rw [dif_neg]
   dsimp
-  rw [←sqrt]
   apply not_le_of_lt
   assumption
 
@@ -137,8 +139,8 @@ def nat.sqrt.spec (n x: nat): x * x ≤ n ↔ x ≤ n.sqrt := by
     replace ih := fun m => ih m
     cases lt_or_ge 1 n
     · rename_i one_lt_n
-      unfold sqrt induction
-      rw [←sqrt, dif_neg]
+      unfold sqrt
+      rw [dif_neg]
       dsimp
       split
       · rename_i h
@@ -195,8 +197,8 @@ def nat.sqrt.spec (n x: nat): x * x ≤ n ↔ x ≤ n.sqrt := by
       apply not_le_of_lt
       assumption
     · rename_i h
-      unfold sqrt induction
-      rw [←sqrt, dif_pos]
+      unfold sqrt
+      rw [dif_pos]
       · match n with
         | 0 =>
           match x with
