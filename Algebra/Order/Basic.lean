@@ -10,6 +10,20 @@ class TotalOrder (α: Sort _) [Ord α] where
 
 variable { α: Sort _ } [Ord α] [TotalOrder α]
 
+instance {P: Ordering -> Prop} [DecidablePred P] : Decidable (∀o: Ordering, P o) :=
+  match inferInstanceAs (Decidable (P .lt ∧ P .eq ∧ P .gt)) with
+  | .isTrue ⟨h₀,h₁,h₂⟩  => .isTrue <| fun
+    | .lt => h₀
+    | .eq => h₁
+    | .gt => h₂
+  | .isFalse h => .isFalse <| fun h₀ => h ⟨ h₀ _, h₀ _, h₀ _ ⟩
+
+instance : TotalOrder Bool where
+  compare_antisymm := by decide
+  compare_transitive := by decide
+  eq_of_compare_eq := by decide
+  compare_eq_refl := by decide
+
 def compare_transitive: ∀{a b c: α} {o: Ordering}, compare a b = o -> compare b c = o -> compare a c = o := TotalOrder.compare_transitive
 def eq_of_compare_eq: ∀{a b: α}, compare a b = Ordering.eq -> a = b := TotalOrder.eq_of_compare_eq
 def compare_eq_refl: ∀(a: α), compare a a = Ordering.eq := TotalOrder.compare_eq_refl
