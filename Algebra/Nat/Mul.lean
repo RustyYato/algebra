@@ -9,11 +9,7 @@ instance nat.mul_inst : Mul nat where
 
 def nat.zero_mul (b: nat) : 0 * b = 0 := rfl
 
-#print axioms nat.zero_mul
-
 def nat.succ_mul (a b: nat) : a.succ * b = b + a * b := rfl
-
-#print axioms nat.succ_mul
 
 def nat.mul_zero (a: nat) : a * 0 = 0 := by
   induction a with
@@ -22,31 +18,21 @@ def nat.mul_zero (a: nat) : a * 0 = 0 := by
     rw [succ_mul, ih]
     rfl
 
-#print axioms nat.mul_zero
-
 def nat.mul_succ (a b: nat) : a * b.succ = a + (a * b) := by
   induction a generalizing b with
   | zero => rfl
   | succ a ih => rw [succ_mul, ih, succ_mul, succ_add, succ_add, add.comm_left]
 
-#print axioms nat.mul_succ
-
 def nat.one_mul (a: nat) : 1 * a = a := by
   rw [←one_eq, succ_mul, zero_eq, zero_mul, add_zero]
 
-#print axioms nat.one_mul
-
 def nat.mul_one (a: nat) : a * 1 = a := by
   rw [←one_eq, mul_succ, zero_eq, mul_zero, add_zero]
-
-#print axioms nat.mul_one
 
 def nat.mul.comm (a b: nat) : a * b = b * a := by
   induction a generalizing b with
   | zero => rw [zero_eq, zero_mul, mul_zero]
   | succ a ih => rw [succ_mul, mul_succ, ih]
-
-#print axioms nat.mul.comm
 
 def nat.add_mul (a b k: nat) : (a + b) * k = a * k + b * k := by
   induction k with
@@ -57,13 +43,9 @@ def nat.add_mul (a b k: nat) : (a + b) * k = a * k + b * k := by
     apply nat.add_eq_add_right
     rw [add.comm_left]
 
-#print axioms nat.add_mul
-
 def nat.mul_add (a b k: nat) : k * (a + b) = k * a + k * b := by
   repeat rw [mul.comm k]
   apply add_mul
-
-#print axioms nat.mul_add
 
 def nat.mul.eq_zero {a b: nat} : a * b = 0 -> a = 0 ∨ b = 0 := by
   intro mul_eq_zero
@@ -74,8 +56,6 @@ def nat.mul.eq_zero {a b: nat} : a * b = 0 -> a = 0 ∨ b = 0 := by
   rw [succ_mul, succ_add] at mul_eq_zero
   contradiction
 
-#print axioms nat.mul.eq_zero
-
 def nat.mul.assoc (a b c: nat) : (a * b) * c = a * (b * c) := by
   induction a generalizing b c with
   | zero => rw [zero_eq, zero_mul, zero_mul, zero_mul]
@@ -83,8 +63,6 @@ def nat.mul.assoc (a b c: nat) : (a * b) * c = a * (b * c) := by
     rw [succ_mul, succ_mul, add_mul]
     apply nat.add_eq_add_right
     apply ih
-
-#print axioms nat.mul.assoc
 
 def nat.mul.comm_left (a b c: nat) : a * (b * c) = b * (a * c) := by
   rw [←mul.assoc, mul.comm a, mul.assoc]
@@ -98,8 +76,6 @@ def nat.mul.ge (a b: nat) (b_nz: 0 < b) : a ≤ a * b := by
     rw [mul_succ]
     apply add.le_left
 
-#print axioms nat.mul.ge
-
 def nat.mul.gt (a b: nat) (a_nz: 0 < a) (b_nz: 1 < b) : a < a * b := by
   match b with
   | .zero | .succ .zero => contradiction
@@ -111,8 +87,6 @@ def nat.mul.gt (a b: nat) (a_nz: 0 < a) (b_nz: 1 < b) : a < a * b := by
     apply succ_lt_succ
     apply lt_of_le_of_lt _ (lt_succ_self _)
     apply add.le_left
-
-#print axioms nat.mul.gt
 
 def nat.mul.cancel_left (a b c: nat) (a_nz: 0 < a) : a * b = a * c -> b = c := by
   induction c generalizing a b with
@@ -139,13 +113,9 @@ def nat.mul.cancel_left (a b c: nat) (a_nz: 0 < a) : a * b = a * c -> b = c := b
       assumption
       apply add.cancel_left h
 
-#print axioms nat.mul.cancel_left
-
 def nat.mul.cancel_right (a b c: nat) (a_nz: 0 < a) : b * a = c * a -> b = c := by
   repeat rw [comm _ a]
   apply cancel_left <;> assumption
-
-#print axioms nat.mul.cancel_right
 
 def nat.mul.of_lt_cancel_left (a b c: nat) (a_nz: 0 < a) : b < c -> a * b < a * c := by
   induction b generalizing a c with
@@ -169,14 +139,10 @@ def nat.mul.of_lt_cancel_left (a b c: nat) (a_nz: 0 < a) : b < c -> a * b < a * 
     apply zero_lt_succ
     exact h
 
-#print axioms nat.mul.of_lt_cancel_left
-
 def nat.mul.of_lt_cancel_right (a b c: nat) (a_nz: 0 < a) : b < c -> b * a < c * a := by
   intros
   repeat rw [comm _ a]
   apply of_lt_cancel_left <;> assumption
-
-#print axioms nat.mul.of_lt_cancel_right
 
 def nat.mul.lt_cancel_left (a b c: nat) (a_nz: 0 < a) : a * b < a * c -> b < c := by
   induction c generalizing a b with
@@ -196,13 +162,9 @@ def nat.mul.lt_cancel_left (a b c: nat) (a_nz: 0 < a) : a * b < a * c -> b < c :
       apply add.lt_cancel_left
       exact h
 
-#print axioms nat.mul.lt_cancel_left
-
 def nat.mul.lt_cancel_right (a b c: nat) (a_nz: 0 < a): b * a < c * a -> b < c := by
   repeat rw [comm _ a]
   apply lt_cancel_left <;> assumption
-
-#print axioms nat.mul.lt_cancel_right
 
 def nat.mul.of_le_cancel_left (a b c: nat) : b ≤ c -> a * b ≤ a * c := by
   induction c generalizing a b with
@@ -222,13 +184,9 @@ def nat.mul.of_le_cancel_left (a b c: nat) : b ≤ c -> a * b ≤ a * c := by
     apply add.of_le_cancel_left
     assumption
 
-#print axioms nat.mul.of_le_cancel_left
-
 def nat.mul.of_le_cancel_right (a b c: nat) : b ≤ c -> b * a ≤ c * a := by
   repeat rw [comm _ a]
   apply of_le_cancel_left
-
-#print axioms nat.mul.of_le_cancel_right
 
 def nat.mul_sub (a b c: nat) : a * (b - c) = a * b - a * c := by
   induction b generalizing a c with
@@ -241,13 +199,9 @@ def nat.mul_sub (a b c: nat) : a * (b - c) = a * b - a * c := by
       apply ih
       apply le_refl
 
-#print axioms nat.mul_sub
-
 def nat.sub_mul (a b c: nat): (b - c) * a = b * a - c * a := by
   repeat rw [mul.comm _ a]
   apply nat.mul_sub
-
-#print axioms nat.sub_mul
 
 def nat.mul.eq_one {a b: nat} : a * b = 1 -> a = 1 ∧ b = 1 := by
   intro mul_eq_one
@@ -284,8 +238,6 @@ def nat.mul.eq_one {a b: nat} : a * b = 1 -> a = 1 ∧ b = 1 := by
     rw [one_mul] at mul_eq_one
     assumption
 
-#print axioms nat.mul.eq_one
-
 def nat.eq_of_mul_eq { a b k: nat } : 0 < k -> k * a = k * b -> a = b := by
   intro k_nz k_mul
   induction a generalizing b k with
@@ -313,15 +265,11 @@ def nat.eq_of_mul_eq { a b k: nat } : 0 < k -> k * a = k * b -> a = b := by
       apply nat.add.cancel_left
       assumption
 
-#print axioms nat.eq_of_mul_eq
-
 def nat.mul.le (a b c d: nat) : a ≤ c -> b ≤ d -> a * b ≤ c * d := by
   intro a_le_c b_le_d
   apply le_trans
   exact (nat.mul.of_le_cancel_left _ _ _ b_le_d)
   exact (nat.mul.of_le_cancel_right _ _ _ a_le_c)
-
-#print axioms nat.mul.le
 
 def nat.mul.lt (a b c d: nat) : a < c -> b < d -> a * b < c * d := by
   intro a_lt_c b_lt_d
@@ -346,8 +294,6 @@ def nat.mul.lt (a b c d: nat) : a < c -> b < d -> a * b < c * d := by
   apply of_lt_cancel_left
   rfl
   assumption
-
-#print axioms nat.mul.lt
 
 def nat.mul.compare_left_pos (a b k: nat) : 0 < k -> compare (a * k) (b * k) = compare a b := by
   intro h

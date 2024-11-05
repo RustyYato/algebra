@@ -21,8 +21,6 @@ def Decidable.not_or { P Q: Prop }
     intro not_q not_p
     apply And.intro <;> assumption
 
-#print axioms Decidable.not_or
-
 def Decidable.not_and { P Q: Prop }
   [Decidable P] [Decidable Q]:
   ¬(P ∧ Q) -> ¬P ∨ ¬Q := by
@@ -35,8 +33,6 @@ def Decidable.not_and { P Q: Prop }
     contradiction
     exact Or.inr
     exact Or.inl
-
-#print axioms Decidable.not_and
 
 def nat.prime.dvd_or_coprime : ∀a b, a.prime -> a ∣ b ∨ coprime a b := by
   intro a b prime_a
@@ -59,8 +55,6 @@ def nat.prime.dvd_or_coprime : ∀a b, a.prime -> a ∣ b ∨ coprime a b := by
       have := nat.gcd.dvd_right a b
       rw [gcd_eq_a] at this
       contradiction
-
-#print axioms nat.prime.dvd_or_coprime
 
 def nat.prime.search
   (p limit: nat)
@@ -97,8 +91,6 @@ def nat.prime.search
       clear succ_limit_eq_k limit_lt_k k progress
       apply current k_dvd_p
 
-#print axioms nat.prime.search
-
 instance nat.prime.instDec (a: nat) : Decidable a.prime := by
   have : ∀P Q, Decidable P -> Decidable Q -> Decidable (P ∧ Q) := by intros; exact inferInstance
   have one_lt_a : Decidable (1 < a) := inferInstance
@@ -117,8 +109,6 @@ instance nat.prime.instDec (a: nat) : Decidable a.prime := by
   have := not_lt_and_ge a_lt_k this
   contradiction
 
-#print axioms nat.prime.instDec
-
 def nat.first_factor.find (a: nat) (current: nat) (fuel: nat) : nat :=
   match fuel with
   | .zero => current
@@ -128,8 +118,6 @@ def nat.first_factor.find (a: nat) (current: nat) (fuel: nat) : nat :=
     | .isFalse _ => find a current.succ fuel
 
 def nat.first_factor (a: nat) : nat := first_factor.find a 2 (a - 2)
-
-#print axioms nat.first_factor
 
 def nat.first_factor.find.is_factor (a current fuel: nat) : a = fuel + current -> nat.first_factor.find a current fuel ∣ a := by
   induction fuel generalizing current with
@@ -148,8 +136,6 @@ def nat.first_factor.find.is_factor (a current fuel: nat) : a = fuel + current -
     rw [add_succ, ←succ_add]
     assumption
 
-#print axioms nat.first_factor.find.is_factor
-
 def nat.first_factor.is_factor (a: nat) : 1 < a -> a.first_factor ∣ a := by
   intro one_lt_a
   match a with
@@ -159,8 +145,6 @@ def nat.first_factor.is_factor (a: nat) : 1 < a -> a.first_factor ∣ a := by
   have : 2 = nat.zero.succ.succ := rfl
   rw [this, succ_sub_succ, succ_sub_succ, zero_eq, sub_zero]
   rw [add_succ, add_succ, add_zero]
-
-#print axioms nat.first_factor.is_factor
 
 def nat.first_factor.find.lower_bound (a current fuel: nat) :
   current ≤ nat.first_factor.find a current fuel := by
@@ -174,8 +158,6 @@ def nat.first_factor.find.lower_bound (a current fuel: nat) :
     apply le_trans _ (ih current.succ)
     apply le_of_lt
     apply nat.lt_succ_self
-
-#print axioms nat.first_factor.find.lower_bound
 
 def nat.first_factor.find.is_smallest_factor (a current fuel: nat) :
   a = fuel + current ->
@@ -232,8 +214,6 @@ def nat.first_factor.find.is_smallest_factor (a current fuel: nat) :
       assumption
     }
 
-#print axioms nat.first_factor.find.is_smallest_factor
-
 def nat.first_factor.is_smallest_factor (a: nat) : 1 < a -> ∀k, 1 < k -> k ∣ a -> a.first_factor ≤ k := by
   intro one_lt_a k k_gt_1 k_dvd_a
   apply nat.first_factor.find.is_smallest_factor
@@ -252,8 +232,6 @@ def nat.first_factor.is_smallest_factor (a: nat) : 1 < a -> ∀k, 1 < k -> k ∣
       contradiction
   }
   repeat assumption
-
-#print axioms nat.first_factor.is_smallest_factor
 
 def nat.first_factor.is_prime (a: nat) : 1 < a -> a.first_factor.prime := by
   intro one_lt_a
@@ -292,18 +270,12 @@ def nat.first_factor.is_prime (a: nat) : 1 < a -> a.first_factor.prime := by
   }
   assumption
 
-#print axioms nat.first_factor.is_prime
-
 def nat.coprime.cancel_left { a b c: nat }: coprime a b -> a ∣ (b * c) -> a ∣ c := by
   intro a_coprime_b a_dvd_bc
   have g := gcd.of_dvd (dvd.mul_left a c) a_dvd_bc
   rw [gcd.common_right, a_coprime_b, one_mul] at g
   assumption
 
-#print axioms nat.coprime.cancel_left
-
 def nat.coprime.cancel_right { a b c: nat }: coprime a b -> a ∣ (c * b) -> a ∣ c := by
   rw [mul.comm]
   apply nat.coprime.cancel_left
-
-#print axioms nat.coprime.cancel_right

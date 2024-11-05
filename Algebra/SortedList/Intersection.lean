@@ -33,8 +33,6 @@ def sorted_intersection.left_empty
   intro ys
   rfl
 
-#print axioms sorted_intersection.left_empty
-
 def sorted_intersection.right_empty
   { α: Sort _ }
   [Ord α] [tle: TotalOrder α]:
@@ -43,8 +41,6 @@ def sorted_intersection.right_empty
   match xs with
   | [] => rfl
   | _::_ => rfl
-
-#print axioms sorted_intersection.right_empty
 
 def sorted_intersection.if_lt
   { α: Sort _ }
@@ -85,8 +81,6 @@ def sorted_intersection.if_lt'
     rw [if_lt]
     repeat assumption
 
-#print axioms sorted_intersection.if_lt'
-
 def sorted_intersection.if_gt'
   { α: Sort _ }
   [Ord α] [tle: TotalOrder α]:
@@ -101,8 +95,6 @@ def sorted_intersection.if_gt'
     have _ := prf x (.head _)
     rw [if_gt]
     repeat assumption
-
-#print axioms sorted_intersection.if_gt'
 
 def sorted_intersection.if_eq
   { α: Sort _ }
@@ -150,8 +142,6 @@ def sorted_intersection.if_eq
     exact x_eq_y
   }
 
-#print axioms sorted_intersection.comm
-
 def sorted_intersection.refl
   { α: Sort _ }
   [Ord α] [tle: TotalOrder α]:
@@ -163,8 +153,6 @@ def sorted_intersection.refl
     rw [if_eq]
     congr
     rfl
-
-#print axioms sorted_intersection.refl
 
 def sorted_intersection.contains
   { α: Sort _ }
@@ -211,8 +199,6 @@ def sorted_intersection.contains
       have ⟨ z_in_xs, z_in_ys ⟩ := ih z_in_intersection
       apply And.intro <;> (apply List.Mem.tail; assumption)
   }
-
-#print axioms sorted_intersection.contains
 
 def sorted_intersection.of_contains
   { α: Sort _ }
@@ -307,8 +293,6 @@ def sorted_intersection.of_contains
         repeat assumption
   }
 
-#print axioms sorted_intersection.of_contains
-
 def sorted_intersection.idempotent_left
   { α: Sort _ }
   [Ord α] [tle: TotalOrder α]:
@@ -349,8 +333,6 @@ def sorted_intersection.idempotent_left
     repeat assumption
   }
 
-#print axioms sorted_intersection.idempotent_left
-
 def sorted_intersection.idempotent_right
   { α: Sort _ }
   [Ord α] [tle: TotalOrder α]:
@@ -360,8 +342,6 @@ def sorted_intersection.idempotent_right
   intro xs ys sorted_ys
   rw [comm, comm xs ys]
   apply idempotent_left <;> assumption
-
-#print axioms sorted_intersection.idempotent_right
 
 def sorted_intersection.sorted
   { a: Sort _ }
@@ -420,5 +400,3 @@ def SortedList.intersection
   assumption
   exact xs.is_sorted
   exact ys.is_sorted
-
-#print axioms SortedList.intersection

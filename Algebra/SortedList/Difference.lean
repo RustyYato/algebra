@@ -82,7 +82,7 @@ def sorted_difference.refl
   intro xs
   induction xs with
   | nil => rfl
-  | cons x xs ih => 
+  | cons x xs ih =>
     rw [if_eq]
     congr
     rfl
@@ -126,12 +126,10 @@ def sorted_difference.contains
     assumption
   }
 
-#print axioms sorted_difference.contains
-
 def sorted_difference.sorted
   { a: Sort _ }
   [Ord α] [TotalOrder α]:
-  (xs ys: List α) -> 
+  (xs ys: List α) ->
   is_sorted xs ->
   is_sorted (sorted_difference xs ys) := by
   apply sorted_induction'
@@ -140,7 +138,7 @@ def sorted_difference.sorted
     trivial
   }
   {
-    intro x xs sorted_xs 
+    intro x xs sorted_xs
     assumption
   }
   {
@@ -172,14 +170,9 @@ def sorted_difference.sorted
     assumption
   }
 
-#print axioms sorted_difference.sorted
-
 def SortedList.difference
   [Ord α] [TotalOrder α]
   (xs ys: SortedList α) : SortedList α := SortedList.mk (sorted_difference xs.items ys.items) <| by
   apply sorted_difference.sorted
   assumption
   exact xs.is_sorted
-
-#print axioms SortedList.difference
-

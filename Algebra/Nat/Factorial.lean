@@ -5,8 +5,6 @@ def nat.fact (n: nat) : nat := match n with
   | 0 => 1
   | succ n => n.succ * n.fact
 
-#print axioms nat.fact
-
 def nat.partial_fact (n m: nat) : nat :=
   match m with
   | 0 => 1
@@ -14,8 +12,6 @@ def nat.partial_fact (n m: nat) : nat :=
   match n with
   | 0 => 1
   | succ n => n.succ * (n.partial_fact m)
-
-#print axioms nat.partial_fact
 
 postfix:max ".!" => nat.fact
 postfix:max "!" => nat.fact
@@ -34,7 +30,6 @@ def nat.fact.nz : 0 < n ! := by
     apply lt_of_lt_of_le
     assumption
     apply add.le_left
-
 
 def nat.dvd.fact {n m: nat} : 0 < m -> m ≤ n -> m ∣ n ! := by
   intro m_nz m_le_n
@@ -55,8 +50,6 @@ def nat.dvd.fact {n m: nat} : 0 < m -> m ≤ n -> m ∣ n ! := by
       rw [←mul.assoc, prf, mul.comm]
       rfl
 
-#print axioms nat.dvd.fact
-
 def nat.dvd.of_fact {n m: nat} : m ≤ n -> m ! ∣ n ! := by
   intro m_le_n
   induction n with
@@ -73,8 +66,6 @@ def nat.dvd.of_fact {n m: nat} : m ≤ n -> m ! ∣ n ! := by
       exists (x * n.succ)
       rw [←mul.assoc, prf, mul.comm]
       rfl
-
-#print axioms nat.dvd.of_fact
 
 def nat.partial_fact.eq_fact_div : m ≤ n -> nat.partial_fact n m = n ! / (n - m) ! := by
   intro m_le_n
@@ -98,8 +89,6 @@ def nat.partial_fact.eq_fact_div : m ≤ n -> nat.partial_fact n m = n ! / (n - 
       apply nat.dvd.of_fact
       apply nat.sub.le
       assumption
-
-#print axioms nat.partial_fact.eq_fact_div
 
 -- TODO: revisit once there is a working theory of the rationals, since that will make this a whole lot easier
 -- to prove

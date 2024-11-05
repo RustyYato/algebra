@@ -47,8 +47,6 @@ def nat.gcd.induction.fueled.termination
     intro
     contradiction
 
-#print axioms nat.gcd.induction.fueled.termination
-
 def nat.gcd.induction.fueled.fuel_irr
   (motive: nat -> nat -> Sort _)
   (right_zero: ∀a, motive a 0)
@@ -86,8 +84,6 @@ def nat.gcd.induction.fueled.fuel_irr
           apply nat.zero_lt_succ
           exact le_of_lt_succ b_le_fuelb
 
-#print axioms nat.gcd.induction.fueled.fuel_irr
-
 def nat.gcd.induction
   (motive: nat -> nat -> Sort _)
   (right_zero: ∀a, motive a 0)
@@ -101,8 +97,6 @@ def nat.gcd.induction
       apply nat.gcd.induction.fueled.termination motive right_zero right_nz b.succ a b
       apply nat.lt_succ_self
       assumption
-
-#print axioms nat.gcd.induction
 
 def nat.gcd.induction.remove_fuel
     (motive: nat -> nat -> Sort _)
@@ -122,15 +116,11 @@ def nat.gcd.induction.remove_fuel
     apply nat.lt_succ_self
     assumption
 
-#print axioms nat.gcd.induction.remove_fuel
-
 def nat.gcd.induction.right_zero
     (motive: nat -> nat -> Sort _)
     (right_zero: ∀a, motive a 0)
     (right_nz: ∀a b, 0 < b -> motive b (a % b) -> motive a b):
     ∀a, induction motive right_zero right_nz a 0 = right_zero a := fun _ => rfl
-
-#print axioms nat.gcd.induction.right_zero
 
 def nat.gcd.induction.right_nz
     (motive: nat -> nat -> Sort _)
@@ -170,8 +160,6 @@ def nat.gcd.induction.right_nz
       assumption
     }
 
-#print axioms nat.gcd.induction.right_nz
-
 def nat.gcd (a b: nat) : nat := nat.gcd.induction (fun _ _ => nat) (fun a => a) (fun _ _ _ prev => prev) a b
 
 def nat.gcd.right_zero { a: nat } : gcd a 0 = a := rfl
@@ -194,8 +182,6 @@ def nat.gcd_ne_zero : ∀a b, gcd a b ≠ 0 -> a ≠ 0 ∨ b ≠ 0 := by
     assumption
   }
 
-#print axioms nat.gcd_ne_zero
-
 def nat.gcd.to_dvd : ∀{a b c: nat}, c ∣ gcd a b -> c ∣ a ∧ c ∣ b := by
   apply induction
   {
@@ -213,8 +199,6 @@ def nat.gcd.to_dvd : ∀{a b c: nat}, c ∣ gcd a b -> c ∣ a ∧ c ∣ b := by
     repeat assumption
   }
 
-#print axioms nat.gcd.to_dvd
-
 def nat.gcd.of_dvd : ∀{a b c: nat}, c ∣ a -> c ∣ b -> c ∣ gcd a b := by
   apply induction
   {
@@ -230,16 +214,10 @@ def nat.gcd.of_dvd : ∀{a b c: nat}, c ∣ a -> c ∣ b -> c ∣ gcd a b := by
     assumption
   }
 
-#print axioms nat.gcd.of_dvd
-
 def nat.gcd.dvd (a b: nat): gcd a b ∣ a ∧ gcd a b ∣ b := nat.gcd.to_dvd (nat.dvd.refl _)
-
-#print axioms nat.gcd.dvd
 
 def nat.gcd.dvd_left (a b: nat): gcd a b ∣ a := (nat.gcd.dvd a b).left
 def nat.gcd.dvd_right (a b: nat): gcd a b ∣ b := (nat.gcd.dvd a b).right
-
-#print axioms nat.gcd.dvd
 
 def nat.gcd.comm : ∀(a b: nat), gcd a b = gcd b a := by
   intro a b
@@ -249,8 +227,6 @@ def nat.gcd.comm : ∀(a b: nat), gcd a b = gcd b a := by
   have ⟨ _, _ ⟩ := nat.gcd.dvd b a
   apply of_dvd <;> assumption
 
-#print axioms nat.gcd.comm
-
 def nat.gcd.idempot_left : ∀{a b: nat}, gcd (gcd a b) b = gcd a b := by
   intro a b
   apply dvd.antisymm
@@ -259,14 +235,10 @@ def nat.gcd.idempot_left : ∀{a b: nat}, gcd (gcd a b) b = gcd a b := by
   apply dvd.refl
   exact (nat.gcd.dvd _ _).right
 
-#print axioms nat.gcd.idempot_left
-
 def nat.gcd.idempot_right : ∀{a b: nat}, gcd a (gcd a b) = gcd a b := by
   intro a b
   rw [comm _ (gcd _ _), comm a]
   apply idempot_left
-
-#print axioms nat.gcd.idempot_right
 
 def nat.gcd.assoc : ∀{a b c: nat}, gcd (gcd a b) c = gcd a (gcd b c) := by
   intro a b c
@@ -290,8 +262,6 @@ def nat.gcd.assoc : ∀{a b c: nat}, gcd (gcd a b) c = gcd a (gcd b c) := by
   apply dvd_right
   apply dvd_right
 
-#print axioms nat.gcd.idempot_right
-
 def nat.gcd.eq_zero : ∀{a b}, gcd a b = 0 -> a = 0 ∧ b = 0 := by
   intro a b  gcd_eq_zero
   have : 0 ∣ gcd a b := by
@@ -301,8 +271,6 @@ def nat.gcd.eq_zero : ∀{a b}, gcd a b = 0 -> a = 0 ∧ b = 0 := by
   apply And.intro
   exact dvd.eq_zero_of_by_zero zero_dvd_a
   exact dvd.eq_zero_of_by_zero zero_dvd_b
-
-#print axioms nat.gcd.eq_zero
 
 def nat.gcd.common_right : ∀a b k, gcd (a * k) (b * k) = gcd a b * k := by
   apply nat.gcd.induction
@@ -326,16 +294,12 @@ def nat.gcd.common_right : ∀a b k, gcd (a * k) (b * k) = gcd a b * k := by
     apply nat.add.le_left
   }
 
-#print axioms nat.gcd.common_right
-
 def nat.gcd.common_left : ∀a b k, gcd (k * a) (k * b) = k * gcd a b := by
   intros a b k
   rw [mul.comm k]
   rw [mul.comm k]
   rw [mul.comm k]
   apply common_right
-
-#print axioms nat.gcd.common_left
 
 def nat.gcd.div_common : ∀a b k, k ∣ a -> k ∣ b -> gcd (a / k) (b / k) = gcd a b / k := by
   intros a b k k_dvd_a k_dvd_b
@@ -352,8 +316,6 @@ def nat.gcd.div_common : ∀a b k, k ∣ a -> k ∣ b -> gcd (a / k) (b / k) = g
     rw [nat.gcd.common_left]
     repeat rw [mul_div]
     repeat apply zero_lt_succ
-
-#print axioms nat.gcd.div_common
 
 def nat.dvd.mul_div (a b c: nat) : c ∣ b -> a * (b / c) = (a * b) / c := by
   intro c_dvd_b
@@ -380,8 +342,6 @@ def nat.dvd.mul_div (a b c: nat) : c ∣ b -> a * (b / c) = (a * b) / c := by
   apply nat.eq_of_mul_eq _ xprf.symm
   repeat exact zero_lt_succ
 
-#print axioms nat.dvd.mul_div
-
 def nat.gcd.eq_left_of_dvd : ∀(a b: nat), a ∣ b -> gcd a b = a := by
   intro a b a_dvd_b
   apply nat.dvd.antisymm
@@ -389,8 +349,6 @@ def nat.gcd.eq_left_of_dvd : ∀(a b: nat), a ∣ b -> gcd a b = a := by
   apply gcd.of_dvd
   apply dvd.refl
   assumption
-
-#print axioms nat.gcd.eq_left_of_dvd
 
 def nat.gcd.eq_right_of_dvd : ∀(a b: nat), b ∣ a -> gcd a b = b := by
   intro a b a_dvd_b
@@ -400,26 +358,18 @@ def nat.gcd.eq_right_of_dvd : ∀(a b: nat), b ∣ a -> gcd a b = b := by
   assumption
   apply dvd.refl
 
-#print axioms nat.gcd.eq_right_of_dvd
-
 def nat.gcd.left_zero { a: nat } : gcd 0 a = a := by
   rw [gcd.comm, gcd.right_zero]
-
-#print axioms nat.gcd.left_zero
 
 def nat.gcd.one_right : gcd a 1 = 1 := by
   apply nat.dvd.antisymm
   apply gcd.dvd_right
   apply nat.dvd.by_one
 
-#print axioms nat.gcd.one_right
-
 def nat.gcd.one_left : gcd 1 a = 1 := by
   apply nat.dvd.antisymm
   apply gcd.dvd_left
   apply nat.dvd.by_one
-
-#print axioms nat.gcd.one_left
 
 def nat.gcd.gt_zero { a b: nat } : 0 < a ∨ 0 < b -> 0 < gcd a b := by
   intro a_nz_or_b_nz
@@ -427,5 +377,3 @@ def nat.gcd.gt_zero { a b: nat } : 0 < a ∨ 0 < b -> 0 < gcd a b := by
   have ⟨ _, _ ⟩  := eq_zero h
   cases a <;> cases b <;> contradiction
   apply zero_lt_succ
-
-#print axioms nat.gcd.gt_zero

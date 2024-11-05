@@ -50,8 +50,6 @@ def range.add (a: range mina maxa) (b: range minb maxb) : range (mina + minb) (m
   exact a.value_lt_max
   exact b.value_lt_max
 
-#print axioms range.add
-
 def range.mul (a: range mina maxa) (b: range minb maxb) : range (mina * minb) (maxa * maxb) := by
   apply range.mk (a.value * b.value)
   apply nat.mul.le
@@ -60,5 +58,3 @@ def range.mul (a: range mina maxa) (b: range minb maxb) : range (mina * minb) (m
   apply nat.mul.lt
   exact a.value_lt_max
   exact b.value_lt_max
-
-#print axioms range.mul

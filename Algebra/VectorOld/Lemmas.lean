@@ -4,8 +4,6 @@ def Vector.nil_append
   (vs: Vector α n):
   (nil: Vector α 0) ++ vs = vs := rfl
 
-#print axioms Vector.nil_append
-
 def Vector.append_nil
   (vs: Vector α n):
   vs ++ (nil: Vector α 0) =v vs := by
@@ -16,14 +14,10 @@ def Vector.append_nil
     apply And.intro rfl
     exact ih
 
-#print axioms Vector.nil_append
-
 def Vector.cons_append
   (v: α)
   (vs: Vector α n) (ws: Vector α m):
   (cons v vs) ++ ws = cons v (vs ++ ws) := rfl
-
-#print axioms Vector.cons_append
 
 def Vector.mem_append { vs: Vector α n } { ws: Vector α m }:
   ∀{x}, x ∈ vs ++ ws ↔ x ∈ vs ∨ x ∈ ws := by
@@ -70,26 +64,18 @@ def Vector.mem_append { vs: Vector α n } { ws: Vector α m }:
         apply Or.inr
         assumption
 
-#print axioms Vector.mem_append
-
 def Vector.nil_flatten:
   (nil: Vector (Vector α m) 0).flatten = .nil := rfl
-
-#print axioms Vector.nil_flatten
 
 def Vector.flatten_nil (vs: Vector (Vector α 0) m):
   vs.flatten =v .nil := by
   apply Vector.eq_nil_of_zero_len
   rw [nat.mul_zero]
 
-#print axioms Vector.flatten_nil
-
 def Vector.cons_flatten
   (v: (Vector α n))
   (vs: Vector (Vector α n) m):
   (cons v vs).flatten = v ++ vs.flatten := rfl
-
-#print axioms Vector.cons_flatten
 
 def Vector.mem_flatten { vs: Vector (Vector α m) n }:
   ∀{x}, x ∈ vs.flatten ↔ ∃ws, x ∈ ws ∧ ws ∈ vs := by
@@ -131,8 +117,6 @@ def Vector.mem_flatten { vs: Vector (Vector α m) n }:
       | tail v vs ws ws_mem =>
         exact Or.inr (ih.mpr ⟨ ws, h, ws_mem ⟩)
 
-#print axioms Vector.mem_flatten
-
 def Vector.mem_from_list {list: List α} :
   ∀{x}, x ∈ list ↔ x ∈ Vector.from_list list := by
   intro k
@@ -156,12 +140,8 @@ def Vector.mem_from_list {list: List α} :
       apply ih.mpr
       assumption
 
-#print axioms Vector.mem_from_list
-
 def Vector.cons_to_list { v: α } { vs: Vector α n } :
   (cons v vs).to_list = v::vs.to_list := rfl
-
-#print axioms Vector.cons_to_list
 
 def Vector.mem_to_list {vs: Vector α n} :
   ∀{x}, x ∈ vs ↔ x ∈ vs.to_list := by
@@ -186,8 +166,6 @@ def Vector.mem_to_list {vs: Vector α n} :
       apply ih.mpr
       assumption
 
-#print axioms Vector.mem_to_list
-
 def Vector.from_list_to_list { list: List α }
   : (Vector.from_list list).to_list = list := by
   induction list with
@@ -195,8 +173,6 @@ def Vector.from_list_to_list { list: List α }
   | cons v vs ih =>
     unfold Vector.from_list Vector.to_list
     congr
-
-#print axioms Vector.from_list_to_list
 
 def Vector.to_list_from_list { vs: Vector α n }
   : Vector.from_list vs.to_list =v vs := by
@@ -209,8 +185,6 @@ def Vector.to_list_from_list { vs: Vector α n }
     apply And.intro rfl
     exact ih
 
-#print axioms Vector.from_list_to_list
-
 def Vector.to_list_of_veq
   { vs: Vector α n }
   { ws: Vector α m }:
@@ -218,8 +192,6 @@ def Vector.to_list_of_veq
   intro eq
   cases eq
   rfl
-
-#print axioms Vector.from_list_to_list
 
 -- def Vector.get_append_left
 --   (vs: Vector α n) (ws: Vector α m) (idx: { x: nat // x < n }):
@@ -293,8 +265,6 @@ def Vector.append_veq
   cases weq
   rfl
 
-#print axioms Vector.append_veq
-
 def Vector.append_left_veq
   { vs: Vector α n }
   { vs': Vector α m }
@@ -303,8 +273,6 @@ def Vector.append_left_veq
   intro veq
   cases veq
   rfl
-
-#print axioms Vector.append_left_veq
 
 def Vector.append_right_veq
   { vs: Vector α n }
@@ -315,8 +283,6 @@ def Vector.append_right_veq
   cases veq
   rfl
 
-#print axioms Vector.append_right_veq
-
 def Vector.flatten_veq
   { vs: Vector (Vector α m) n }
   { ws: Vector (Vector α m) o }:
@@ -324,8 +290,6 @@ def Vector.flatten_veq
   intro veq
   cases veq
   rfl
-
-#print axioms Vector.flatten_veq
 
 def Vector.nil_reverse : (Vector.nil : Vector α 0).reverse = .nil := rfl
 

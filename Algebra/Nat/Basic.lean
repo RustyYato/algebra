@@ -17,11 +17,7 @@ instance nat.of_Nat (n: Nat) : OfNat nat n where
 instance nat.repr : Repr nat where
   reprPrec n := reprPrec n.toNat
 
-def nat.zero_eq : nat.zero = 0 := rfl
-#print axioms nat.zero_eq
-def nat.one_eq : nat.zero.succ = 1 := rfl
-#print axioms nat.one_eq
-
+def nat.zero_eq : nat.zero = 0 := rfldef nat.one_eq : nat.zero.succ = 1 := rfl
 def nat.toNat_ofNat (n: nat) : .ofNat n.toNat = n := by
   induction n with
   | zero => rfl

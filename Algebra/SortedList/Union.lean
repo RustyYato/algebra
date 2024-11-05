@@ -34,8 +34,6 @@ def sorted_union.left_empty
   unfold sorted_union
   rw [sorted_induction.left_empty]
 
-#print axioms sorted_union.left_empty
-
 def sorted_union.right_empty
   { α: Sort _ }
   [Ord α] [tle: TotalOrder α]:
@@ -46,8 +44,6 @@ def sorted_union.right_empty
   | x::xs =>
   unfold sorted_union
   rw [sorted_induction.right_empty]
-
-#print axioms sorted_union.right_empty
 
 def sorted_union.if_lt
   { α: Sort _ }
@@ -61,8 +57,6 @@ def sorted_union.if_lt
   rw [sorted_induction.if_lt]
   repeat assumption
 
-#print axioms sorted_union.if_lt
-
 def sorted_union.if_gt
   { α: Sort _ }
   [Ord α] [tle: TotalOrder α]:
@@ -75,8 +69,6 @@ def sorted_union.if_gt
   rw [sorted_induction.if_gt]
   repeat assumption
 
-#print axioms sorted_union.if_gt
-
 def sorted_union.if_eq
   { α: Sort _ }
   [Ord α] [tle: TotalOrder α]:
@@ -88,8 +80,6 @@ def sorted_union.if_eq
   unfold sorted_union
   rw [sorted_induction.if_eq]
   repeat assumption
-
-#print axioms sorted_union.if_eq
 
 def sorted_union.comm
   { α: Sort _ }
@@ -125,8 +115,6 @@ def sorted_union.comm
     assumption
   }
 
-#print axioms sorted_union.comm
-
 def sorted_union.refl
   { α: Sort _ }
   [Ord α] [tle: TotalOrder α]:
@@ -138,8 +126,6 @@ def sorted_union.refl
     rw [if_eq]
     congr
     rfl
-
-#print axioms sorted_union.refl
 
 def sorted_union.idempotent_left
   { α: Sort _ }
@@ -174,7 +160,7 @@ def sorted_union.idempotent_left
     congr
     repeat assumption
   }
- 
+
  #print axioms sorted_union.idempotent_left
 
 def sorted_union.idempotent_right
@@ -184,7 +170,7 @@ def sorted_union.idempotent_right
   sorted_union xs (sorted_union xs ys) = sorted_union xs ys := by
   intro xs ys
   rw [sorted_union.comm, sorted_union.comm xs, sorted_union.idempotent_left]
- 
+
  #print axioms sorted_union.idempotent_right
 
 def sorted_union.contains
@@ -213,7 +199,7 @@ def sorted_union.contains
         apply List.Mem.head
       | tail head mem =>
         cases ih mem with
-        | inl _ => 
+        | inl _ =>
           apply Or.inl
           apply List.Mem.tail
           assumption
@@ -259,8 +245,6 @@ def sorted_union.contains
           assumption
     }
 
-#print axioms sorted_union.contains
-
 def sorted_union.of_contains
   { α: Sort _ }
   [Ord α] [tle: TotalOrder α]:
@@ -284,10 +268,10 @@ def sorted_union.of_contains
       rw [if_lt]
       any_goals assumption
       cases z_in_source with
-      | inl z_in_xs => 
+      | inl z_in_xs =>
         cases z_in_xs with
         | head _ => apply List.Mem.head
-        | tail _ _ => 
+        | tail _ _ =>
           apply List.Mem.tail
           apply ih
           apply Or.inl
@@ -308,10 +292,10 @@ def sorted_union.of_contains
         apply ih
         apply Or.inl
         assumption
-      | inr z_in_ys => 
+      | inr z_in_ys =>
         cases z_in_ys with
         | head _ => apply List.Mem.head
-        | tail _ _ => 
+        | tail _ _ =>
           apply List.Mem.tail
           apply ih
           apply Or.inr
@@ -322,10 +306,10 @@ def sorted_union.of_contains
       rw [if_eq]
       any_goals assumption
       cases z_in_source with
-      | inl z_in_xs => 
+      | inl z_in_xs =>
         cases z_in_xs with
         | head _ => apply List.Mem.head
-        | tail _ _ => 
+        | tail _ _ =>
           apply List.Mem.tail
           apply ih
           apply Or.inl
@@ -335,14 +319,12 @@ def sorted_union.of_contains
         | head _ =>
           rw [x_eq_y]
           apply List.Mem.head
-        | tail _ _ => 
+        | tail _ _ =>
           apply List.Mem.tail
           apply ih
           apply Or.inr
           assumption
     }
-
-#print axioms sorted_union.of_contains
 
 def sorted_union.lower_bound
   { α: Sort _ }
@@ -356,8 +338,6 @@ def sorted_union.lower_bound
   assumption
   apply List.Mem.tail
   assumption
-
-#print axioms sorted_union.lower_bound
 
  def sorted_union.sorted
   { α: Sort _ }
@@ -442,14 +422,12 @@ def sorted_union.lower_bound
         apply lower_bound
         exact z_in_xs
         exact sorted_xs
-      | inr z_in_ys =>  
+      | inr z_in_ys =>
         rw [x_eq_y]
         apply lower_bound
         exact z_in_ys
         exact sorted_ys
     }
-
-#print axioms sorted_union.sorted
 
 def SortedList.union
   [Ord α] [TotalOrder α]
@@ -457,5 +435,3 @@ def SortedList.union
   apply sorted_union.sorted
   exact xs.is_sorted
   exact ys.is_sorted
-
-#print axioms SortedList.union

@@ -16,16 +16,12 @@ def Vector.cons.injVEq : (Vector.cons v vs) =v (Vector.cons w ws) -> v = w ∧ v
   cases h
   apply And.intro <;> rfl
 
-#print axioms Vector.cons.injEq
-
 def Vector.cons.congrEq : v = w ∧ vs =v ws -> (Vector.cons v vs) =v (Vector.cons w ws) := by
   intro h
   have ⟨ h, g ⟩ := h
   subst w
   cases g
   rfl
-
-#print axioms Vector.cons.congrEq
 
 def Vector.mem_cons { elem v: α } { vs: Vector α n }:
   elem ∈ cons v vs -> elem = v ∨ elem ∈ vs := by
@@ -41,5 +37,3 @@ def Vector.eq_nil_of_zero_len (vs: Vector α n) :
   subst n
   cases vs
   rfl
-
-#print axioms Vector.eq_nil_of_zero_len

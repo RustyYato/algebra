@@ -108,8 +108,6 @@ def sorted_symm_difference.comm
     assumption
   }
 
-#print axioms sorted_symm_difference.comm
-
 def sorted_symm_difference.refl
   { α: Sort _ }
   [Ord α] [tle: TotalOrder α]:
@@ -172,8 +170,6 @@ def sorted_symm_difference.contains
     | inl h =>  apply Or.inl; apply List.Mem.tail; assumption
     | inr h => apply Or.inr ; apply List.Mem.tail; assumption
   }
-
-#print axioms sorted_symm_difference.contains
 
 def sorted_symm_difference.sorted
   { a: Sort _ }
@@ -246,8 +242,6 @@ def sorted_symm_difference.sorted
     exact sorted_ys.pop
   }
 
-#print axioms sorted_symm_difference.sorted
-
 def SortedList.symm_difference
   [Ord α] [TotalOrder α]
   (xs ys: SortedList α) : SortedList α := SortedList.mk (sorted_symm_difference xs.items ys.items) <| by
@@ -255,5 +249,3 @@ def SortedList.symm_difference
   assumption
   exact xs.is_sorted
   exact ys.is_sorted
-
-#print axioms SortedList.symm_difference

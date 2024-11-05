@@ -197,15 +197,11 @@ decreasing_by
   apply nat.add.le_right
   apply nat.lt_succ_self
 
-#print axioms Term.subst_at
-
 def Term.subst
   { n: nat }
   { ctx: TypeCtx n }
   (term: Term (Vector.cons arg_ty ctx) ty)
   (subst: Term ctx arg_ty) : Term ctx ty := Term.subst_at term .zero subst
-
-#print axioms Term.subst
 
 inductive Reduction : Term ctx ty -> Term ctx ty -> Type where
 | Abort : ∀(body body': Term ctx .Void) ty, Reduction body body' -> Reduction (.Abort body ty) (.Abort body' ty)
@@ -371,8 +367,6 @@ def Reduction.choose (h: Nonempty (a ⤳ b)): a ⤳ b :=
   have b_eq_c := determanistic' h ⟨red⟩
   b_eq_c ▸ red
 
-#print axioms Reduction.choose
-
 instance Reduction.subsingleton: Subsingleton (a ⤳ b) where
   allEq := by
     intro x y
@@ -411,8 +405,6 @@ instance Reduction.subsingleton: Subsingleton (a ⤳ b) where
       have := arg_red.never_terminal
       contradiction
       congr
-
-#print axioms Reduction.subsingleton
 
 def ReductionChain.determanistic (b c: Term ctx ty) :
   b.is_terminal -> c.is_terminal ->
@@ -462,8 +454,6 @@ instance ReductionChain.subsingleton (b: Term ctx ty) (b_term: b.is_terminal) : 
       apply ih
       assumption
 
-#print axioms ReductionChain.subsingleton
-
 def Reduction.allHEq
   (x: a ⤳ b) (y: a ⤳ c):
   HEq x y := by
@@ -471,8 +461,6 @@ def Reduction.allHEq
   subst c
   congr
   apply Subsingleton.allEq
-
-#print axioms Reduction.allHEq
 
 structure CommonReduction { ctx: TypeCtx n } { a b c: Term ctx ty } (ab: a ⤳* b) (ac: a ⤳* c) where
   term: Term ctx ty
@@ -524,13 +512,9 @@ def ReductionChain.commonSubseq
       subst y
       apply (commonSubseq xs ys).push
 
-#print axioms ReductionChain.commonSubseq
-
 -- We want to prove that all terms halt
 def Term.halts (t: Term ctx ty) : Prop :=
   ∃(t': Term ctx ty) (_red: t ⤳* t'), t'.is_terminal
-
-#print axioms Term.halts
 
 def Reduction.extend_left {t u: Term ctx ty} :
   t ⤳ u -> u.halts -> t.halts := by
@@ -538,8 +522,6 @@ def Reduction.extend_left {t u: Term ctx ty} :
   have ⟨ x, r, u_term ⟩ := uhalts
   exists x
   exists (.Cons tu r)
-
-#print axioms Reduction.extend_left
 
 def Reduction.extend_right {t u: Term ctx ty} :
   t ⤳ u -> t.halts -> u.halts := by
@@ -556,16 +538,12 @@ def Reduction.extend_right {t u: Term ctx ty} :
     subst b
     exists bx
 
-#print axioms Reduction.extend_right
-
 def Term.hered_halts (t: Term ctx ty) : Prop :=
   match ty with
   | .Void => False
   | .Unit => t.halts
   | .Func arg_ty ret_ty =>
     t.halts ∧ (∀(arg: Term ctx arg_ty), arg.hered_halts -> (Term.App arg_ty ret_ty t arg).hered_halts)
-
-#print axioms Term.hered_halts
 
 def Term.hered_halts.halts (t: Term ctx ty) : t.hered_halts -> t.halts := by
   intro h
@@ -842,8 +820,6 @@ def Term.subst_all_unit { n: nat } { ctx: TypeCtx n }
     unfold subst_all subst subst_at
     rw [ih]
 
-#print axioms Term.subst_all_unit
-
 -- def Term.subst_all_lam { n: nat } { ctx: TypeCtx n }
 --   (bindings: BindingList ctx)
 --   (body: Term (.cons arg_ty ctx) ret_ty)
@@ -893,7 +869,6 @@ def Term.hered_halt
   --         unfold subst_all
   --         apply ReductionChain.Cons
   --         apply Reduction.AppArg
-
 
   --         sorry
   --       | cons =>

@@ -20,13 +20,9 @@ instance nat.wf : @WellFounded nat (· < ·) := WellFounded.intro (by
       assumption
   )
 
-#print axioms nat.wf
-
 instance nat.wf_rel : WellFoundedRelation nat where
   rel a b := a < b
   wf := nat.wf
-
-#print axioms nat.wf_rel
 
 def nat.induction
   (motive: nat -> Sort u)
@@ -36,5 +32,3 @@ def nat.induction
 termination_by n
 decreasing_by
   assumption
-
-#print axioms nat.induction

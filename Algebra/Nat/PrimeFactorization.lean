@@ -22,8 +22,6 @@ def PrimeFactorization.of_prime {n: nat}: n.prime -> PrimeFactorization n := by
   trivial
   apply nat.mul_one
 
-#print axioms PrimeFactorization.of_prime
-
 def PrimeFactorization.mul { a b: nat } : PrimeFactorization a -> PrimeFactorization b -> PrimeFactorization (a * b) := by
   intro factors_a factors_b
   apply PrimeFactorization.mk <| factors_a.factors.merge factors_b.factors
@@ -74,8 +72,6 @@ def PrimeFactorization.mul { a b: nat } : PrimeFactorization a -> PrimeFactoriza
     }
   }
 
-#print axioms PrimeFactorization.mul
-
 def PrimeFactorization.new (n: nat) : 0 < n -> PrimeFactorization n := by
   intro n_nz
   cases (inferInstance: Decidable (1 < n)) with
@@ -109,8 +105,6 @@ decreasing_by
   exact is_prime.left
   assumption
 
-#print axioms PrimeFactorization.new
-
 def product.eq_zero : product list = 0 -> 0 ∈ list := by
   induction list with
   | nil => intro; contradiction
@@ -123,8 +117,6 @@ def product.eq_zero : product list = 0 -> 0 ∈ list := by
       apply List.Mem.tail
       apply ih h
 
-#print axioms product.eq_zero
-
 def product.eq_one : product list = 1 -> ∀x, x ∈ list -> x = 1 := by
   intro eq_one y elem
   induction elem with
@@ -136,15 +128,11 @@ def product.eq_one : product list = 1 -> ∀x, x ∈ list -> x = 1 := by
     have ⟨ _, _ ⟩ := nat.mul.eq_one eq_one
     assumption
 
-#print axioms product.eq_one
-
 def PrimeFactorization.never_zero : PrimeFactorization 0 -> False := by
   intro factorization
   have := product.eq_zero factorization.product_eq
   have := (factorization.all_primes.contains) 0 this
   contradiction
-
-#print axioms PrimeFactorization.never_zero
 
 def PrimeFactorization.is_factor (n p: nat) (f: PrimeFactorization n) : p ∈ f.factors.items -> p ∣ n := by
   cases f with
@@ -170,8 +158,6 @@ def PrimeFactorization.is_factor (n p: nat) (f: PrimeFactorization n) : p ∈ f.
     exists x * head
     rw [←nat.mul.assoc, xprf, ←nat.dvd.def]
     exists product factors
-
-#print axioms PrimeFactorization.is_factor
 
 def PrimeFactorization.is_complete (n p: nat) (f: PrimeFactorization n) : p.prime -> p ∣ n -> p ∈ f.factors.items := by
   intro prime_p p_dvd_n
@@ -222,8 +208,6 @@ def PrimeFactorization.is_complete (n p: nat) (f: PrimeFactorization n) : p.prim
       apply lt_trans
       apply nat.lt_succ_self
       exact is_prime.left.left
-
-#print axioms PrimeFactorization.is_complete
 
 def PrimeFactorization.unique (a b: PrimeFactorization n) : a = b := by
   have a_is_factor := a.is_factor
@@ -340,12 +324,6 @@ def PrimeFactorization.unique (a b: PrimeFactorization n) : a = b := by
       exact nfb.all_primes
       exact nfb.product_eq
 
-#print axioms PrimeFactorization.unique
-
 instance PrimeFactorization.instSubSingleton : Subsingleton (PrimeFactorization n) := ⟨ PrimeFactorization.unique ⟩
 
-#print axioms PrimeFactorization.instSubSingleton
-
 instance PrimeFactorization.instInhabitted (n_nz: 0 < n) : Inhabited (PrimeFactorization n) := ⟨ PrimeFactorization.new n n_nz ⟩
-
-#print axioms PrimeFactorization.instInhabitted

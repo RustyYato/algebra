@@ -4,8 +4,6 @@ import Algebra.Nat.Mul
 
 def int.mul (a b: int) : int := a.sign * b.sign * (a.abs * b.abs)
 
-#print axioms int.mul
-
 instance int.mul.inst : Mul int := ⟨ int.mul ⟩
 
 def int.mul.def { a b: int } : a * b = int.mul a b := rfl
@@ -15,14 +13,10 @@ def int.mul.zero_left { b: int } :  0 * b = 0 := by
   unfold mul
   rw [int.sign.zero, int.Sign.zero_left, int.Sign.int_zero]
 
-#print axioms int.mul.zero_left
-
 def int.mul.zero_right { b: int } :  b * 0 = 0 := by
   rw [mul.def]
   unfold mul
   rw [int.sign.zero, int.Sign.zero_right, int.Sign.int_zero]
-
-#print axioms int.mul.zero_right
 
 def int.mul.one_left { b: int } :  1 * b = b := by
   rw [mul.def]
@@ -49,12 +43,8 @@ def int.mul.neg_one_left { b: int } :  -1 * b = -b := by
 def int.mul.neg_left { a b: int } : -(a * b) = -a * b := by
   cases a <;> cases b <;> rfl
 
-#print axioms int.mul.neg_left
-
 def int.mul.neg_right { a b: int } : -(a * b) = a * -b := by
   cases a <;> cases b <;> rfl
-
-#print axioms int.mul.neg_right
 
 def int.mul.comm (a b: int) : a * b = b * a := by
   rw [mul.def, mul.def]
@@ -62,8 +52,6 @@ def int.mul.comm (a b: int) : a * b = b * a := by
   rw [nat.mul.comm]
   congr 1
   cases a <;> cases b <;> rfl
-
-#print axioms int.mul.comm
 
 def int.mul.one_right { b: int } :  b * 1 = b := by
   rw [int.mul.comm, int.mul.one_left]
@@ -108,29 +96,19 @@ def int.mul.assoc (a b c: int) : a * b * c = a * (b * c) := by
     all_goals (rw [zero_eq, abs.zero, nat.mul_zero]; apply Or.inr; rfl)
   }
 
-#print axioms int.mul.assoc
-
 def int.mul.right_comm (a b c: int) :
   a * b * c = a * c * b := by rw [int.mul.assoc, int.mul.comm b, int.mul.assoc]
 
-#print axioms int.mul.right_comm
-
 def int.mul.left_comm (a b c: int) :
   a * b * c = c * b * a := by rw [int.mul.comm _ c, int.mul.comm a, int.mul.assoc]
-
-#print axioms int.mul.left_comm
 
 def int.mul.comm_left (a b c: int) :
   a * (b * c) = b * (a * c) := by
   rw [←int.mul.assoc, ←int.mul.assoc, int.mul.comm a]
 
-#print axioms int.mul.right_comm
-
 def int.mul.comm_right (a b c: int) :
   a * (b * c) = c * (b * a) := by
   rw [int.mul.comm _ c, int.mul.comm a, int.mul.assoc]
-
-#print axioms int.mul.comm_right
 
 def int.mul.abs_sign_mul_pos : ∀(x: nat) (y: int), y.sign * (nat.succ x * y.abs) = (int.pos_succ x) * y := by intro x y; cases y <;> rfl
 def int.mul.abs_sign_mul_neg : ∀(x: nat) (y: int), y.sign.flip * (nat.succ x * y.abs) = (int.neg_succ x) * y := by intro x y; cases y <;> rfl
@@ -231,23 +209,15 @@ def int.mul.add_left { a b k: int } : (a + b) * k = a * k + b * k := by
       rw [←nat.add_succ, ←nat.succ_add, nat.add_mul, int.add.sign_mul]
       congr 1 <;> apply int.mul.abs_sign_mul_pos
 
-#print axioms int.mul.add_left
-
 def int.mul.add_right { a b k: int } : k * (a + b) = k * a + k * b := by
   repeat rw [int.mul.comm k]
   apply int.mul.add_left
 
-#print axioms int.mul.add_right
-
 def int.mul.sub_left { a b k: int } : (a - b) * k = a * k - b * k := by
   rw [sub.def, add_left, ←neg_left, ←sub.def]
 
-#print axioms int.mul.sub_left
-
 def int.mul.sub_right { a b k: int } : k * (a - b) = k * a - k * b := by
   rw [sub.def, add_right, ←neg_right, ←sub.def]
-
-#print axioms int.mul.sub_right
 
 def int.mul.pos_pos_is_pos { a b: int } : 0 < a -> 0 < b -> 0 < a * b := by
   intros pos_a pos_b
@@ -255,15 +225,11 @@ def int.mul.pos_pos_is_pos { a b: int } : 0 < a -> 0 < b -> 0 < a * b := by
   any_goals assumption
   rfl
 
-#print axioms int.mul.pos_pos_is_pos
-
 def int.mul.neg_neg_is_pos { a b: int } : 0 > a -> 0 > b -> 0 < a * b := by
   intros pos_a pos_b
   cases a <;> cases b
   any_goals assumption
   rfl
-
-#print axioms int.mul.neg_neg_is_pos
 
 def int.mul.pos_neg_is_neg { a b: int } : 0 < a -> 0 > b -> 0 > a * b := by
   intros pos_a pos_b
@@ -271,15 +237,11 @@ def int.mul.pos_neg_is_neg { a b: int } : 0 < a -> 0 > b -> 0 > a * b := by
   any_goals assumption
   rfl
 
-#print axioms int.mul.pos_neg_is_neg
-
 def int.mul.neg_pos_is_neg { a b: int } : 0 > a -> 0 < b -> 0 > a * b := by
   intros pos_a pos_b
   cases a <;> cases b
   any_goals assumption
   rfl
-
-#print axioms int.mul.neg_pos_is_neg
 
 def int.mul.eq_zero { a b: int } : a * b = 0 -> a = 0 ∨ b = 0 := by
   intro ab_eq_zero
@@ -288,8 +250,6 @@ def int.mul.eq_zero { a b: int } : a * b = 0 -> a = 0 ∨ b = 0 := by
   any_goals (apply Or.inr; rfl)
   all_goals contradiction
 
-#print axioms int.mul.eq_zero
-
 def int.mul.eq_pos { a b: int } : a * b > 0 -> (a < 0 ∧ b < 0) ∨ (a > 0 ∧ b > 0) := by
   intro ab_gt_zero
   cases a <;> cases b
@@ -297,16 +257,12 @@ def int.mul.eq_pos { a b: int } : a * b > 0 -> (a < 0 ∧ b < 0) ∨ (a > 0 ∧ 
   apply Or.inr <;> apply And.intro <;> assumption
   apply Or.inl <;> apply And.intro <;> assumption
 
-#print axioms int.mul.eq_pos
-
 def int.mul.eq_neg { a b: int } : a * b < 0 -> (a < 0 ∧ b > 0) ∨ (a > 0 ∧ b < 0) := by
   intro ab_lt_zero
   cases a <;> cases b
   any_goals contradiction
   apply Or.inr <;> apply And.intro <;> assumption
   apply Or.inl <;> apply And.intro <;> assumption
-
-#print axioms int.mul.eq_neg
 
 def int.sign_mul.mul_of_nat { s: int.Sign } { a b: nat } : s * a * (b: int) = s * (a * b) := by
   cases b with
@@ -341,35 +297,25 @@ def int.sign_mul.mul_of_nat { s: int.Sign } { a b: nat } : s * a * (b: int) = s 
       apply nat.noConfusion
     }
 
-#print axioms int.sign_mul.mul_of_nat
-
 def int.mul.inc_right (a b: int) : a * b.inc = a * b + a := by
   rw [int.inc.eq_add_one, int.mul.add_right]
   congr
   rw [int.mul.one_right]
-
-#print axioms int.mul.inc_right
 
 def int.mul.inc_left (a b: int) : a.inc * b = a * b + b := by
   rw [int.inc.eq_add_one, int.mul.add_left]
   congr
   rw [int.mul.one_left]
 
-#print axioms int.mul.inc_left
-
 def int.mul.dec_right (a b: int) : a * b.dec = a * b - a := by
   rw [int.dec.eq_add_neg_one, int.mul.add_right]
   congr
   rw [int.mul.neg_one_right]
 
-#print axioms int.mul.inc_right
-
 def int.mul.dec_left (a b: int) : a.dec * b = a * b - b := by
   rw [int.dec.eq_add_neg_one, int.mul.add_left]
   congr
   rw [int.mul.neg_one_left]
-
-#print axioms int.mul.inc_left
 
 def int.mul.lift_nat (a b: nat) : (a: int) * (b: int) = of_nat (a * b) := by
   induction b with
@@ -404,8 +350,6 @@ def int.mul.of_eq (a b: int) : ∀k, k ≠ 0 -> a * k = b * k -> a = b := by
     rw [int.mul.dec_left, int.mul.dec_left, ak_eq_bk]
   }
 
-#print axioms int.mul.of_eq
-
 def int.mul.compare_left_pos { a b k: int } :
   0 < k ->
   compare a b = compare (a * k) (b * k) := by
@@ -423,8 +367,6 @@ def int.mul.compare_left_pos { a b k: int } :
       apply ih
       trivial
       trivial
-
-#print axioms int.add.compare_left
 
 def int.abs.mul (a b: int) : int.abs (a * b) = int.abs a * int.abs b := by
   cases a <;> cases b

@@ -101,8 +101,6 @@ instance fract.setoid : Setoid fract where
   r := fract.equiv
   iseqv := fract.equiv.instEquiv
 
-#print axioms fract.equiv.instEquiv
-
 instance fract.equiv.transInst : Trans fract.equiv fract.equiv fract.equiv := ⟨ fract.equiv.instEquiv.trans ⟩
 
 instance : HasEquiv fract := ⟨ fract.equiv ⟩
@@ -189,14 +187,10 @@ def fract.to_rat (r: fract) : rat := rat.mk
         apply Or.inl
         intro; contradiction)
 
-#print axioms fract.to_rat
-
 def rat.to_simple (r: rat) : fract := fract.mk r.num r.den r.den_nz
 
 def rat.new (num den: int) (den_nz: den ≠ 0) : rat :=
   (fract.mk num den.abs (by cases den <;> trivial)).to_rat
-
-#print axioms rat.new
 
 def rat.to_simple_to_rat (r: rat) : r.to_simple.to_rat = r := by
   unfold to_simple fract.to_rat
@@ -346,8 +340,6 @@ def rat.eq_of_equiv (a b: fract) : a ≈ b -> a.to_rat = b.to_rat := by
     exact a_eq_b.symm
   }
 
-#print axioms rat.eq_of_equiv
-
 def rat.equiv_of_eq (a b: rat) : a = b -> a.to_simple ≈ b.to_simple := by
   intro h
   subst h
@@ -443,8 +435,6 @@ def fract.to_rat_to_simple (a: fract) : a.to_rat.to_simple.equiv a := by
     }
   }
 
-#print axioms fract.to_rat_to_simple
-
 def rat.eq_of_equiv' (a b: rat) : a.to_simple ≈ b.to_simple -> a = b := by
   rw [←to_simple_to_rat a, ←to_simple_to_rat b]
   intro h
@@ -463,8 +453,6 @@ def fract.neg (a: fract) : fract := fract.mk (-a.num) a.den a.den_nz
 def rat.neg (a: rat) : rat := rat.mk (-a.num) a.den a.den_nz (by
   rw [int.abs.neg]
   exact a.is_reduced)
-
-#print axioms rat.neg
 
 instance fract.neg.inst : Neg fract := ⟨ fract.neg ⟩
 instance rat.neg.inst : Neg rat := ⟨ rat.neg ⟩
@@ -485,8 +473,6 @@ def fract.add (a b: fract) : fract := fract.mk (
     rfl
   )
 
-#print axioms fract.add
-
 instance fract.add.inst : Add fract := ⟨ fract.add ⟩
 
 -- a.n / a.d + b.n / b.d
@@ -494,8 +480,6 @@ instance fract.add.inst : Add fract := ⟨ fract.add ⟩
 -- (a.n * b.d + a.d * b.n) / (a.d * b.d)
 def rat.add (a b: rat) : rat :=
   (a.to_simple + b.to_simple).to_rat
-
-#print axioms rat.add
 
 instance rat.add.inst : Add rat := ⟨ rat.add ⟩
 
@@ -512,13 +496,9 @@ def fract.add.def (a b: fract) : a + b = fract.mk (a.num * b.den + a.den * b.num
     rw [h] at this
     contradiction
 ) := rfl
-
-#print axioms fract.add.def
 def rat.add.def { a b: rat } : a + b = (a.to_simple + b.to_simple).to_rat := rfl
 
 def rat.sub (a b: rat) : rat := a + -b
-
-#print axioms rat.sub
 
 instance rat.sub.inst : Sub rat := ⟨ rat.sub ⟩
 
@@ -527,11 +507,7 @@ def rat.neg.def (r: rat) : -r = rat.mk (-r.num) r.den r.den_nz (by
   exact r.is_reduced
   ) := rfl
 
-#print axioms rat.neg.def
-
 def fract.neg.def (r: fract) : -r = fract.mk (-r.num) r.den r.den_nz := rfl
-
-#print axioms rat.neg.def
 
 def rat.add.to_simple (a b : rat) : (a + b).to_simple ≈ a.to_simple + b.to_simple := fract.to_rat_to_simple _
 
@@ -547,13 +523,9 @@ def fract.add.comm (a b : fract ) : (a + b) ≈ (b + a) := by
   simp only
   rw [int.add.comm, int.mul.comm bnum, int.mul.comm anum, nat.mul.comm]
 
-#print axioms fract.add.comm
-
 def rat.add.comm (a b : rat ) : a + b = b + a := by
   apply rat.eq_of_equiv
   apply fract.add.comm
-
-#print axioms rat.add.comm
 
 def fract.add.equiv_left (a b k: fract) : fract.equiv a k -> fract.equiv (a + b) (k + b) := by
   intro a_eq_k
@@ -577,8 +549,6 @@ def fract.add.equiv_left (a b k: fract) : fract.equiv a k -> fract.equiv (a + b)
   congr 2
   rw [int.mul.comm]
 
-#print axioms fract.add.equiv_left
-
 def fract.add.equiv_right (a b k: fract) : a ≈ k -> (b + a) ≈ (b + k) := by
   intro a_eq_k
   apply equiv.instEquiv.trans (fract.add.comm b a)
@@ -586,15 +556,11 @@ def fract.add.equiv_right (a b k: fract) : a ≈ k -> (b + a) ≈ (b + k) := by
   apply fract.add.equiv_left
   assumption
 
-#print axioms fract.add.equiv_right
-
 def fract.add.of_equiv (a b c d: fract) : a ≈ c -> b ≈ d -> (a + b) ≈ (c + d) := by
   intro a_eq_c b_eq_d
   exact equiv.instEquiv.trans
     (fract.add.equiv_left a b c a_eq_c)
     (fract.add.equiv_right b c d b_eq_d)
-
-#print axioms fract.add.of_equiv
 
 def fract.add.assoc (a b c: fract) : (a + b) + c ≈ a + (b + c) := by
   repeat rw [fract.add.def]
@@ -705,15 +671,11 @@ def rat.add.cancel_left (a b k: rat) : a + k = b + k -> a = b := by
   rw [to_simple_to_rat, to_simple_to_rat] at this
   exact this
 
-#print axioms rat.add.cancel_left
-
 def rat.add.cancel_right (a b k: rat) : k + a = k + b -> a = b := by
   intro h
   rw [add.comm k, add.comm k] at h
   apply add.cancel_left
   assumption
-
-#print axioms rat.add.cancel_right
 
 def fract.abs (a: fract) : fract := fract.mk a.num.abs a.den a.den_nz
 
@@ -767,8 +729,6 @@ def rat.invert (a: rat) : rat :=
     | .zero => 0
 
 postfix:max "⁻¹ " => rat.invert
-
-#print axioms rat.invert
 
 def rat.div (a b: rat) : rat := a * b⁻¹
 
@@ -1294,46 +1254,30 @@ def rat.add.zero_right (a: rat) : a + 0 = a := by
 def rat.add.right_comm (a b c: rat) :
   a + b + c = a + c + b := by rw [rat.add.assoc, rat.add.comm b, rat.add.assoc]
 
-#print axioms rat.add.right_comm
-
 def rat.add.left_comm (a b c: rat) :
   a + b + c = c + b + a := by rw [rat.add.comm _ c, rat.add.comm a, rat.add.assoc]
-
-#print axioms rat.add.left_comm
 
 def rat.add.comm_left (a b c: rat) :
   a + (b + c) = b + (a + c) := by
   rw [←rat.add.assoc, ←rat.add.assoc, rat.add.comm a]
 
-#print axioms rat.add.right_comm
-
 def rat.add.comm_right (a b c: rat) :
   a + (b + c) = c + (b + a) := by
   rw [rat.add.comm _ c, rat.add.comm a, rat.add.assoc]
 
-#print axioms rat.add.comm_right
-
 def rat.mul.right_comm (a b c: rat) :
   a * b * c = a * c * b := by rw [rat.mul.assoc, rat.mul.comm b, rat.mul.assoc]
 
-#print axioms rat.mul.right_comm
-
 def rat.mul.left_comm (a b c: rat) :
   a * b * c = c * b * a := by rw [rat.mul.comm _ c, rat.mul.comm a, rat.mul.assoc]
-
-#print axioms rat.mul.left_comm
 
 def rat.mul.comm_left (a b c: rat) :
   a * (b * c) = b * (a * c) := by
   rw [←rat.mul.assoc, ←rat.mul.assoc, rat.mul.comm a]
 
-#print axioms rat.mul.right_comm
-
 def rat.mul.comm_right (a b c: rat) :
   a * (b * c) = c * (b * a) := by
   rw [rat.mul.comm _ c, rat.mul.comm a, rat.mul.assoc]
-
-#print axioms rat.mul.comm_right
 
 def rat.sub.add_cancel (a b: rat) :
   a - b + b = a := by

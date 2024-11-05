@@ -41,8 +41,6 @@ def is_sorted.first [Ord α] [tle: TotalOrder α] (x: α) (xs: List α) :
     exact sorted_xs.right
     assumption
 
-#print axioms is_sorted.first
-
 def is_sorted.contains [Ord α] [tle: TotalOrder α] (z x: α) (xs: List α) :
   is_sorted (x::xs) ->
   z ∈ (x::xs) -> x ≤ z:= by
@@ -57,8 +55,6 @@ def is_sorted.contains [Ord α] [tle: TotalOrder α] (z x: α) (xs: List α) :
       exact sorted_xs.pop
       assumption
 
-#print axioms is_sorted.contains
-
 def is_sorted.pop_snd [Ord α] [tle: TotalOrder α] (x x': α) (xs: List α) :
   is_sorted (x :: x' :: xs) -> is_sorted (x :: xs) := by
   intro sorted_xs
@@ -68,8 +64,6 @@ def is_sorted.pop_snd [Ord α] [tle: TotalOrder α] (x x': α) (xs: List α) :
   intro y y_in_xs
   have x'_le_y := lower_x' y y_in_xs
   apply le_trans sorted_xs.left x'_le_y
-
-#print axioms is_sorted.pop_snd
 
 def is_sorted.pick_first
   [Ord α] [TotalOrder α]:
@@ -100,8 +94,6 @@ def is_sorted.pick_first
           apply List.Mem.tail
           assumption
 
-#print axioms is_sorted.pick_first
-
 instance is_sorted.dec [Ord α] [TotalOrder α] (xs: List α) : Decidable (is_sorted xs) :=
   match xs with
   | [] => Decidable.isTrue True.intro
@@ -112,8 +104,6 @@ instance is_sorted.dec [Ord α] [TotalOrder α] (xs: List α) : Decidable (is_so
       apply dec_and
       exact inferInstance
       apply is_sorted.dec
-
-#print axioms is_sorted.dec
 
 structure SortedList (α: Sort _) [Ord α] [TotalOrder α] where
   items: List α
@@ -166,8 +156,6 @@ def sorted_induction.fueled
           intro ih
           apply ctx.if_gt
           repeat assumption
-
-#print axioms sorted_induction.fueled
 
 def enough_fuel_for_lt
   {x:α} {xs ys: List α} {fuel: nat}:
@@ -267,8 +255,6 @@ def sorted_induction.fueled.termination
           intro
           trivial
 
-#print axioms sorted_induction.fueled.termination
-
 def sorted_induction.fueled.fuel_irr
   { α: Sort _ }
   [Ord α] [tle: TotalOrder α]
@@ -314,8 +300,6 @@ def sorted_induction.fueled.fuel_irr
           rw [this]
         }
 
-#print axioms sorted_induction.fueled.fuel_irr
-
 def sorted_induction
   { α: Sort _ }
   [Ord α] [TotalOrder α]
@@ -328,8 +312,6 @@ def sorted_induction
     have := sorted_induction.fueled.termination ctx (xs.len + ys.len).succ xs ys (nat.lt_succ_self _)
     rw [h] at this
     contradiction
-
-#print axioms sorted_induction
 
 def sorted_induction.of_fueled
   { α: Sort _ }
@@ -364,8 +346,6 @@ def sorted_induction.of_fueled
       apply nat.lt_succ_self
     }
 
-#print axioms sorted_induction.of_fueled
-
 def sorted_induction.fueled.left_empty
   { α: Sort _ }
   [Ord α] [TotalOrder α]
@@ -380,8 +360,6 @@ def sorted_induction.fueled.left_empty
     unfold fueled
     rfl
 
-#print axioms sorted_induction.fueled.left_empty
-
 def sorted_induction.fueled.right_empty
   { α: Sort _ }
   [Ord α] [TotalOrder α]
@@ -395,8 +373,6 @@ def sorted_induction.fueled.right_empty
     | .succ fuel =>
     unfold fueled
     rfl
-
-#print axioms sorted_induction.fueled.right_empty
 
 def Exists.val (α: Prop) { z: α -> Prop } (a: ∃(x: α), z x): α := match a with
   | .intro x _ => x
@@ -427,8 +403,6 @@ def sorted_induction.fueled.if_lt
     rw [sorted_induction.of_fueled]
     exact enough_fuel_for_lt enough_fuel
 
-#print axioms sorted_induction.fueled.if_lt
-
 def sorted_induction.fueled.if_gt
   { α: Sort _ }
   [Ord α] [tle: TotalOrder α]
@@ -454,8 +428,6 @@ def sorted_induction.fueled.if_gt
     unfold my_option.map
     rw [sorted_induction.of_fueled]
     exact enough_fuel_for_gt enough_fuel
-
-#print axioms sorted_induction.fueled.if_gt
 
 def sorted_induction.fueled.if_eq
   { α: Sort _ }
@@ -483,8 +455,6 @@ def sorted_induction.fueled.if_eq
     rw [sorted_induction.of_fueled]
     exact enough_fuel_for_eq enough_fuel
 
-#print axioms sorted_induction.fueled.if_eq
-
 def sorted_induction.left_empty
   { α: Sort _ }
   [Ord α] [TotalOrder α]
@@ -500,8 +470,6 @@ def sorted_induction.left_empty
     rename_i h
     apply False.elim
     exact sorted_induction.fueled.termination ctx _ _ _ (nat.lt_succ_self _) h
-
-#print axioms sorted_induction.left_empty
 
 def sorted_induction.right_empty
   { α: Sort _ }
@@ -519,8 +487,6 @@ def sorted_induction.right_empty
     rename_i h
     apply False.elim
     exact sorted_induction.fueled.termination ctx _ _ _ (nat.lt_succ_self _) h
-
-#print axioms sorted_induction.right_empty
 
 def sorted_induction.if_lt
   { α: Sort _ }
@@ -556,9 +522,6 @@ def sorted_induction.if_lt
     exact sorted_induction.fueled.termination ctx _ _ _ (nat.lt_succ_self _) h
 
 
-
-#print axioms sorted_induction.if_lt
-
 def sorted_induction.if_gt
   { α: Sort _ }
   [Ord α] [tle: TotalOrder α]
@@ -591,8 +554,6 @@ def sorted_induction.if_gt
     rename_i h
     apply False.elim
     exact sorted_induction.fueled.termination ctx _ _ _ (nat.lt_succ_self _) h
-
-#print axioms sorted_induction.if_gt
 
 def sorted_induction.if_eq
   { α: Sort _ }
@@ -627,8 +588,6 @@ def sorted_induction.if_eq
     rename_i h
     apply False.elim
     exact sorted_induction.fueled.termination ctx _ _ _ (nat.lt_succ_self _) h
-
-#print axioms sorted_induction.if_eq
 
 def sorted_induction'
   { α: Sort _ }

@@ -230,14 +230,12 @@ def Nat.bitwise_lt (a b: Nat) :
         rw [testBit_succ, testBit_succ] at this
         exact this)
 
-
       cases decLt a (2 * (b / 2))
       case isTrue h =>
 
         sorry
       case isFalse h =>
         sorry
-
 
 def Nat.le_or_left  (a b: Nat) : a ≤ a ||| b := by
   suffices a ≤ a.bitwise Bool.or b from this
@@ -398,13 +396,7 @@ def Nat.or_le_or  (a b k: Nat) : a ≤ b -> a ||| k ≤ b ||| k := by
 
 
 
-
-
-
     sorry
-
-
-
 
 
 
@@ -453,9 +445,6 @@ def String.utf8EncodeChar.IsValidUtf8 (c: Char) : IsValidUtf8 (String.utf8Encode
     dsimp
     apply @Nat.le_trans _  (63 ||| 128)
     sorry
-
-
-
 
 
 

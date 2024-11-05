@@ -6,8 +6,6 @@ def nat.sub (a b: nat) := match b with
   | nat.zero => a
   | nat.succ b => a.dec.sub b
 
-#print axioms nat.sub
-
 def nat.pred (n: nat) :=
   match n with
   | .succ n => n
@@ -22,11 +20,7 @@ def nat.sub_zero (a: nat) : a - 0 = a := by
   unfold sub
   rfl
 
-#print axioms nat.sub_zero
-
 def nat.sub_succ (a b: nat) : a - b.succ = a.dec - b := rfl
-
-#print axioms nat.sub_succ
 
 def nat.zero_sub (b: nat) : 0 - b = 0 := by
   induction b with
@@ -35,18 +29,12 @@ def nat.zero_sub (b: nat) : 0 - b = 0 := by
     rw [nat.sub_succ]
     exact ih
 
-#print axioms nat.zero_sub
-
 def nat.succ_sub_succ (a b: nat) : a.succ - b.succ = a - b := rfl
-
-#print axioms nat.succ_sub_succ
 
 def nat.sub.refl (a: nat) : a - a = 0 := by
   induction a with
   | zero => rfl
   | succ _ ih => rw [succ_sub_succ, ih]
-
-#print axioms nat.sub.refl
 
 def nat.succ_sub {a b: nat} : b ≤ a -> a.succ - b = (a - b).succ := by
   intro b_le_a
@@ -74,8 +62,6 @@ def nat.succ_sub {a b: nat} : b ≤ a -> a.succ - b = (a - b).succ := by
       | zero => rfl
       | succ _ ih => congr
 
-#print axioms nat.succ_sub
-
 def nat.sub_add (a b c: nat) : a - (b + c) = a - b - c := by
   cases a with
   | zero =>
@@ -87,8 +73,6 @@ def nat.sub_add (a b c: nat) : a - (b + c) = a - b - c := by
     | succ b =>
       rw [succ_add, succ_sub_succ, succ_sub_succ]
       apply nat.sub_add
-
-#print axioms nat.sub_add
 
 def nat.add_sub (a b c: nat) : c ≤ b -> a + (b - c) = (a + b) - c := by
   intro c_le_b
@@ -111,21 +95,15 @@ def nat.add_sub (a b c: nat) : c ≤ b -> a + (b - c) = (a + b) - c := by
       rw [succ_sub_succ, add_succ, succ_sub_succ, ih]
       apply le_refl
 
-#print axioms nat.add_sub
-
 def nat.add_sub_inv (a b: nat) : a + b - b = a := by
   rw [←add_sub, sub.refl, add_zero]
   apply le_refl
-
-#print axioms nat.add_sub_inv
 
 def nat.sub_add_inv (a b: nat) : b ≤ a -> a - b + b = a := by
   intro b_le_a
   rw [add.comm, nat.add_sub, add.comm]
   apply nat.add_sub_inv
   assumption
-
-#print axioms nat.sub_add_inv
 
 def nat.sub.le_left (a b c: nat) : a ≤ b -> a - c ≤ b - c := by
   intro a_le_b
@@ -142,8 +120,6 @@ def nat.sub.le_left (a b c: nat) : a ≤ b -> a - c ≤ b - c := by
     rw [succ_sub_succ, succ_sub_succ]
     exact ih a b (nat.le_of_succ_le_succ a_le_b)
 
-#print axioms nat.sub.le_left
-
 def nat.sub.le (a b: nat) : a - b ≤ a := by
   induction b with
   | zero =>
@@ -155,8 +131,6 @@ def nat.sub.le (a b: nat) : a - b ≤ a := by
     apply le_left
     apply dec.le
 
-#print axioms nat.sub.le
-
 def nat.sub.lt_nz (a b: nat) : 0 < b -> b ≤ a -> a - b < a := by
   intro b_nz b_le_a
   match b with
@@ -167,8 +141,6 @@ def nat.sub.lt_nz (a b: nat) : 0 < b -> b ≤ a -> a - b < a := by
   apply lt_of_le_of_lt
   apply le
   apply lt_succ_self
-
-#print axioms nat.sub.lt_nz
 
 def nat.sub.lt { a b: nat }: a < b -> a - b = 0 := by
   induction b generalizing a with
@@ -186,8 +158,6 @@ def nat.sub.lt { a b: nat }: a < b -> a - b = 0 := by
       apply nat.lt_of_succ_lt_succ
       assumption
 
-#print axioms nat.sub.lt
-
 def nat.sub_sub (a b c: nat) : c ≤ b -> a - (b - c) = (a + c) - b := by
   intro c_le_b
   induction b generalizing a c with
@@ -202,8 +172,6 @@ def nat.sub_sub (a b c: nat) : c ≤ b -> a - (b - c) = (a + c) - b := by
       apply ih
       apply nat.le_of_succ_le_succ
       exact c_le_b
-
-#print axioms nat.sub_sub
 
 def nat.sub.eq_zero {a b: nat} : a - b = 0 ↔ a ≤ b := by
   induction a generalizing b with
@@ -230,8 +198,6 @@ def nat.sub.eq_zero {a b: nat} : a - b = 0 ↔ a ≤ b := by
       exact ih.mp h
       intro h
       exact ih.mpr (nat.le_of_succ_le_succ h)
-
-#print axioms nat.sub.eq_zero
 
 -- def nat.sub.compare_strict (a b c: nat) :
 --   c ≤ a ->

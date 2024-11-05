@@ -613,7 +613,6 @@ def Ordinal.ulift_eq_self (o: Ordinal) : ulift o = o := by
   apply sound'
   apply WellOrder.ulift_equiv_self
 
-
 def WellOrder.empty : WellOrder := by
   apply WellOrder.mk Empty
   apply IsWellOrder.mk

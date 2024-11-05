@@ -12,30 +12,28 @@ def List.allP.dec (list : List α) (f: α -> Prop) [decf: ∀x, Decidable (f x)]
   | cons x xs => cases List.allP.dec xs f with
     | isTrue h =>
       cases decf x with
-      | isTrue g => 
+      | isTrue g =>
         apply Decidable.isTrue
         apply And.intro <;> assumption
-      | isFalse g => 
+      | isFalse g =>
         apply Decidable.isFalse
         intro and; exact g and.left
-    | isFalse h => 
+    | isFalse h =>
       apply Decidable.isFalse
       intro and; exact h and.right
 
 instance List.allP.instDec (list : List α) (f: α -> Prop) [∀x, Decidable (f x)] : Decidable (list.allP f) := List.allP.dec list f
-
-#print axioms List.allP.dec
 
 def List.anyP.dec (list : List α) (f: α -> Prop) [decf: ∀x, Decidable (f x)] : Decidable (list.anyP f) := by
   cases list with
   | nil => exact (inferInstance: Decidable False)
   | cons x xs =>
   cases decf x with
-  | isTrue g => 
+  | isTrue g =>
     apply Decidable.isTrue
     apply Or.inl
     assumption
-  | isFalse g => 
+  | isFalse g =>
   cases List.anyP.dec xs f with
     | isTrue h =>
       apply Decidable.isTrue
@@ -48,8 +46,6 @@ def List.anyP.dec (list : List α) (f: α -> Prop) [decf: ∀x, Decidable (f x)]
 
 instance List.anyP.instDec (list : List α) (f: α -> Prop) [∀x, Decidable (f x)] : Decidable (list.anyP f) := List.anyP.dec list f
 
-#print axioms List.anyP.dec
-
 def List.allP.of_contains (list: List α) (f: α -> Prop) (h: ∀x, x ∈ list -> f x) : list.allP f := match list with
   | [] => trivial
   | x::xs => by
@@ -60,8 +56,6 @@ def List.allP.of_contains (list: List α) (f: α -> Prop) (h: ∀x, x ∈ list -
     apply h
     apply List.Mem.tail _ elem
 
-#print axioms List.allP.of_contains
-
 def List.allP.contains (list: List α) (f: α -> Prop) : list.allP f -> ∀x, x ∈ list -> f x := by
   intro list_all x x_in_list
   induction x_in_list with
@@ -69,5 +63,3 @@ def List.allP.contains (list: List α) (f: α -> Prop) : list.allP f -> ∀x, x 
   | tail _ _ ih =>
     apply ih
     exact list_all.right
-
-#print axioms List.allP.of_contains

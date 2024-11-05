@@ -86,7 +86,6 @@ def Zf.mk_of_nat (n: nat) : .of_nat n = mk (.of_nat n) := by
     rw [ih, mk_succ]
     rfl
 
-
 def Zf.mem_ofNat {n:Nat} : ∀{x}, x ∈ Zf.ofNat n ↔ ∃m < n, x = Zf.ofNat m := by
   intro x
   induction n with

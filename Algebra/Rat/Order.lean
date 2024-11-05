@@ -340,8 +340,6 @@ def rat.compare_of_fract { a b: fract } :
         apply nat.gcd.dvd_right
         apply nat.gcd.dvd_left
 
-#print axioms rat.compare_of_fract
-
 def fract.add.compare_strict { a b: fract } { o: Ordering } :
    compare a c = o ->
    compare b d = o ->
@@ -436,8 +434,6 @@ def rat.add.compare_strict { a b c d: rat } { o: Ordering } :
    assumption
    assumption
 
-#print axioms rat.add.compare_strict
-
 def rat.add.compare_left { a b k: rat } { o: Ordering } :
    compare a b = o ->
    compare (k + a) (k + b) = o := by
@@ -446,8 +442,6 @@ def rat.add.compare_left { a b k: rat } { o: Ordering } :
    apply fract.add.compare_left
    assumption
 
-#print axioms rat.add.compare_strict
-
 def rat.add.compare_right { a b k: rat } { o: Ordering } :
    compare a b = o ->
    compare (a + k) (b + k) = o := by
@@ -455,8 +449,6 @@ def rat.add.compare_right { a b k: rat } { o: Ordering } :
    rw [rat.add.comm _ k, rat.add.comm _ k]
    apply rat.add.compare_left
    assumption
-
-#print axioms rat.add.compare_strict
 
 def rat.add.compare' { a b c d: rat } { o: Ordering } :
    compare a b = o ∨ a = b ->
@@ -474,8 +466,6 @@ def rat.add.compare' { a b c d: rat } { o: Ordering } :
       assumption
     · have := h ⟨ ab, cd ⟩
       contradiction
-
-#print axioms rat.add.compare'
 
 def rat.add.lt_of_add_left { a b k: rat } :
   a < b ->

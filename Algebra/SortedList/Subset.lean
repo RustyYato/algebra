@@ -7,8 +7,6 @@ def List.sorted_subset (as bs: List α) : Prop := match as with
      | [] => False
      | b::bs => a = b ∧ as.sorted_subset bs ∨ a ≠ b ∧ (a::as).sorted_subset bs
 
-#print axioms List.sorted_subset
-
 instance List.sorted_subset.dec [DecidableEq α] (as bs: List α) : Decidable (as.sorted_subset bs) :=
   match as with
   | [] => by
@@ -29,8 +27,6 @@ instance List.sorted_subset.dec [DecidableEq α] (as bs: List α) : Decidable (a
       apply dec_and
       exact inferInstance
       exact List.sorted_subset.dec (a::as) bs
-
-#print axioms List.sorted_subset.dec
 
 def List.sorted_subset.len_check :
   ∀(as bs: List α),
@@ -58,8 +54,6 @@ def List.sorted_subset.len_check :
         apply le_trans this
         apply le_of_lt
         apply nat.lt_succ_self
-
-#print axioms List.sorted_subset.len_check
 
 def List.sorted_subset.push_pop
   [DecidableEq α]:
@@ -138,8 +132,6 @@ def List.sorted_subset.push_pop
           exact (ih (a'::as)).left b' this
       }
 
-#print axioms List.sorted_subset.push_pop
-
 def List.sorted_subset.push_right
   [DecidableEq α]:
   ∀(b: α) (as bs: List α),
@@ -148,8 +140,6 @@ def List.sorted_subset.push_right
   intro b as bs as_sub_bs
   exact (push_pop as bs).left b as_sub_bs
 
-#print axioms List.sorted_subset.push_right
-
 def List.sorted_subset.pop_left
   [DecidableEq α]:
   ∀(a: α) (as bs: List α),
@@ -157,8 +147,6 @@ def List.sorted_subset.pop_left
   as.sorted_subset bs := by
   intro a as bs as_sub_bs
   exact (push_pop as bs).right a as_sub_bs
-
-#print axioms List.sorted_subset.pop_left
 
 def List.sorted_subset.proof
   [Ord α] [TotalOrder α]:
@@ -203,8 +191,6 @@ def List.sorted_subset.proof
       exact aas_in_bs.pop_left
       assumption
 
-#print axioms List.sorted_subset.proof
-
 def List.sorted_subset.first_not_picked
   [Ord α] [tle: TotalOrder α]
   : ∀(a b: α) (as bs: List α),
@@ -236,8 +222,6 @@ def List.sorted_subset.first_not_picked
         have a_in_bs := List.sorted_subset.proof (a::as) bs sorted_bs.pop aas_sub_bs a (.head _)
         have := this a a_in_bs
         contradiction
-
-#print axioms List.sorted_subset.first_not_picked
 
 def List.sorted_subset.trans
   [Ord α] [tle: TotalOrder α]
@@ -318,8 +302,6 @@ def List.sorted_subset.trans
           apply tle.lt_trans <;> assumption
           exact ih (a::as) bs sorted_as sorted_bs.pop sorted_cs.pop as_sub_bs bbs_sub_cs.pop_left
 
-#print axioms List.sorted_subset.trans
-
 def List.sorted_subset.antisymm
   [Ord α] [TotalOrder α]
   (as bs: List α) :
@@ -362,5 +344,3 @@ def List.sorted_subset.antisymm
           have lt : bs.len < (b::bs).len := by apply nat.lt_succ_self
           have := nat.not_lt_and_ge lt ge
           contradiction
-
-#print axioms List.sorted_subset.antisymm

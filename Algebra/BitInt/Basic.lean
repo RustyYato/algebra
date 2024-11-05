@@ -3365,9 +3365,6 @@ def BitInt.Bits.cmp.spec (a b c d: Bits) :
     | nil_bit b bs bd => sorry
     | bit_bit b bs ds bd => sorry
 
-
-#print axioms BitInt.Bits.cmp.spec
-
 def BitInt.cmp : BitInt -> BitInt -> Ordering := by
   apply lift₂ compare
   apply BitInt.Bits.cmp.spec

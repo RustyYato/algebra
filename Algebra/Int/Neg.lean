@@ -5,18 +5,12 @@ def int.neg (i: int): int := match i with
   | .pos_succ n => .neg_succ n
   | .neg_succ n => .pos_succ n
 
-#print axioms int.neg
-
 instance int.instNeg : Neg int where
   neg := int.neg
 
 def int.neg_neg : ∀i: int, - -i = i := by intro i; cases i <;> rfl
 
-#print axioms int.neg_neg
-
 def int.neg_one_eq : int.neg_succ .zero = -1 := rfl
-#print axioms int.neg_one_eq
-
 def int.Sign.int_neg { x: nat } :  Sign.neg * x = -(x: int) := by cases x <;> rfl
 
 def int.neg.inj: ∀{ a b: int }, -a = -b -> a = b := by
@@ -28,8 +22,6 @@ def int.neg.inj: ∀{ a b: int }, -a = -b -> a = b := by
   rw [int.neg_succ.inj h]
   intro h
   rw [int.pos_succ.inj h]
-
-#print axioms int.neg.inj
 
 def int.neg.swap_lt: ∀{ a b: int }, a < b ↔ -b < -a := by
   suffices ∀{a b: int}, a < b -> -b < -a by
@@ -49,8 +41,6 @@ def int.neg.swap_lt: ∀{ a b: int }, a < b ↔ -b < -a := by
   assumption
   apply int.LT.neg
   assumption
-
-#print axioms int.neg.swap_lt
 
 def int.neg.swap_le: ∀{ a b: int }, a ≤ b ↔ -b ≤ -a := by
   suffices ∀{a b: int}, a ≤ b -> -b ≤ -a by
@@ -72,19 +62,13 @@ def int.neg.swap_le: ∀{ a b: int }, a ≤ b ↔ -b ≤ -a := by
   apply int.LE.neg
   assumption
 
-#print axioms int.neg.swap_le
-
 def int.neg.swap_gt: ∀{ a b: int }, a > b ↔ -b > -a := by
   intros
   apply int.neg.swap_lt
 
-#print axioms int.neg.swap_gt
-
 def int.neg.swap_ge: ∀{ a b: int }, a ≥ b ↔ -b ≥ -a := by
   intros
   apply int.neg.swap_le
-
-#print axioms int.neg.swap_ge
 
 def int.neg.def (a: int) : -a = a.neg := rfl
 def int.neg.zero : -(0: int) = 0 := rfl
@@ -96,5 +80,3 @@ def int.neg.sign_mul { s: int.Sign } { x: nat } : -(s * x) = s.flip * x := by
   | zero => rfl
   | pos | neg =>
     cases x <;> rfl
-
-#print axioms int.neg.sign_mul

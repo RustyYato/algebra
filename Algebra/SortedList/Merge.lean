@@ -152,8 +152,6 @@ def sorted_merge.contains
       assumption
   }
 
-#print axioms sorted_merge.contains
-
  def sorted_merge.sorted
   { α: Sort _ }
   [Ord α] [tle:TotalOrder α]:
@@ -238,13 +236,9 @@ def sorted_merge.contains
         assumption
     }
 
-#print axioms sorted_merge.sorted
-
 def SortedList.merge
   [Ord α] [TotalOrder α]
   (xs ys: SortedList α) : SortedList α := SortedList.mk (sorted_merge xs.items ys.items) <| by
   apply sorted_merge.sorted
   exact xs.is_sorted
   exact ys.is_sorted
-
-#print axioms SortedList.merge

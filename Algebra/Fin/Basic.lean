@@ -50,8 +50,6 @@ def fin.mk_val (x: nat) (h: x < n) : (fin.mk x h).val = x := by
       unfold mk val
       rw [ih]
 
-#print axioms fin.mk_val
-
 def fin.val_mk (x: fin n) : fin.mk x.val x.isLt = x := by
   induction x with
   | zero => rfl
@@ -60,18 +58,12 @@ def fin.val_mk (x: fin n) : fin.mk x.val x.isLt = x := by
     dsimp
     rw [ih]
 
-#print axioms fin.val_mk
-
 def fin.mk.inj (x y: nat) (xLt: x < n) (yLt: y < n) : fin.mk x xLt = fin.mk y yLt -> x = y := by
   intro h
   rw [←mk_val x xLt, ←mk_val y yLt, h]
 
-#print axioms fin.mk.inj
-
 def fin.n_gt_zero (x: fin n) : 0 < n := by
   cases x <;> apply nat.zero_lt_succ
-
-#print axioms fin.n_gt_zero
 
 def fin.to_Fin (x: fin n) : Fin n.toNat := by
   apply Fin.mk x.val.toNat

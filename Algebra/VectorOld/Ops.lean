@@ -7,8 +7,6 @@ def Vector.append (vs: Vector α n) (ws: Vector α m) :
   | .nil => ws
   | .cons v vs => .cons v (append vs ws)
 
-#print axioms Vector.append
-
 instance Vector.appendInst : HAppend (Vector α n) (Vector α m) (Vector α (n + m)) := ⟨ append ⟩
 
 def Vector.flatten (vs: Vector (Vector α m) n) : Vector α (n * m) :=
@@ -16,21 +14,15 @@ def Vector.flatten (vs: Vector (Vector α m) n) : Vector α (n * m) :=
   | .nil => .nil
   | .cons v vs => v ++ vs.flatten
 
-#print axioms Vector.flatten
-
 def Vector.from_list (list: List α) : Vector α (nat.ofNat list.length) :=
   match list with
   | .nil => .nil
   | .cons v vs => .cons v (Vector.from_list vs)
 
-#print axioms Vector.flatten
-
 def Vector.to_list (vs: Vector α n) : List α :=
   match vs with
   | .nil => .nil
   | .cons v vs => .cons v vs.to_list
-
-#print axioms Vector.flatten
 
 def Vector.get (vs: Vector α n) (idx: fin n) : α :=
   match idx with
@@ -79,8 +71,6 @@ def Vector.insert_at_get (vs: Vector α n) (idx: fin n.succ) (value: α):
     dsimp
     apply Vector.insert_at_get
 
-#print axioms Vector.insert_at_get
-
 def Vector.insert_at_get_ge (vs: Vector α n) (b: fin n) (a: fin n.succ) (value: α):
   a.val ≤ b.val ->
   (vs.insert_at a value).get b.succ = vs.get b := by
@@ -105,8 +95,6 @@ def Vector.insert_at_get_ge (vs: Vector α n) (b: fin n) (a: fin n.succ) (value:
     dsimp
     apply Vector.insert_at_get_ge
     exact a_lt_b
-
-#print axioms Vector.insert_at_get_ge
 
 def Vector.insert_at_get_lt (vs: Vector α n) (b: fin n) (a: fin n.succ) (value: α):
   a.val > b.val ->
@@ -138,8 +126,6 @@ def Vector.insert_at_get_lt (vs: Vector α n) (b: fin n) (a: fin n.succ) (value:
     apply ih
     assumption
 
-#print axioms Vector.insert_at_get_lt
-
 def Vector.remove_get_lt { n: nat } (vs: Vector α n.succ) (a: fin n.succ) (b: fin n) :
   b.val < a.val ->
   (vs.remove a).get b = vs.get (fin.mk b.val (lt_trans b.isLt (nat.lt_succ_self _))) := by
@@ -162,8 +148,6 @@ def Vector.remove_get_lt { n: nat } (vs: Vector α n.succ) (a: fin n.succ) (b: f
       dsimp
       apply ih
       exact b_lt_a
-
-#print axioms Vector.remove_get_lt
 
 def Vector.remove_get_ge { n: nat } (vs: Vector α n.succ) (a: fin n.succ) (b: fin n) :
   b.val ≥ a.val ->
@@ -192,8 +176,6 @@ def Vector.remove_get_ge { n: nat } (vs: Vector α n.succ) (a: fin n.succ) (b: f
       dsimp
       exact b_gt_a
 
-#print axioms Vector.remove_get_ge
-
 def Vector.swap (vs: Vector α n) (a b: fin n) : Vector α n := by
   exact (vs.set b (vs.get a)).set a (vs.get b)
 
@@ -211,8 +193,4 @@ def Vector.reverseAux (vs: Vector α n) (out: Vector α m) :
   | .cons v vs => Vector.cast (vs.reverseAux <| .cons v out) (by
     rw [nat.add_succ, ←nat.succ_add])
 
-#print axioms Vector.reverseAux
-
 def Vector.reverse (vs: Vector α n) : Vector α n := Vector.reverseAux vs .nil
-
-#print axioms Vector.reverse

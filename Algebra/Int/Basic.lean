@@ -33,11 +33,7 @@ instance int.instOfNat (n: Nat) : OfNat int n where
 instance int.instRepr : Repr int where
   reprPrec n := reprPrec n.toInt
 
-def int.zero_eq : int.zero = 0 := rfl
-#print axioms int.zero_eq
-def int.one_eq : int.pos_succ .zero = 1 := rfl
-#print axioms int.one_eq
-
+def int.zero_eq : int.zero = 0 := rfldef int.one_eq : int.pos_succ .zero = 1 := rfl
 instance nat_to_int : Coe nat int where
   coe := int.of_nat
 
@@ -62,14 +58,10 @@ instance nat.mul_sign : HMul int.Sign nat int where
       | .zero => .zero
       | .succ n => .neg_succ n
 
-#print axioms nat.mul_sign
-
 def int.sign (i: int) : int.Sign := match i with
   | .zero => .zero
   | .pos_succ _ => .pos
   | .neg_succ _ => .neg
-
-#print axioms int.sign
 
 @[simp]
 def int.Sign.flip (s: int.Sign) : int.Sign := match s with
@@ -102,18 +94,12 @@ def int.sign.of_sign_mul { s: int.Sign } { x: nat } : s = int.Sign.zero âˆ¨ x â‰
     cases c <;> contradiction
   )
 
-#print axioms int.sign.of_sign_mul
-
 def int.Sign.flip_flip { s: int.Sign } : s.flip.flip = s := by cases s <;> rfl
-
-#print axioms int.Sign.flip_flip
 
 def int.of_nat.inj { a b: nat } : int.of_nat a = int.of_nat b -> a = b := by
   intro eq
   cases a <;> cases b <;> cases eq
   rfl; rfl
-
-#print axioms int.of_nat.inj
 
 def int.of_nat.pos (a: nat) : int.pos_succ a = int.of_nat a.succ := rfl
 def int.of_nat.zero : 0 = int.of_nat 0 := rfl

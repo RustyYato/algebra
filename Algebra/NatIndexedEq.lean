@@ -17,15 +17,11 @@ def NatEq.length_eq { vs: α n } { ws: α m } :
   cases vs_eq_ws
   rfl
 
-#print axioms NatEq.length_eq
-
 def NatEq.symm :
   vs =v ws -> ws =v vs := by
   intro vs_eq_ws
   cases vs_eq_ws
   rfl
-
-#print axioms NatEq.symm
 
 def NatEq.trans :
   vs =v ws -> ws =v xs -> vs =v xs := by
@@ -34,22 +30,16 @@ def NatEq.trans :
   cases ws_eq_xs
   rfl
 
-#print axioms NatEq.trans
-
 def NatEq.subst {p : ∀{n}, α n → Prop}
   { as: α n } { bs: α m }
   (h₁ : as =v bs) (h₂ : p as) : p bs :=
   match h₁ with
   | .refl _ => h₂
 
-#print axioms NatEq.subst
-
 set_option linter.unusedVariables false
 def NatEq.of_eq : as = bs -> as =v bs
 | .refl _ => NatEq.refl _
 set_option linter.unusedVariables true
-
-#print axioms NatEq.of_eq
 
 instance NatEq.EquivalenceInst : Equivalence (@NatEq α n n) where
   refl := refl

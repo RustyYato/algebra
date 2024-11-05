@@ -234,7 +234,6 @@ def InitialSeg.surj_or_principal
   rw [ClassicLogic.not_iff] at prf
 
 
-
   -- apply PSum.inr
   sorry
 
