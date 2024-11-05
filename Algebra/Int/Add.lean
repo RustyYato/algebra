@@ -37,6 +37,7 @@ def int.add.def { a b: int } : a + b = int.add a b := rfl
 def int.sub.def { a b: int } : a - b = a + (-b) := rfl
 
 def int.add_zero { a: int } : a + 0 = a := by cases a <;> rfl
+def int.sub_zero { a: int } : a - 0 = a := by cases a <;> rfl
 
 def int.inc.pos_succ : (int.pos_succ a).inc = int.pos_succ a.succ := rfl
 def int.dec.neg_succ : (int.neg_succ a).dec = int.neg_succ a.succ := rfl
@@ -123,6 +124,34 @@ def int.pos_succ.of_nat : nat.succ x = int.pos_succ x := by cases x <;> rfl
 def int.pos_succ.succ : int.pos_succ (nat.succ x) = int.inc (int.pos_succ x) := by cases x <;> rfl
 def int.neg_succ.succ : int.neg_succ (nat.succ x) = int.dec (int.neg_succ x) := by cases x <;> rfl
 def int.inc.of_nat_succ : of_nat (nat.succ x) = int.inc (of_nat x) := by cases x <;> rfl
+
+def int.induction
+  (motive: int -> Prop)
+  (zero: motive 0)
+  (inc: ∀(x: int), motive (x.inc) -> motive x)
+  (dec: ∀(x: int), motive (x.dec) -> motive x):
+  ∀x, motive x := by
+    intro x
+    cases x with
+    | zero => exact zero
+    | pos_succ x =>
+      apply dec
+      cases x with
+      | zero => exact zero
+      | succ x =>
+        rw [pos_succ.succ, inc_dec_inv]
+        apply int.induction <;> assumption
+    | neg_succ x =>
+      apply inc
+      cases x with
+      | zero => exact zero
+      | succ x =>
+        rw [neg_succ.succ, dec_inc_inv]
+        apply int.induction <;> assumption
+termination_by x => int.abs x
+decreasing_by
+  apply nat.lt_succ_self
+  apply nat.lt_succ_self
 
 def int.add_nat.zero : int.add_nat 0 x = x := by
   induction x with
@@ -308,6 +337,12 @@ def int.sub.dec_right { a b : int } : a - b.dec = (a - b).inc := by
   rw [sub.def, dec.neg]
   apply int.add.inc_right
 
+def int.sub.inc { a b : int } : a.inc - b.inc = a - b := by
+  rw [inc_left, inc_right, dec_inc_inv]
+
+def int.sub.dec { a b : int } : a.dec - b.dec = a - b := by
+  rw [dec_left, dec_right, inc_dec_inv]
+
 def int.add_nat.pos_succ { a b: nat } : (int.pos_succ a).add_nat b = int.pos_succ (a + b) := by
   induction b generalizing a with
   | zero => erw [nat.zero_eq, nat.add_zero]; rfl
@@ -459,214 +494,229 @@ def int.of_lt_zero { a: int } : 0 > a -> ∃x, a = int.neg_succ x := by
   rename_i x _
   exists x
 
-def int.inc.compare { a b: int } : compare a.inc b.inc = compare a b := by
-  cases a <;> cases b
-  any_goals rfl
-  any_goals simp [int.instOrd]
-  any_goals (
-    rename_i b
+def int.inc_dec_le' : ∀{a b: int}, a ≤ b -> a.inc ≤ b.inc ∧ a.dec ≤ b.dec := by
+  intro a b h
+  cases h with
+  | neg_pos =>
+    rename_i a b
+    cases a
+    apply And.intro
+    exact .zero_pos
     cases b
-    any_goals rfl)
-  all_goals rename_i a b
-  cases a <;> cases b
-  any_goals rfl
-  cases a <;> cases b
-  any_goals rfl
-
-def int.dec.compare { a b: int } : compare a.dec b.dec = compare a b := by
-  cases a <;> cases b
-  any_goals rfl
-  any_goals simp [int.instOrd]
-  any_goals (
-    rename_i b
+    exact .neg_zero
+    exact .neg_pos
+    apply And.intro
+    exact .neg_pos
     cases b
-    any_goals rfl)
-  all_goals rename_i a b
-  cases a <;> cases b
-  any_goals rfl
-  cases a <;> cases b
-  any_goals rfl
-
-def int.inc_dec_compare { a b: int } : compare a.inc b = compare a b.dec := by
-  cases a <;> cases b
-  any_goals rfl
-  any_goals simp [int.instOrd]
-  any_goals (
+    exact .neg_zero
+    exact .neg_pos
+  | zero_pos =>
     rename_i b
+    apply And.intro
+    exact .pos (nat.zero_le _)
     cases b
-    any_goals rfl)
-  all_goals rename_i a b
-  cases a <;> cases b
-  any_goals rfl
-  cases a <;> cases b
-  any_goals rfl
-
-def int.dec_inc_compare { a b: int } : compare a.dec b = compare a b.inc := by
-  cases a <;> cases b
-  any_goals rfl
-  any_goals simp [int.instOrd]
-  any_goals (
-    rename_i b
+    exact .neg_zero
+    exact .neg_pos
+  | neg_zero =>
+    rename_i a
+    apply And.intro
+    cases a
+    exact .zero_pos
+    exact .neg_pos
+    exact .neg (nat.zero_le _)
+  | zero => apply And.intro <;> rfl
+  | pos =>
+    apply And.intro
+    apply int.LE.pos
+    apply nat.succ_le_succ
+    assumption
+    rename_i a b h
+    cases h
     cases b
-    any_goals rfl)
-  all_goals rename_i a b
-  cases a <;> cases b
-  any_goals rfl
-  cases a <;> cases b
-  any_goals rfl
+    rfl
+    exact .zero_pos
+    rename_i h
+    exact .pos h
+  | neg =>
+    apply And.intro
+    rename_i a b h
+    cases h
+    cases b
+    rfl
+    exact .neg_zero
+    rename_i h
+    exact .neg h
+    apply int.LE.neg
+    apply nat.succ_le_succ
+    assumption
 
-def int.inc.cmp { a b: int } : cmp a.inc b.inc = cmp a b := by
-  apply int.inc.compare
-
-def int.dec.cmp { a b: int } : cmp a.dec b.dec = cmp a b := by
-  apply int.dec.compare
-
-def int.inc_dec_cmp { a b: int } : cmp a.inc b = cmp a b.dec := by
-  apply int.inc_dec_compare
-
-def int.dec_inc_cmp { a b: int } : cmp a.dec b = cmp a b.inc := by
-  apply int.dec_inc_compare
-
-def int.add.compare_left { a b k: int } : compare a b = compare (a + k) (b + k) := by
-  cases k with
-  | zero => rfl
-  | pos_succ k =>
-    induction k with
-    | zero =>
-      rw [int.one_eq, int.add.one_right, int.add.one_right]
-      rw [int.inc.compare]
-    | succ k ih =>
-      rw [int.pos_succ.succ, int.add.inc_right, int.add.inc_right]
-      rw [int.inc.compare, ih]
-  | neg_succ k =>
-    induction k with
-    | zero =>
-      rw [int.neg_one_eq, int.add.neg_one_right, int.add.neg_one_right]
-      rw [int.dec.compare]
-    | succ k ih =>
-      rw [int.neg_succ.succ, int.add.dec_right, int.add.dec_right]
-      rw [int.dec.compare, ih]
-
-def int.add.compare_right { a b k: int } : compare a b = compare (k + a) (k + b) := by
-  rw [@comm k, @comm k, compare_left]
-
-def int.add.compare_swap { a b k: int } : compare (a + k) b = compare a (b - k) := by
-  cases k with
-  | zero => rw [zero_eq, add_zero]; rfl
-  | pos_succ k =>
-    induction k generalizing a b with
-    | zero =>
-      rw [one_eq, one_right, sub.def, neg_one_right]
-      apply inc_dec_compare
-    | succ k ih =>
-      rw [pos_succ.succ, inc_right, ←inc_left, sub.def, inc.neg, dec_right, ←inc_dec_compare, ←sub.def]
-      apply ih
-  | neg_succ k =>
-    induction k generalizing a b with
-    | zero =>
-      rw [neg_one_eq, neg_one_right, sub.def, neg_neg, one_right]
-      apply dec_inc_compare
-    | succ k ih =>
-      rw [neg_succ.succ, dec_right, ←dec_left, sub.def, dec.neg, inc_right, ←dec_inc_compare, ←sub.def]
-      apply ih
-
-def int.add.right_iff_sub { a b k: int }: a + k = b ↔ a = b - k := by
+def int.inc.le : ∀{a b: int}, a ≤ b ↔ a.inc ≤ b.inc := by
+  intro a b
   apply Iff.intro
-  intros h
-  apply eq_of_compare_eq
-  rw [←int.add.compare_swap]
+  intro h
+  exact (inc_dec_le' h).left
+  intro h
+  have := (inc_dec_le' h).right
+  rw [inc_dec_inv, inc_dec_inv] at this
+  exact this
+
+def int.dec.le : ∀{a b: int}, a ≤ b ↔ a.dec ≤ b.dec := by
+  intro a b
+  apply Iff.intro
+  intro h
+  exact (inc_dec_le' h).right
+  intro h
+  have := (inc_dec_le' h).left
+  rw [dec_inc_inv, dec_inc_inv] at this
+  exact this
+
+def int.inc_le_iff_le_dec : ∀{a b: int}, a.inc ≤ b ↔ a ≤ b.dec := by
+  intro a b
+  apply Iff.intro
+  intro h
+  have := dec.le.mp h
+  rw [inc_dec_inv] at this
+  exact this
+  intro h
+  have := inc.le.mp h
+  rw [dec_inc_inv] at this
+  exact this
+
+def int.le_inc_iff_dec_le : ∀{a b: int}, a ≤ b.inc ↔ a.dec ≤ b := by
+  intro a b
+  apply Iff.intro
+  intro h
+  have := dec.le.mp h
+  rw [inc_dec_inv] at this
+  exact this
+  intro h
+  have := inc.le.mp h
+  rw [dec_inc_inv] at this
+  exact this
+
+def int.lt_inc_of_le {a b: int} : a ≤ b -> a < b.inc := by
+  intro h
   cases h
-  apply compare_eq_refl
-  intros h
-  apply eq_of_compare_eq
-  rw [int.add.compare_swap]
+  exact .neg_pos
+  exact .zero_pos
+  exact .neg_pos
+  exact .zero_pos
+  rename_i a b h
+  cases a
+  exact .neg_zero
+  exact .neg (nat.lt_of_succ_le h)
+  rename_i h
+  exact .pos (nat.lt_of_succ_le (nat.succ_le_succ h))
+def int.lt_of_inc_le {a b: int} : a.inc ≤ b -> a < b := by
+  intro h
+  have := lt_inc_of_le (dec.le.mp h)
+  rw [inc_dec_inv, dec_inc_inv] at this
+  exact this
+
+def int.inc_le_of_lt {a b: int} : a < b -> a.inc ≤ b := by
+  intro h
   cases h
-  apply compare_eq_refl
+  rename_i a _
+  cases a
+  exact .zero_pos
+  exact .neg_pos
+  exact .pos (nat.zero_le _)
+  rename_i a
+  cases a
+  rfl
+  exact .neg_zero
+  rename_i h
+  cases h
+  exact .neg (nat.zero_le _)
+  rename_i h
+  exact .neg (nat.succ_le_of_lt h)
+  rename_i h
+  exact .pos (nat.succ_le_of_lt h)
+def int.le_of_lt_inc {a b: int} : a < b.inc -> a ≤ b := by
+  intro h
+  apply inc.le.mpr
+  exact inc_le_of_lt h
+def int.lt_inc_iff_le {a b: int} : a < b.inc ↔ a ≤ b := ⟨le_of_lt_inc,lt_inc_of_le⟩
+def int.inc_le_iff_lt {a b: int} : a.inc ≤ b ↔ a < b := ⟨lt_of_inc_le,inc_le_of_lt⟩
 
-def int.add.left_iff_sub { a b k: int }: k + a = b ↔ a = b - k := by
-  rw [add.comm]
-  apply int.add.right_iff_sub
+def int.inc.lt : ∀{a b: int}, a < b ↔ a.inc < b.inc := by
+  intro a b
+  apply Iff.trans int.inc_le_iff_lt.symm
+  apply Iff.trans _ int.inc_le_iff_lt
+  exact le
 
-def int.add.lt_right_iff_sub { a b k: int }: a + k < b ↔ a < b - k := by
+def int.dec.lt : ∀{a b: int}, a < b ↔ a.dec < b.dec := by
+  intro a b
+  apply Iff.trans int.inc_le_iff_lt.symm
+  apply Iff.trans _ int.inc_le_iff_lt
+  rw [dec_inc_inv]
+  exact inc_le_iff_le_dec
+
+def int.inc_lt_iff_lt_dec : ∀{a b: int}, a.inc < b ↔ a < b.dec := by
+  intro a b
   apply Iff.intro
-  intros h
-  rw [TotalOrder.unfold_lt]
-  rw [←int.add.compare_swap]
-  assumption
-  intros h
-  rw [TotalOrder.unfold_lt]
-  rw [int.add.compare_swap]
-  assumption
+  intro h
+  have := dec.lt.mp h
+  rw [inc_dec_inv] at this
+  exact this
+  intro h
+  have := inc.lt.mp h
+  rw [dec_inc_inv] at this
+  exact this
 
-def int.add.lt_left_iff_sub { a b k: int }: k + a < b ↔ a < b - k := by
-  rw [add.comm]
-  apply int.add.lt_right_iff_sub
-
-def int.add.le_right_iff_sub { a b k: int }: a + k ≤ b ↔ a ≤ b - k := by
+def int.lt_inc_iff_dec_lt : ∀{a b: int}, a < b.inc ↔ a.dec < b := by
+  intro a b
   apply Iff.intro
-  intros h
-  rw [TotalOrder.unfold_le]
-  rw [←int.add.compare_swap]
-  assumption
-  intros h
-  rw [TotalOrder.unfold_le]
-  rw [int.add.compare_swap]
-  assumption
+  intro h
+  have := dec.lt.mp h
+  rw [inc_dec_inv] at this
+  exact this
+  intro h
+  have := inc.lt.mp h
+  rw [dec_inc_inv] at this
+  exact this
 
-def int.add.le_left_iff_sub { a b k: int }: k + a ≤ b ↔ a ≤ b - k := by
-  rw [add.comm]
-  apply int.add.le_right_iff_sub
+def int.add.le_left {a b k: int} : a ≤ b ↔ a + k ≤ b + k := by
+  induction k using induction generalizing a b with
+  | zero => rw [add_zero, add_zero]
+  | inc k ih =>
+    replace ih := @ih a b
+    rw [add.inc_right, add.inc_right] at ih
+    replace ih := Iff.trans ih inc.le.symm
+    exact ih
+  | dec k ih =>
+    replace ih := @ih a b
+    rw [add.dec_right, add.dec_right] at ih
+    replace ih := Iff.trans ih dec.le.symm
+    exact ih
 
-def int.add.gt_right_iff_sub { a b k: int }: a + k > b ↔ a > b - k := by
-  apply Iff.intro
-  intros h
-  apply gt_of_compare
-  rw [←int.add.compare_swap]
-  apply compare_of_gt
-  assumption
-  intros h
-  apply gt_of_compare
-  rw [int.add.compare_swap]
-  apply compare_of_gt
-  assumption
+def int.add.lt_left {a b k: int} : a < b ↔ a + k < b + k := by
+  induction k using induction generalizing a b with
+  | zero => rw [add_zero, add_zero]
+  | inc k ih =>
+    replace ih := @ih a b
+    rw [add.inc_right, add.inc_right] at ih
+    replace ih := Iff.trans ih inc.lt.symm
+    exact ih
+  | dec k ih =>
+    replace ih := @ih a b
+    rw [add.dec_right, add.dec_right] at ih
+    replace ih := Iff.trans ih dec.lt.symm
+    exact ih
 
-def int.add.gt_left_iff_sub { a b k: int }: k + a > b ↔ a > b - k := by
-  rw [add.comm]
-  apply int.add.gt_right_iff_sub
-
-def int.add.ge_right_iff_sub { a b k: int }: a + k ≥ b ↔ a ≥ b - k := by
-  apply Iff.intro
-  intros h
-  apply ge_of_compare
-  rw [←int.add.compare_swap]
-  apply compare_of_ge
-  assumption
-  intros h
-  apply ge_of_compare
-  rw [int.add.compare_swap]
-  apply compare_of_ge
-  assumption
-
-def int.add.ge_left_iff_sub { a b k: int }: k + a ≥ b ↔ a ≥ b - k := by
-  rw [add.comm]
-  apply int.add.ge_right_iff_sub
-
-def int.add.ne_right_iff_sub { a b k: int }: a + k ≠ b ↔ a ≠ b - k := by
-  apply Iff.intro
-  intros h
-  apply ne_of_compare
-  rw [←int.add.compare_swap]
-  apply compare_of_ne
-  assumption
-  intros h
-  apply ne_of_compare
-  rw [int.add.compare_swap]
-  apply compare_of_ne
-  assumption
-
-def int.add.ne_left_iff_sub { a b k: int }: k + a ≠ b ↔ a ≠ b - k := by
-  rw [add.comm]
-  apply int.add.ne_right_iff_sub
+def int.add_le_iff_le_sub {a b k: int} : a + k < b ↔ a < b - k := by
+  induction k using induction generalizing a b with
+  | zero => rw [add_zero, sub_zero]
+  | inc k ih =>
+    replace ih := @ih a b.inc
+    rw [add.inc_right, sub.inc] at ih
+    replace ih := Iff.trans inc.lt ih
+    exact ih
+  | dec k ih =>
+    replace ih := @ih a b.dec
+    rw [add.dec_right, sub.dec] at ih
+    replace ih := Iff.trans dec.lt ih
+    exact ih
 
 def int.add.lift_nat { a b: nat } : (of_nat (a + b)) = (of_nat a) + (of_nat b) := by
   induction b generalizing a with
@@ -694,7 +744,7 @@ def int.sub.lift_nat { a b: nat } : b ≤ a -> (of_nat (a - b)) = (of_nat a) - (
     rw [nat.succ_sub_succ]
     repeat rw [inc.of_nat_succ]
     rw [sub.def, inc.neg, add.dec_right, add.inc_left, inc_dec_inv, ←sub.def]
-    apply ih b_le_a
+    apply ih (nat.le_of_succ_le_succ b_le_a)
 
 def int.add_nat.neg { a: int } { b: nat }  : -int.add_nat a b = int.sub_nat (-a) b := by
   induction b generalizing a with
@@ -758,7 +808,6 @@ def int.sub.sign_mul { s: int.Sign } { a b: nat } : b ≤ a -> s * (a - b) = s *
     cases b with
     | zero => rw [nat.zero_eq, nat.sub_zero, int.Sign.int_zero_nat, sub.def, neg.zero, add.zero_right]
     | succ b =>
-    have b_le_a : b ≤ a := b_le_a
     cases s with
     | zero =>
       repeat rw [int.Sign.int_zero]
@@ -840,6 +889,7 @@ def int.add.lift_pos_neg_lt_to_nat { a b: nat } : a < b -> (int.pos_succ a) + (i
     | succ a =>
       rw [nat.succ_sub_succ, pos_succ.succ, inc_dec_inv]
       apply ih
+      apply nat.lt_of_succ_lt_succ
       assumption
 
 def int.add.lift_neg_pos_gt_to_nat { a b: nat } : a > b -> (int.neg_succ a) + (int.pos_succ b) = int.neg_succ (a - b.succ) := by
@@ -853,34 +903,6 @@ def int.add.lift_neg_pos_lt_to_nat { a b: nat } : a < b -> (int.neg_succ a) + (i
   rw [add.comm]
   apply int.add.lift_pos_neg_gt_to_nat
   assumption
-
-def int.induction
-  (motive: int -> Prop)
-  (if_zero: motive 0)
-  (from_inc: ∀(x: int), motive (x.inc) -> motive x)
-  (from_dec: ∀(x: int), motive (x.dec) -> motive x):
-  ∀x, motive x := by
-    intro x
-    cases x with
-    | zero => exact if_zero
-    | pos_succ x =>
-      apply from_dec
-      cases x with
-      | zero => exact if_zero
-      | succ x =>
-        rw [pos_succ.succ, inc_dec_inv]
-        apply int.induction <;> assumption
-    | neg_succ x =>
-      apply from_inc
-      cases x with
-      | zero => exact if_zero
-      | succ x =>
-        rw [neg_succ.succ, dec_inc_inv]
-        apply int.induction <;> assumption
-termination_by x => int.abs x
-decreasing_by
-  apply nat.lt_succ_self
-  apply nat.lt_succ_self
 
 def int.inc.inj (a b: int) : a.inc = b.inc -> a = b := by
   intro a_eq_b

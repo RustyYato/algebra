@@ -33,7 +33,8 @@ instance int.instOfNat (n: Nat) : OfNat int n where
 instance int.instRepr : Repr int where
   reprPrec n := reprPrec n.toInt
 
-def int.zero_eq : int.zero = 0 := rfldef int.one_eq : int.pos_succ .zero = 1 := rfl
+def int.zero_eq : int.zero = 0 := rfl
+def int.one_eq : int.pos_succ .zero = 1 := rfl
 instance nat_to_int : Coe nat int where
   coe := int.of_nat
 
