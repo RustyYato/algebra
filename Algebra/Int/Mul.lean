@@ -297,22 +297,22 @@ def int.sign_mul.mul_of_nat { s: int.Sign } { a b: nat } : s * a * (b: int) = s 
       apply nat.noConfusion
     }
 
-def int.mul.inc_right (a b: int) : a * b.inc = a * b + a := by
+def int.mul.add_inc (a b: int) : a * b.inc = a * b + a := by
   rw [int.inc.eq_add_one, int.mul.add_right]
   congr
   rw [int.mul.one_right]
 
-def int.mul.inc_left (a b: int) : a.inc * b = a * b + b := by
+def int.mul.inc_add (a b: int) : a.inc * b = a * b + b := by
   rw [int.inc.eq_add_one, int.mul.add_left]
   congr
   rw [int.mul.one_left]
 
-def int.mul.dec_right (a b: int) : a * b.dec = a * b - a := by
+def int.mul.add_dec (a b: int) : a * b.dec = a * b - a := by
   rw [int.dec.eq_add_neg_one, int.mul.add_right]
   congr
   rw [int.mul.neg_one_right]
 
-def int.mul.dec_left (a b: int) : a.dec * b = a * b - b := by
+def int.mul.dec_add (a b: int) : a.dec * b = a * b - b := by
   rw [int.dec.eq_add_neg_one, int.mul.add_left]
   congr
   rw [int.mul.neg_one_left]
@@ -323,7 +323,7 @@ def int.mul.lift_nat (a b: nat) : (a: int) * (b: int) = of_nat (a * b) := by
     have : of_nat 0 = 0 := rfl
     rw [nat.zero_eq, nat.mul_zero, this, mul.zero_right]
   | succ b ih =>
-    rw [int.inc.of_nat_succ, int.mul.inc_right, nat.mul_succ, int.add.lift_nat, ih, int.add.comm]
+    rw [int.inc.of_nat_succ, int.mul.add_inc, nat.mul_succ, int.add.lift_nat, ih, int.add.comm]
 
 def int.mul.of_eq (a b: int) : ∀k, k ≠ 0 -> a * k = b * k -> a = b := by
   apply int.induction (fun a => ∀b k, k ≠ 0 -> a * k = b * k -> a = b) _ _ _ a
@@ -340,14 +340,14 @@ def int.mul.of_eq (a b: int) : ∀k, k ≠ 0 -> a * k = b * k -> a = b := by
     intro a ih b k k_nz ak_eq_bk
     apply int.inc.inj
     apply ih b.inc k k_nz
-    rw [int.mul.inc_left, int.mul.inc_left, ak_eq_bk]
+    rw [int.mul.inc_add, int.mul.inc_add, ak_eq_bk]
   }
   {
     clear a b
     intro a ih b k k_nz ak_eq_bk
     apply int.dec.inj
     apply ih b.dec k k_nz
-    rw [int.mul.dec_left, int.mul.dec_left, ak_eq_bk]
+    rw [int.mul.dec_add, int.mul.dec_add, ak_eq_bk]
   }
 
 def int.mul.compare_left_pos { a b k: int } :
@@ -360,7 +360,7 @@ def int.mul.compare_left_pos { a b k: int } :
     induction k with
     | zero => rw [int.one_eq, int.mul.one_right, int.mul.one_right]
     | succ k ih =>
-      rw [int.pos_succ.succ, int.mul.inc_right, int.mul.inc_right]
+      rw [int.pos_succ.succ, int.mul.add_inc, int.mul.add_inc]
       rw [ih]
       rw [int.add.compare_strict]
       rfl

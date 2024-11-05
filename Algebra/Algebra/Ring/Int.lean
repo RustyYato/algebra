@@ -47,7 +47,7 @@ instance : IsSubNegMonoid int where
     suffices (int.ofNat n.succ * x = (int.ofNat n * x) + x) from this
     rw [int.ofNat]
     dsimp
-    rw [int.pos_succ.def, int.mul.inc_left]
+    rw [int.pos_succ.def, int.mul.inc_add]
     cases n <;> rfl
   zsmul_ofNat n x := by cases n <;> rfl
   zsmul_negSucc n x := by
