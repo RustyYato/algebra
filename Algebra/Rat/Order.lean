@@ -1136,7 +1136,7 @@ def rat.abs.eq_max (a: rat) : a.abs = max a (-a) := by
   rw [rat.neg.zero] at this
   apply le_trans <;> assumption
   rw [max.of_ge_right]
-  have := le_of_lt (lt_of_not_ge h)
+  have := le_of_lt (lt_of_not_le h)
   apply le_trans this
   rw [←rat.neg.zero]
   apply rat.neg.swap_le

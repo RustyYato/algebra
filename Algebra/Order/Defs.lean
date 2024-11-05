@@ -132,7 +132,7 @@ def le_of_not_le : ¬(a ≤ b) -> b ≤ a := le_of_lt ∘ lt_of_not_le
 def lt_asymm : a < b -> b < a -> False := (lt_irrefl <| lt_trans · ·)
 
 class IsDecidableLinearOrder (α: Type _) [LE α] [LT α] [Min α] [Max α] extends IsLinearOrder α where
-  decLE (a b: α): Decidable (a ≤ b)
+  decLE (a b: α): Decidable (a ≤ b) := by intros; exact inferInstance
   decLT (a b: α): Decidable (a < b) := decidable_of_iff _ (IsLinearOrder.lt_iff_le_and_not_le (a := a) (b := b)).symm
   decEQ (a b: α): Decidable (a = b) := decidable_of_iff (a ≤ b ∧ b ≤ a) (by
   apply Iff.intro
@@ -141,8 +141,8 @@ class IsDecidableLinearOrder (α: Type _) [LE α] [LT α] [Min α] [Max α] exte
   · intro h
     subst h
     apply And.intro <;> rfl)
-  min_def (a b: α): min a b = if a ≤ b then a else b
-  max_def (a b: α): max a b = if a ≤ b then b else a
+  min_def (a b: α): min a b = if a ≤ b then a else b := by intros; rfl
+  max_def (a b: α): max a b = if a ≤ b then b else a := by intros; rfl
 
 instance : Subsingleton (IsDecidableLinearOrder α) where
   allEq a b := by

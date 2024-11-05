@@ -188,3 +188,15 @@ def nat.ofNat_le { a b: Nat } : a ≤ b -> nat.ofNat a ≤ nat.ofNat b := by
     apply ih
     apply Nat.le_of_succ_le_succ
     exact a_le_b
+
+instance nat.decLe : ∀(a b: nat), Decidable (a ≤ b)
+| .succ _, .zero => .isFalse (nomatch ·)
+| .zero, _ => .isTrue (.zero _)
+| .succ a, .succ b =>
+  match decLe a b with
+  | .isTrue h => .isTrue h.succ
+  | .isFalse h => .isFalse fun g => match g with | .succ _ _ g => h g
+
+instance : Min nat := minOfLe
+instance : Max nat := maxOfLe
+instance : IsDecidableLinearOrder nat where

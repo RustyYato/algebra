@@ -101,7 +101,7 @@ instance nat.dvd.dec (a b: nat) : Decidable (a ∣ b) := by
     have := nat.mul.ge k.succ a.succ rfl
     rw [mul.comm] at this
     rw [←ak_eq_b] at b_lt_k
-    exact not_lt_of_ge this b_lt_k
+    exact not_lt_of_le this b_lt_k
     )
   match this with
   | .Found h => exact Decidable.isTrue h
@@ -315,7 +315,7 @@ def nat.div.compare_strict (a b c: nat) :
     | succ a =>
       have := fun h => nat.dvd.le h c_dvd_a
       have := this nat.zero_lt_succ
-      have := not_lt_of_ge this a_lt_c
+      have := not_lt_of_le this a_lt_c
       contradiction
     | zero =>
       rw [nat.zero_eq, nat.zero_div]
@@ -325,7 +325,7 @@ def nat.div.compare_strict (a b c: nat) :
         | succ b =>
           have := fun h => nat.dvd.le h c_dvd_b
           have := this nat.zero_lt_succ
-          have := not_lt_of_ge this (by assumption)
+          have := not_lt_of_le this (by assumption)
           contradiction
         | zero =>
           rfl

@@ -146,7 +146,7 @@ def nat.sqrt.spec (n x: nat): x * x ≤ n ↔ x ≤ n.sqrt := by
       · rename_i h
         apply Decidable.byContradiction
         intro g
-        replace g := lt_of_not_ge g
+        replace g := lt_of_not_le g
         replace g := nat.succ_le_of_lt g
         have := le_trans (mul.le _ _ _ _ g g) xsq_le_n
         have := lt_of_lt_of_le h this

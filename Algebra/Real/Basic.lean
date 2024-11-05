@@ -330,7 +330,7 @@ def CauchySeq.Equiv.abs.helper_1 (a b: CauchySeq) :
       rw [←rat.neg.zero]
       apply rat.neg.swap_le
       assumption
-  · replace h' := lt_of_not_ge h'
+  · replace h' := lt_of_not_le h'
     have : a x - b y + b y < 0 + b y := rat.add.lt_of_add_right h'
     rw [rat.sub.add_cancel, rat.add.zero_left] at this
     have := lt_antisymm b_lt_a this
@@ -350,14 +350,14 @@ def CauchySeq.Equiv.abs (a b: CauchySeq) :
   · rw [rat.sub.def, rat.neg_neg]
     apply abs.helper_1
     assumption
-    apply lt_of_not_ge
+    apply lt_of_not_le
     assumption
     assumption
   · rw [rat.sub.def, ←rat.neg.add, rat.abs.neg]
     rw [rat.add.comm]
     apply abs.helper_1
     assumption
-    apply lt_of_not_ge
+    apply lt_of_not_le
     assumption
     rw [rat.abs.sub_symm]
     assumption

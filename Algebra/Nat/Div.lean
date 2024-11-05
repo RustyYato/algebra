@@ -6,7 +6,7 @@ import Algebra.Order.Basic
 
 structure div_mod.IndCtx where
   motive: nat -> (b: nat) -> 0 < b -> Sort α
-  is_lt: ∀(a b: nat), (a_lt_b: a < b) -> motive a b (nat.zero_lt_of_lt a_lt_b)
+  is_lt: ∀(a b: nat), (a_lt_b: a < b) -> motive a b (nat.pos_of_lt a_lt_b)
   is_ge: ∀(a b: nat), (b_nz: 0 < b) -> a ≥ b -> motive (a - b) b b_nz -> motive a b b_nz
 
 def nat.div_mod.induction.fueled (ctx: div_mod.IndCtx) (fuel: nat):
@@ -14,11 +14,11 @@ def nat.div_mod.induction.fueled (ctx: div_mod.IndCtx) (fuel: nat):
     match fuel with
     | .zero => .none
     | .succ fuel =>
-    match lt_or_ge_dec a b with
-    | .Lt a_lt_b => .some <| ctx.is_lt a b a_lt_b
-    | .Ge a_ge_b => match fueled ctx fuel (a - b) b b_nz with
+    if h:a < b then .some <| ctx.is_lt a b h
+    else
+    match fueled ctx fuel (a - b) b b_nz with
       | .none => .none
-      | .some prev => .some <| ctx.is_ge a b b_nz a_ge_b prev
+      | .some prev => .some <| ctx.is_ge a b b_nz (le_of_not_lt h) prev
 
 def nat.div_mod.induction.fueled.termination
   {ctx: div_mod.IndCtx} {fuel: nat}:
@@ -31,18 +31,20 @@ def nat.div_mod.induction.fueled.termination
     | succ fuel ih =>
       unfold fueled
       split
-      rename_i a_lt_b _
+      rename_i a_lt_b
       exact my_option.noConfusion
-      rename_i a_ge_b _
+      rename_i a_ge_b
       have ih := @ih (a - b) <|
         lt_of_lt_of_le
-        (sub.lt_nz a b b_nz a_ge_b)
+        (sub.lt_nz a b b_nz (le_of_not_lt a_ge_b))
         (le_of_lt_succ a_lt_fuel)
       split
       rename_i h
       rw [h] at ih
       contradiction
       exact my_option.noConfusion
+
+#print axioms nat.div_mod.induction.fueled.termination
 
 def nat.div_mod.induction.fueled.fuel_irr
   (ctx: div_mod.IndCtx) (fuel_a fuel_b: nat):
@@ -61,25 +63,28 @@ def nat.div_mod.induction.fueled.fuel_irr
       contradiction
     | succ fuel_b =>
       unfold fueled
-      cases lt_or_ge_dec a b with
-      | Lt a_lt_b => trivial
-      | Ge a_ge_b =>
-        simp only
-        rw [iha]
+      if h:a < b then rw [dif_pos h, dif_pos h]
+      else
+        have a_ge_b := le_of_not_lt h
+        rw [dif_neg h, dif_neg h, iha]
         exact lt_of_lt_of_le (sub.lt_nz a b b_nz a_ge_b) (le_of_lt_succ a_lt_fuel_a)
         exact lt_of_lt_of_le (sub.lt_nz a b b_nz a_ge_b) (le_of_lt_succ a_lt_fuel_b)
 
+#print axioms nat.div_mod.induction.fueled.fuel_irr
+
 def nat.div_mod.induction
   ( motive: nat -> (b: nat) -> 0 < b -> Sort α )
-  ( is_lt: ∀(a b: nat), (a_lt_b: a < b) -> motive a b (nat.zero_lt_of_lt a_lt_b))
+  ( is_lt: ∀(a b: nat), (a_lt_b: a < b) -> motive a b (nat.pos_of_lt a_lt_b))
   ( is_ge: ∀(a b: nat), (b_nz: 0 < b) -> a ≥ b -> motive (a - b) b b_nz -> motive a b b_nz ):
   ∀a b b_nz, motive a b b_nz := fun a b b_nz => match h:induction.fueled (div_mod.IndCtx.mk motive is_lt is_ge) a.succ a b b_nz with
     | .some m => m
-    | .none => False.elim <| induction.fueled.termination (lt_succ_self _) h
+    | .none => False.elim <| induction.fueled.termination lt_succ_self h
+
+#print axioms nat.div_mod.induction
 
 def nat.div_mod.induction.remove_fuel
   ( motive: nat -> (b: nat) -> 0 < b -> Sort α )
-  ( is_lt: ∀(a b: nat), (a_lt_b: a < b) -> motive a b (nat.zero_lt_of_lt a_lt_b))
+  ( is_lt: ∀(a b: nat), (a_lt_b: a < b) -> motive a b (nat.pos_of_lt a_lt_b))
   ( is_ge: ∀(a b: nat), (b_nz: 0 < b) -> a ≥ b -> motive (a - b) b b_nz -> motive a b b_nz):
   ∀a b b_nz fuel,
   a < fuel ->
@@ -97,8 +102,10 @@ def nat.div_mod.induction.remove_fuel
   }
   {
     rename_i h
-    exact False.elim <| induction.fueled.termination (lt_succ_self _) h
+    exact False.elim <| induction.fueled.termination lt_succ_self h
   }
+
+#print axioms nat.div_mod.induction.remove_fuel
 
 def nat.div_mod.induction.if_lt:
   ∀a b b_nz a_lt_b,
@@ -109,19 +116,20 @@ def nat.div_mod.induction.if_lt:
   {
     rename_i m h
     unfold fueled at h
-    have pick_lt := nat.lt_or_ge_dec.pick_lt a_lt_b
-    rw [pick_lt] at h
+    rw [dif_pos a_lt_b] at h
     simp only at h
     exact my_option.some.inj h.symm
   }
   {
     rename_i h
-    exact False.elim <| induction.fueled.termination (lt_succ_self _) h
+    exact False.elim <| induction.fueled.termination lt_succ_self h
   }
+
+#print axioms nat.div_mod.induction.if_lt
 
 def nat.div_mod.induction.if_ge
   ( motive: nat -> (b: nat) -> 0 < b -> Sort α )
-  ( is_lt: ∀(a b: nat), (a_lt_b: a < b) -> motive a b (nat.zero_lt_of_lt a_lt_b))
+  ( is_lt: ∀(a b: nat), (a_lt_b: a < b) -> motive a b (nat.pos_of_lt a_lt_b))
   ( is_ge: ∀(a b: nat), (b_nz: 0 < b) -> a ≥ b -> motive (a - b) b b_nz -> motive a b b_nz):
   ∀a b b_nz a_ge_b,
   induction motive is_lt is_ge a b b_nz = is_ge a b b_nz a_ge_b (induction motive is_lt is_ge (a - b) b b_nz) := by
@@ -134,8 +142,7 @@ def nat.div_mod.induction.if_ge
   {
     rename_i m h
     unfold fueled at h
-    have pick_ge := nat.lt_or_ge_dec.pick_ge a_ge_b
-    rw [pick_ge] at h
+    rw [dif_neg (not_lt_of_le a_ge_b)] at h
     simp only at h
     rw [remove_fuel] at h
     simp only at h
@@ -145,18 +152,24 @@ def nat.div_mod.induction.if_ge
   }
   {
     rename_i h
-    exact False.elim <| induction.fueled.termination (lt_succ_self _) h
+    exact False.elim <| induction.fueled.termination lt_succ_self h
   }
+
+#print axioms nat.div_mod.induction.if_ge
 
 def nat.div : ∀(_ b: nat), 0 < b -> nat := div_mod.induction
     (fun _ _ _ => nat)
     (fun _ _ _ => nat.zero)
     (fun _ _ _ _ prev => prev.succ)
 
+#print axioms nat.div
+
 def nat.mod : ∀(_ b: nat), 0 < b -> nat :=  div_mod.induction
     (fun _ _ _ => nat)
     (fun a _ _ => a)
     (fun _ _ _ _ prev => prev)
+
+#print axioms nat.mod
 
 def nat.div.def { a b: nat } { b_nz: 0 < b } : (a.div b b_nz) = (div_mod.induction
     (fun _ _ _ => nat)
@@ -171,20 +184,20 @@ def nat.mod.def { a b: nat } { b_nz: 0 < b } : (a.mod b b_nz) = (div_mod.inducti
 instance nat.div_inst : Div nat where
   div a b := match b with
      | .zero => .zero
-     | .succ b => a.div b.succ rfl
+     | .succ b => a.div b.succ zero_lt_succ
 
 instance nat.mod_inst : Mod nat where
   mod a b := match b with
      | .zero => .zero
-     | .succ b => a.mod b.succ rfl
+     | .succ b => a.mod b.succ zero_lt_succ
 
 def nat.div_eq' : ∀{ a b: nat }, a / b = (match b with
      | .zero => .zero
-     | .succ b => a.div b.succ rfl) := rfl
+     | .succ b => a.div b.succ zero_lt_succ) := rfl
 
 def nat.mod_eq' : ∀{ a b: nat }, a % b = (match b with
      | .zero => .zero
-     | .succ b => a.mod b.succ rfl) := rfl
+     | .succ b => a.mod b.succ zero_lt_succ) := rfl
 
 def nat.div_eq : ∀{ a b: nat } (b_nz: 0 < b), a / b = a.div b b_nz := by
   intro a b b_nz
@@ -193,12 +206,16 @@ def nat.div_eq : ∀{ a b: nat } (b_nz: 0 < b), a / b = a.div b b_nz := by
   | zero => contradiction
   | succ b => rfl
 
+#print axioms nat.div_eq
+
 def nat.mod_eq : ∀{ a b: nat } (b_nz: 0 < b), a % b = a.mod b b_nz := by
   intro a b b_nz
   rw [nat.mod_eq']
   cases b with
   | zero => contradiction
   | succ b => rfl
+
+#print axioms nat.mod_eq
 
 def nat.div.if_lt' : ∀{ a b: nat } (b_nz: 0 < b), a < b -> a.div b b_nz = 0 := by
   intro a b b_nz a_lt_b
@@ -207,11 +224,15 @@ def nat.div.if_lt' : ∀{ a b: nat } (b_nz: 0 < b), a < b -> a.div b b_nz = 0 :=
   rfl
   assumption
 
+#print axioms nat.div.if_lt'
+
 def nat.div.if_ge' : ∀{ a b: nat } (b_nz: 0 < b), a ≥ b -> a.div b b_nz = ((a - b).div b b_nz).succ := by
   intro a b b_nz a_ge_b
   unfold div
   rw [div_mod.induction.if_ge]
   assumption
+
+#print axioms nat.div.if_ge'
 
 def nat.mod.if_lt' : ∀{ a b: nat } (b_nz: 0 < b), a < b -> a.mod b b_nz = a := by
   intro a b b_nz a_lt_b
@@ -219,11 +240,15 @@ def nat.mod.if_lt' : ∀{ a b: nat } (b_nz: 0 < b), a < b -> a.mod b b_nz = a :=
   rw [div_mod.induction.if_lt]
   assumption
 
+#print axioms nat.mod.if_lt'
+
 def nat.mod.if_ge': ∀{ a b: nat } (b_nz: 0 < b), a ≥ b -> a.mod b b_nz = (a - b).mod b b_nz := by
   intro a b b_nz a_ge_b
   unfold mod
   rw [div_mod.induction.if_ge]
   assumption
+
+#print axioms nat.mod.if_ge'
 
 def nat.div.if_lt : ∀(a b: nat) (_: 0 < b), a < b -> a / b = 0 := by
   intro a b b_nz a_lt_b
@@ -231,11 +256,15 @@ def nat.div.if_lt : ∀(a b: nat) (_: 0 < b), a < b -> a / b = 0 := by
   apply nat.div.if_lt'
   repeat assumption
 
+#print axioms nat.div.if_lt
+
 def nat.div.if_ge:  ∀(a b: nat) (_: 0 < b), a ≥ b -> a / b = ((a - b) / b).succ := by
   intro a b b_nz a_ge_b
   rw [nat.div_eq, nat.div_eq]
   apply nat.div.if_ge'
   repeat assumption
+
+#print axioms nat.div.if_ge
 
 def nat.mod.if_lt : ∀(a b: nat) (_: 0 < b), a < b -> a % b = a := by
   intro a b b_nz a_lt_b
@@ -243,11 +272,15 @@ def nat.mod.if_lt : ∀(a b: nat) (_: 0 < b), a < b -> a % b = a := by
   apply nat.mod.if_lt'
   repeat assumption
 
+#print axioms nat.mod.if_lt
+
 def nat.mod.if_ge: ∀(a b: nat) (_: 0 < b), a ≥ b -> a % b = (a - b) % b := by
   intro a b b_nz a_ge_b
   rw [nat.mod_eq, nat.mod_eq]
   apply nat.mod.if_ge'
   repeat assumption
+
+#print axioms nat.mod.if_ge
 
 def nat.mod.lt (a b: nat) (b_nz: 0 < b) : a % b < b := by
   rw [nat.mod_eq b_nz]
@@ -266,6 +299,8 @@ def nat.mod.lt (a b: nat) (b_nz: 0 < b) : a % b < b := by
   }
   assumption
 
+#print axioms nat.mod.lt
+
 def nat.div.eq_if : ∀{ a b: nat } (_b_nz: 0 < b), a / b = if a < b then 0 else (a - b) / b + 1 := by
   intro a b b_nz
   split <;> rename_i h
@@ -276,6 +311,8 @@ def nat.div.eq_if : ∀{ a b: nat } (_b_nz: 0 < b), a / b = if a < b then 0 else
   repeat assumption
   apply le_of_not_lt
   assumption
+
+#print axioms nat.div.eq_if
 
 def nat.div_def (a b: nat) (b_nz: 0 < b) : a = (a / b) * b + a % b := by
   apply div_mod.induction (fun a b _ => 0 < b -> a = (a / b) * b + a % b)
@@ -294,17 +331,27 @@ def nat.div_def (a b: nat) (b_nz: 0 < b) : a = (a / b) * b + a % b := by
   }
   repeat assumption
 
+#print axioms nat.div_def
+
 def nat.mod_zero : ∀{a: nat}, a % 0 = 0 := by intros; rfl
 
+#print axioms nat.mod_zero
+
 def nat.div_zero : ∀{a: nat}, a / 0 = 0 := by intros; rfl
+
+#print axioms nat.div_zero
 
 def nat.zero_mod : ∀{a: nat}, 0 % a = 0 := by
   intro a
   cases a <;> rfl
 
+#print axioms nat.zero_mod
+
 def nat.zero_div : ∀{a: nat}, 0 / a = 0 := by
   intro a
   cases a <;> rfl
+
+#print axioms nat.zero_div
 
 def nat.div.one : ∀{a: nat}, a / 1 = a := by
   intro a
@@ -315,7 +362,7 @@ def nat.div.one : ∀{a: nat}, a / 1 = a := by
     match a with
     | .zero => rfl
     | .succ a =>
-      have := nat.not_lt_zero a_lt_b
+      have := nat.not_lt_zero (nat.lt_of_succ_lt_succ a_lt_b)
       contradiction
   }
   {
@@ -328,6 +375,8 @@ def nat.div.one : ∀{a: nat}, a / 1 = a := by
     | .succ a =>
     rw [←nat.one_eq, succ_sub_succ, zero_eq, sub_zero]
   }
+
+#print axioms nat.div.one
 
 def nat.mul_mod :∀(a b k: nat), (a * k) % (b * k) = (a % b) * k := by
   intro a b
@@ -389,6 +438,8 @@ def nat.div.gt_zero (a b: nat) : 0 < b -> b ≤ a -> a / b > 0 := by
   any_goals assumption
   apply nat.zero_lt_succ
 
+#print axioms nat.div.gt_zero
+
 def nat.div.lt (a b: nat) : 1 < b -> 0 < a -> a / b < a := by
   intro b_gt_one a_nz
   conv => {
@@ -445,8 +496,10 @@ def nat.div.lt (a b: nat) : 1 < b -> 0 < a -> a / b < a := by
   }
   apply nat.zero_lt_succ
   assumption
+  apply nat.succ_lt_succ
   apply nat.zero_lt_succ
-  assumption
+
+#print axioms nat.div.lt
 
 def nat.div.of_eq_zero { a b: nat } : a / b = 0 -> b = 0 ∨ a < b := by
   cases b with
@@ -456,25 +509,24 @@ def nat.div.of_eq_zero { a b: nat } : a / b = 0 -> b = 0 ∨ a < b := by
     apply Or.inr
     apply Decidable.byContradiction
     intro h
-    have a_ge_b_succ := not_lt_implies_ge h
+    have a_ge_b_succ := le_of_not_lt h
     rw [if_ge] at div_eq_zero
     contradiction
     apply zero_lt_succ
     assumption
 
+#print axioms nat.div.of_eq_zero
+
 def nat.div.spec (a b: nat) (b_pos: 0 < b) :
   a / b = if a < b then 0 else ((a - b) / b).succ := by
-  cases lt_or_ge a b
-  · rename_i a_lt_b
-    rw [if_pos, nat.div.if_lt]
+  refine if h:a < b then ?_ else ?_
+  · rw [if_pos, nat.div.if_lt]
     apply lt_of_le_of_lt
     apply nat.zero_le
     repeat assumption
-  · rename_i a_ge_b
+  · have a_ge_b := (le_of_not_lt h)
     rw [if_neg, nat.div.if_ge]
     repeat assumption
-    apply flip not_lt_and_ge
-    assumption
 
 def nat.div.le_div_if_mul_le (a b: nat) (b_pos: 0 < b) : ∀c, b * c ≤ a -> c ≤ a / b := by
   apply nat.div_mod.induction (fun a b _ => ∀c, b * c ≤ a -> c ≤ a / b) _ _ a b b_pos
@@ -486,7 +538,7 @@ def nat.div.le_div_if_mul_le (a b: nat) (b_pos: 0 < b) : ∀c, b * c ≤ a -> c 
       | nat.succ c =>
         rw [nat.mul_succ] at h
         have := le_trans (nat.add.le_left _ _) h
-        have := not_lt_of_ge this b_pos
+        have := not_lt_of_le this b_pos
         contradiction
     apply lt_of_le_of_lt _ b_pos
     apply nat.zero_le
@@ -528,7 +580,7 @@ def nat.div.le { a b: nat } : a / b ≤ a := by
   conv => { rhs; rw [this] }
   apply flip le_trans
   apply nat.add.le_left
-  exact mul.ge (a / b.succ) b.succ rfl
+  exact mul.ge (a / b.succ) b.succ zero_lt_succ
 
 def nat.div.mul_le { a b: nat } : b * (a / b) ≤ a := by
   cases b
@@ -566,6 +618,8 @@ def nat.div_div { a b c: nat} : a / b / c = a / (b * c) := by
     rw [←mul.assoc]
     apply nat.div.mul_le
 
+#print axioms nat.div_div
+
 def nat.mod.add (a b k: nat) : (a + b) % k = (a % k + b % k) % k := by
   cases k
   rfl
@@ -597,7 +651,7 @@ def nat.mod.sub_mul (a b k: nat) : a ≥ b * k -> (a - b * k) % k = a % k := by
   by_cases h:k ≤ 0
   cases nat.le_zero h
   rfl
-  have k_pos := lt_of_not_ge h
+  have k_pos := lt_of_not_le h
   clear h
   induction b generalizing a with
   | zero => rw [zero_eq, zero_mul, sub_zero]
@@ -609,9 +663,9 @@ def nat.mod.sub_mul (a b k: nat) : a ≥ b * k -> (a - b * k) % k = a % k := by
     have := nat.sub.le_left  _ _ k a_ge_bk
     rw [succ_mul, add.comm, add_sub_inv] at this
     assumption
-    replace h := lt_of_not_ge h
+    replace h := lt_of_not_le h
     exfalso
-    apply not_lt_of_ge _ h
+    apply not_lt_of_le _ h
     apply le_trans  _ a_ge_bk
     rw [succ_mul]
     apply add.le_left
@@ -673,7 +727,8 @@ def nat.mod.self (a: nat) : a % a = 0 := by
   cases a
   rfl
   rw [mod.if_ge, nat.sub.eq_zero.mpr, zero_mod]
-  repeat rfl
+  any_goals rfl
+  exact zero_lt_succ
 
 def nat.mod.mul_left (a k: nat) : (a * k) % k = 0 := by
   rw [nat.mod.mul, nat.mod.self, nat.mul_zero, zero_mod]

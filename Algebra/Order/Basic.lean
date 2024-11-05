@@ -423,7 +423,7 @@ import Algebra.Order.Defs
 
 -- #print axioms le_of_not_gt
 
--- def lt_of_not_ge { a b: α } : ¬a ≥ b -> a < b := by
+-- def lt_of_not_le { a b: α } : ¬a ≥ b -> a < b := by
 --   intro not_a_ge_b
 --   cases h:compare a b
 --   exact h
@@ -432,7 +432,7 @@ import Algebra.Order.Defs
 --   have := not_a_ge_b <| Or.inl <| swap_compare h
 --   contradiction
 
--- #print axioms lt_of_not_ge
+-- #print axioms lt_of_not_le
 
 -- def ne_of_lt { a b: α } : a < b -> a ≠ b := by
 --   intro a_lt_b a_eq_b
@@ -475,9 +475,9 @@ import Algebra.Order.Defs
 
 -- #print axioms not_lt_of_le
 
--- def not_lt_of_ge { a b: α } : b ≥ a -> ¬b < a := not_lt_of_le
+-- def not_lt_of_le { a b: α } : b ≥ a -> ¬b < a := not_lt_of_le
 
--- #print axioms not_lt_of_ge
+-- #print axioms not_lt_of_le
 
 -- def not_le_of_lt { a b: α } : a < b -> ¬b ≤ a := by
 --   intro g h
@@ -520,7 +520,7 @@ import Algebra.Order.Defs
 --   split
 --   rfl
 --   apply le_of_lt
---   apply lt_of_not_ge
+--   apply lt_of_not_le
 --   assumption
 
 -- def min.le_left (a b: α) : min a b ≤ a := by
@@ -528,7 +528,7 @@ import Algebra.Order.Defs
 --   split
 --   rfl
 --   apply le_of_lt
---   apply lt_of_not_ge
+--   apply lt_of_not_le
 --   assumption
 
 -- def min.le_right (a b: α) : min a b ≤ b := by
@@ -549,7 +549,7 @@ import Algebra.Order.Defs
 --   apply le_trans
 --   assumption
 --   apply le_of_lt
---   apply lt_of_not_ge
+--   apply lt_of_not_le
 --   assumption
 
 -- def max.le (a b k: α) : a ≤ k -> b ≤ k -> max a b ≤ k := by
@@ -569,7 +569,7 @@ import Algebra.Order.Defs
 --   apply lt_of_lt_of_le
 --   assumption
 --   apply le_of_lt
---   apply lt_of_not_ge
+--   apply lt_of_not_le
 --   assumption
 
 -- def max.lt (a b k: α) : a < k -> b < k -> max a b < k := by
@@ -592,7 +592,7 @@ import Algebra.Order.Defs
 --   cases kab
 --   apply le_trans
 --   apply le_of_lt
---   apply lt_of_not_ge
+--   apply lt_of_not_le
 --   repeat assumption
 
 -- def min.gt (a b k: α) : k < a -> k < b -> k < min a b := by
@@ -610,7 +610,7 @@ import Algebra.Order.Defs
 --   cases kab
 --   apply lt_of_le_of_lt
 --   apply le_of_lt
---   apply lt_of_not_ge
+--   apply lt_of_not_le
 --   repeat assumption
 
 -- def max.eq_left_or_right (a b: α) : max a b = a ∨ max a b = b := by

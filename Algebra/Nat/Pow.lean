@@ -68,8 +68,7 @@ def nat.pow.ge_of_nz_exp { a b: nat } : 0 < b -> a ^ b ≥ a := by
   cases a with
   | zero =>
     rw [zero_eq, of_zero]
-    apply le_refl
-    exact zero_lt_succ
+    apply nat.zero_lt_succ
   | succ a =>
   rw [pow.succ]
   apply nat.mul.ge
@@ -78,7 +77,7 @@ def nat.pow.ge_of_nz_exp { a b: nat } : 0 < b -> a ^ b ≥ a := by
     have ⟨ _, _ ⟩ := eq_zero h
     contradiction
   | isFalse h =>
-    apply lt_of_le_and_ne
+    apply lt_of_le_of_ne
     apply zero_le
     intro g
     exact h g.symm
