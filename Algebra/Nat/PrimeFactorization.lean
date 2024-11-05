@@ -76,7 +76,7 @@ def PrimeFactorization.new (n: nat) : 0 < n -> PrimeFactorization n := by
   intro n_nz
   cases (inferInstance: Decidable (1 < n)) with
   | isFalse h =>
-    have := not_lt_implies_ge h
+    have := le_of_not_lt h
     match n with
     | 1 =>
     apply PrimeFactorization.mk (SortedList.mk [] True.intro)
@@ -256,6 +256,13 @@ def PrimeFactorization.unique (a b: PrimeFactorization n) : a = b := by
         | 1 =>
           cases product.eq_one a_product_eq a (.head _)
           have := (a_is_prime.contains) 1 (.head _)
+          contradiction
+        | nat.succ (nat.succ 0) + n =>
+          rename_i h
+          rw [nat.succ_add, nat.succ_add] at h
+          have h := le_of_not_lt h
+          have := nat.le_of_succ_le_succ h
+          have := nat.le_zero this
           contradiction
 
     cases b_factors with

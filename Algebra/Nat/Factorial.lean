@@ -24,7 +24,7 @@ def nat.partial_fact.zero : partial_fact 0 m = 1 := by
 
 def nat.fact.nz : 0 < n ! := by
   induction n with
-  | zero => rfl
+  | zero => exact nat.zero_lt_succ
   | succ n ih =>
     rw [fact.succ, succ_mul]
     apply lt_of_lt_of_le
@@ -81,7 +81,7 @@ def nat.partial_fact.eq_fact_div : m ≤ n -> nat.partial_fact n m = n ! / (n - 
       rw [div.self]
       apply fact.nz
     | succ m =>
-      have m_le_n: m ≤ n := m_le_n
+      have m_le_n: m ≤ n := nat.le_of_succ_le_succ m_le_n
       unfold partial_fact
       simp
       rw [succ_sub_succ]

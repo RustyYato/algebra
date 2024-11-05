@@ -15,7 +15,7 @@ def nat.bitwise_rec
 | .succ a, .succ b => pos a.succ b.succ nat.zero_lt_succ nat.zero_lt_succ (nat.bitwise_rec left_zero right_zero pos (a.succ / 2) (b.succ / 2))
 termination_by a => a
 decreasing_by
-  exact div.lt a.succ 2 rfl rfl
+  exact div.lt a.succ 2 (by decide) nat.zero_lt_succ
 
 def nat.bits_rec
   { motive: nat -> Sort _ }
@@ -26,7 +26,7 @@ def nat.bits_rec
 | .succ a => pos a.succ nat.zero_lt_succ (nat.bits_rec zero pos (a.succ / 2))
 termination_by a => a
 decreasing_by
-  exact div.lt a.succ 2 rfl rfl
+  exact div.lt a.succ 2 (by decide) nat.zero_lt_succ
 
 def nat.msb_pos : nat -> nat := nat.bits_rec (motive := fun _ => nat) 0 (fun _ _ ih => ih.succ)
 def nat.counts_ones : nat -> nat := nat.bits_rec (motive := fun _ => nat) 0 (fun a _ ih => ih + a % 2)
