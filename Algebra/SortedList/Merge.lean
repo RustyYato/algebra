@@ -1,10 +1,11 @@
 import Algebra.SortedList.Basic
 
-def sorted_merge
-  { α: Sort _ }
-  [Ord α] [TotalOrder α]:
+variable { α: Sort _ } [LT α] [LE α] [IsLinearOrder α] [@DecidableRel α (· ≤ ·)]
+
+set_option linter.unusedVariables false in
+def sorted_merge:
   (xs ys: List α) -> List α := by
-  apply @sorted_induction α _ _ (SortedIndCtx.mk (fun _ _ => List α) _ _ _ _ _)
+  apply sorted_induction (ctx := SortedIndCtx.mk (fun _ _ => List α) _ _ _ _ _)
   {
     intro ys
     exact ys
@@ -26,22 +27,16 @@ def sorted_merge
     exact x::y::prev
   }
 
-def sorted_merge.left_empty
-  { α: Sort _ }
-  [Ord α] [TotalOrder α]:
+def sorted_merge.left_empty:
   (ys: List α) -> sorted_merge [] ys = ys := by
   intros; rfl
 
-def sorted_merge.right_empty
-  { α: Sort _ }
-  [Ord α] [TotalOrder α]:
+def sorted_merge.right_empty:
   (xs: List α) -> sorted_merge xs [] = xs := by
   intros xs
   cases xs <;> rfl
 
-def sorted_merge.if_lt
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_merge.if_lt:
   (x y: α) ->
   (xs ys: List α) ->
   (x_le_y: x < y) ->
@@ -51,9 +46,7 @@ def sorted_merge.if_lt
   rw [sorted_induction.if_lt]
   assumption
 
-def sorted_merge.if_gt
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_merge.if_gt:
   (x y: α) ->
   (xs ys: List α) ->
   (x_le_y: x > y) ->
@@ -63,9 +56,7 @@ def sorted_merge.if_gt
   rw [sorted_induction.if_gt]
   assumption
 
-def sorted_merge.if_eq
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_merge.if_eq:
   (x y: α) ->
   (xs ys: List α) ->
   (x_le_y: x = y) ->
@@ -75,9 +66,7 @@ def sorted_merge.if_eq
   rw [sorted_induction.if_eq]
   assumption
 
-def sorted_merge.contains
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_merge.contains:
   ∀{xs ys: List α},
   ∀{z}, z ∈ sorted_merge xs ys -> z ∈ xs ∨ z ∈ ys := by
   apply sorted_induction'
@@ -152,9 +141,7 @@ def sorted_merge.contains
       assumption
   }
 
- def sorted_merge.sorted
-  { α: Sort _ }
-  [Ord α] [tle:TotalOrder α]:
+ def sorted_merge.sorted:
   ∀(xs ys: List α),
   is_sorted xs ->
   is_sorted ys ->
@@ -216,7 +203,6 @@ def sorted_merge.contains
       any_goals assumption
       apply And.intro
       rw [x_eq_y]
-      apply le_refl
       apply is_sorted.push
       apply ih
       exact sorted_xs.pop
@@ -237,7 +223,6 @@ def sorted_merge.contains
     }
 
 def SortedList.merge
-  [Ord α] [TotalOrder α]
   (xs ys: SortedList α) : SortedList α := SortedList.mk (sorted_merge xs.items ys.items) <| by
   apply sorted_merge.sorted
   exact xs.is_sorted

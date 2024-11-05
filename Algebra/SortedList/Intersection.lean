@@ -1,10 +1,11 @@
 import Algebra.SortedList.Basic
 
-def sorted_intersection
-  { α: Sort _ }
-  [Ord α] [TotalOrder α]:
+variable { α: Sort _ } [LT α] [LE α] [IsLinearOrder α] [@DecidableRel α (· ≤ ·)]
+
+set_option linter.unusedVariables false in
+def sorted_intersection:
   (xs ys: List α) -> List α := by
-  apply @sorted_induction α _ _ (SortedIndCtx.mk (fun _ _ => List α) _ _ _ _ _)
+  apply sorted_induction (ctx := SortedIndCtx.mk (fun _ _ => List α) _ _ _ _ _)
   {
     intro ys
     exact []
@@ -26,25 +27,19 @@ def sorted_intersection
     exact x::prev
   }
 
-def sorted_intersection.left_empty
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_intersection.left_empty:
   (ys: List α) -> sorted_intersection [] ys = [] := by
   intro ys
   rfl
 
-def sorted_intersection.right_empty
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_intersection.right_empty:
   (xs: List α) -> sorted_intersection xs [] = [] := by
   intro xs
   match xs with
   | [] => rfl
   | _::_ => rfl
 
-def sorted_intersection.if_lt
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_intersection.if_lt:
   (x y: α) ->
   (xs ys: List α) ->
   (x_le_y: x < y) ->
@@ -54,9 +49,7 @@ def sorted_intersection.if_lt
   rw [sorted_induction.if_lt]
   repeat assumption
 
-def sorted_intersection.if_gt
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_intersection.if_gt:
   (x y: α) ->
   (xs ys: List α) ->
   (x_ge_y: x > y) ->
@@ -66,9 +59,7 @@ def sorted_intersection.if_gt
   rw [sorted_induction.if_gt]
   repeat assumption
 
-def sorted_intersection.if_lt'
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_intersection.if_lt':
   (xs ys: List α) ->
   (z: α) ->
   (∀y', y' ∈ ys -> y' > z) ->
@@ -81,9 +72,7 @@ def sorted_intersection.if_lt'
     rw [if_lt]
     repeat assumption
 
-def sorted_intersection.if_gt'
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_intersection.if_gt':
   (xs ys: List α) ->
   (z: α) ->
   (∀x', x' ∈ xs -> x' > z)->
@@ -96,9 +85,7 @@ def sorted_intersection.if_gt'
     rw [if_gt]
     repeat assumption
 
-def sorted_intersection.if_eq
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_intersection.if_eq:
   (x y: α) ->
   (xs ys: List α) ->
   (x_eq_y: x = y) ->
@@ -108,9 +95,7 @@ def sorted_intersection.if_eq
   rw [sorted_induction.if_eq]
   repeat assumption
 
- def sorted_intersection.comm
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+ def sorted_intersection.comm:
   (xs ys: List α) ->
   sorted_intersection xs ys = sorted_intersection ys xs := by
   apply sorted_induction'
@@ -142,9 +127,7 @@ def sorted_intersection.if_eq
     exact x_eq_y
   }
 
-def sorted_intersection.refl
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_intersection.refl:
   (xs: List α) -> sorted_intersection xs xs = xs := by
   intro xs
   induction xs with
@@ -154,9 +137,7 @@ def sorted_intersection.refl
     congr
     rfl
 
-def sorted_intersection.contains
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_intersection.contains:
   ∀{xs ys: List α},
   ∀{z}, z ∈ sorted_intersection xs ys -> z ∈ xs ∧ z ∈ ys := by
   apply sorted_induction'
@@ -200,9 +181,7 @@ def sorted_intersection.contains
       apply And.intro <;> (apply List.Mem.tail; assumption)
   }
 
-def sorted_intersection.of_contains
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_intersection.of_contains:
   ∀{xs ys: List α},
   is_sorted xs ->
   is_sorted ys ->
@@ -241,7 +220,7 @@ def sorted_intersection.of_contains
         assumption
       | head _ =>
         have x_ge_y := (sorted_ys.first) x z_in_ys
-        have := not_lt_and_ge x_lt_y x_ge_y
+        have := not_lt_of_le x_ge_y x_lt_y
         contradiction
   }
   {
@@ -271,7 +250,7 @@ def sorted_intersection.of_contains
         assumption
       | head _ =>
         have y_ge_x := (sorted_xs.first) y z_in_xs
-        have := not_lt_and_ge x_gt_y y_ge_x
+        have := not_lt_of_le y_ge_x x_gt_y
         contradiction
   }
   {
@@ -293,9 +272,7 @@ def sorted_intersection.of_contains
         repeat assumption
   }
 
-def sorted_intersection.idempotent_left
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_intersection.idempotent_left:
   (xs ys: List α) ->
   is_sorted xs ->
   sorted_intersection (sorted_intersection xs ys) ys = sorted_intersection xs ys := by
@@ -333,9 +310,7 @@ def sorted_intersection.idempotent_left
     repeat assumption
   }
 
-def sorted_intersection.idempotent_right
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_intersection.idempotent_right:
   (xs ys: List α) ->
   is_sorted ys ->
   sorted_intersection xs (sorted_intersection xs ys) = sorted_intersection xs ys := by
@@ -343,9 +318,7 @@ def sorted_intersection.idempotent_right
   rw [comm, comm xs ys]
   apply idempotent_left <;> assumption
 
-def sorted_intersection.sorted
-  { a: Sort _ }
-  [Ord α] [TotalOrder α]:
+def sorted_intersection.sorted:
   (xs ys: List α) ->
   is_sorted xs ->
   is_sorted ys ->
@@ -393,10 +366,7 @@ def sorted_intersection.sorted
     assumption
   }
 
-def SortedList.intersection
-  [Ord α] [TotalOrder α]
-  (xs ys: SortedList α) : SortedList α := SortedList.mk (sorted_intersection xs.items ys.items) <| by
+def SortedList.intersection (xs ys: SortedList α) : SortedList α := SortedList.mk (sorted_intersection xs.items ys.items) <| by
   apply sorted_intersection.sorted
-  assumption
   exact xs.is_sorted
   exact ys.is_sorted

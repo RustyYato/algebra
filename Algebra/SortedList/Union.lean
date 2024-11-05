@@ -1,10 +1,11 @@
 import Algebra.SortedList.Basic
 
-def sorted_union
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+variable { α: Sort _ } [LT α] [LE α] [IsLinearOrder α] [@DecidableRel α (· ≤ ·)]
+
+set_option linter.unusedVariables false in
+def sorted_union:
   (xs ys: List α) -> List α := by
-  apply @sorted_induction α _ _ (SortedIndCtx.mk (fun _ _ => List α) _ _ _ _ _)
+  apply sorted_induction (ctx := SortedIndCtx.mk (fun _ _ => List α) _ _ _ _ _)
   {
     intro ys
     exact ys
@@ -26,17 +27,13 @@ def sorted_union
     exact x::prev
   }
 
-def sorted_union.left_empty
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_union.left_empty:
   (ys: List α) -> sorted_union [] ys = ys := by
   intro ys
   unfold sorted_union
   rw [sorted_induction.left_empty]
 
-def sorted_union.right_empty
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_union.right_empty:
   (xs: List α) -> sorted_union xs [] = xs := by
   intro xs
   match xs with
@@ -45,9 +42,7 @@ def sorted_union.right_empty
   unfold sorted_union
   rw [sorted_induction.right_empty]
 
-def sorted_union.if_lt
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_union.if_lt:
   (x y: α) ->
   (xs ys: List α) ->
   (x_le_y: x < y) ->
@@ -57,9 +52,7 @@ def sorted_union.if_lt
   rw [sorted_induction.if_lt]
   repeat assumption
 
-def sorted_union.if_gt
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_union.if_gt:
   (x y: α) ->
   (xs ys: List α) ->
   (x_gt_y: x > y) ->
@@ -69,9 +62,7 @@ def sorted_union.if_gt
   rw [sorted_induction.if_gt]
   repeat assumption
 
-def sorted_union.if_eq
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_union.if_eq:
   (x y: α) ->
   (xs ys: List α) ->
   (x_eq_y: x = y) ->
@@ -81,9 +72,7 @@ def sorted_union.if_eq
   rw [sorted_induction.if_eq]
   repeat assumption
 
-def sorted_union.comm
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_union.comm:
   (xs ys: List α) ->
   sorted_union xs ys = sorted_union ys xs := by
   apply sorted_induction'
@@ -115,9 +104,7 @@ def sorted_union.comm
     assumption
   }
 
-def sorted_union.refl
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_union.refl:
   (xs: List α) -> sorted_union xs xs = xs := by
   intro xs
   induction xs with
@@ -127,9 +114,7 @@ def sorted_union.refl
     congr
     rfl
 
-def sorted_union.idempotent_left
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_union.idempotent_left:
   (xs ys: List α) ->
   sorted_union (sorted_union xs ys) ys = sorted_union xs ys := by
   apply sorted_induction'
@@ -161,21 +146,13 @@ def sorted_union.idempotent_left
     repeat assumption
   }
 
- #print axioms sorted_union.idempotent_left
-
-def sorted_union.idempotent_right
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_union.idempotent_right:
   (xs ys: List α) ->
   sorted_union xs (sorted_union xs ys) = sorted_union xs ys := by
   intro xs ys
   rw [sorted_union.comm, sorted_union.comm xs, sorted_union.idempotent_left]
 
- #print axioms sorted_union.idempotent_right
-
-def sorted_union.contains
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_union.contains:
   ∀{xs ys: List α},
   ∀{z}, z ∈ sorted_union xs ys -> z ∈ xs ∨ z ∈ ys := by
     apply sorted_induction'
@@ -245,9 +222,7 @@ def sorted_union.contains
           assumption
     }
 
-def sorted_union.of_contains
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_union.of_contains:
   ∀{xs ys: List α},
   ∀{z}, z ∈ xs ∨ z ∈ ys -> z ∈ sorted_union xs ys := by
     apply sorted_induction'
@@ -327,8 +302,6 @@ def sorted_union.of_contains
     }
 
 def sorted_union.lower_bound
-  { α: Sort _ }
-  [Ord α] [TotalOrder α]
   (x z: α) (xs: List α)
   (z_in_xs: z ∈ xs)
   (sorted_xs: is_sorted (x::xs)) :
@@ -339,9 +312,7 @@ def sorted_union.lower_bound
   apply List.Mem.tail
   assumption
 
- def sorted_union.sorted
-  { α: Sort _ }
-  [Ord α] [tle:TotalOrder α]:
+ def sorted_union.sorted:
   ∀(xs ys: List α),
   is_sorted xs ->
   is_sorted ys ->
@@ -374,13 +345,13 @@ def sorted_union.lower_bound
         assumption
       | inr z_in_ys =>
         clear ih
-        apply tle.le_trans
-        apply tle.le_of_lt
+        apply le_trans
+        apply le_of_lt
         assumption
         apply lower_bound
         exact z_in_ys
         apply And.intro
-        apply tle.le_refl
+        apply le_refl
         assumption
     }
     {
@@ -395,13 +366,13 @@ def sorted_union.lower_bound
       cases sorted_union.contains z_in_sorted_union with
       | inl z_in_xs =>
         clear ih
-        apply tle.le_trans
-        apply tle.le_of_lt
+        apply le_trans
+        apply le_of_lt
         assumption
         apply lower_bound
         exact z_in_xs
         apply And.intro
-        apply tle.le_refl
+        apply le_refl
         assumption
       | inr z_in_ys =>
         apply lower_bound
@@ -430,7 +401,6 @@ def sorted_union.lower_bound
     }
 
 def SortedList.union
-  [Ord α] [TotalOrder α]
   (xs ys: SortedList α) : SortedList α := SortedList.mk (sorted_union xs.items ys.items) <| by
   apply sorted_union.sorted
   exact xs.is_sorted

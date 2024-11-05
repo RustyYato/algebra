@@ -91,7 +91,7 @@ def rat.compare_of_fract { a b: fract } :
       · cases nat.gcd.eq_zero h
         contradiction
       · have := nat.dvd.le nat.zero_lt_succ (nat.gcd.dvd_left x.succ y)
-        have := not_lt_and_ge h this
+        have := not_lt_of_le _ h
         contradiction
 
     have gcd_pos : ∀x y: nat, 0 < y -> 0 < x -> 0 < x / x.gcd y := by

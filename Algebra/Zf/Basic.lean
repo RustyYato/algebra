@@ -444,7 +444,6 @@ def Class.isProper_univ : isProper .univ := by
   have : z ∈ z := ofSet_mem_ofSet.mp this
   exact Zf.mem_wf.irrefl this
 
-
 def Zf.Pre.union : Zf.Pre.{u} -> Zf.Pre.{u} -> Zf.Pre.{u}
 | .intro a amem, .intro b bmem => .intro (a ⊕ b) <| fun x => match x with
   | .inl x => amem x

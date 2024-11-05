@@ -178,7 +178,8 @@ def nat.gcd_ne_zero : ∀a b, gcd a b ≠ 0 -> a ≠ 0 ∨ b ≠ 0 := by
     intro a b zero_lt_b _ gcd_ne_zero
     rw [nat.gcd.right_nz] at gcd_ne_zero
     apply Or.inr
-    apply ne_of_gt zero_lt_b
+    symm
+    apply ne_of_lt zero_lt_b
     assumption
   }
 

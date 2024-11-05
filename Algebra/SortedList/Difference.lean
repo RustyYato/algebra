@@ -1,10 +1,11 @@
 import Algebra.SortedList.Basic
 
-def sorted_difference
-  { α: Sort _ }
-  [Ord α] [TotalOrder α]:
+variable { α: Sort _ } [LT α] [LE α] [IsLinearOrder α] [@DecidableRel α (· ≤ ·)]
+
+set_option linter.unusedVariables false in
+def sorted_difference:
   (xs ys: List α) -> List α := by
-  apply @sorted_induction α _ _ (SortedIndCtx.mk (fun _ _ => List α) _ _ _ _ _)
+  apply sorted_induction (ctx := SortedIndCtx.mk (fun _ _ => List α) _ _ _ _ _)
   {
     intro ys
     exact []
@@ -26,22 +27,16 @@ def sorted_difference
     exact prev
   }
 
-def sorted_difference.left_empty
-  { α: Sort _ }
-  [Ord α] [TotalOrder α]:
+def sorted_difference.left_empty:
   (ys: List α) -> sorted_difference [] ys = [] := by
   intros; rfl
 
-def sorted_difference.right_empty
-  { α: Sort _ }
-  [Ord α] [TotalOrder α]:
+def sorted_difference.right_empty:
   (xs: List α) -> sorted_difference xs [] = xs := by
   intros xs
   cases xs <;> rfl
 
-def sorted_difference.if_lt
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_difference.if_lt:
   (x y: α) ->
   (xs ys: List α) ->
   (x_le_y: x < y) ->
@@ -51,9 +46,7 @@ def sorted_difference.if_lt
   rw [sorted_induction.if_lt]
   assumption
 
-def sorted_difference.if_gt
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_difference.if_gt:
   (x y: α) ->
   (xs ys: List α) ->
   (x_le_y: x > y) ->
@@ -63,9 +56,7 @@ def sorted_difference.if_gt
   rw [sorted_induction.if_gt]
   assumption
 
-def sorted_difference.if_eq
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_difference.if_eq:
   (x y: α) ->
   (xs ys: List α) ->
   (x_le_y: x = y) ->
@@ -75,9 +66,7 @@ def sorted_difference.if_eq
   rw [sorted_induction.if_eq]
   assumption
 
-def sorted_difference.refl
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_difference.refl:
   (xs: List α) -> sorted_difference xs xs = [] := by
   intro xs
   induction xs with
@@ -87,9 +76,7 @@ def sorted_difference.refl
     congr
     rfl
 
-def sorted_difference.contains
-  { α: Sort _ }
-  [Ord α] [tle: TotalOrder α]:
+def sorted_difference.contains:
   ∀{xs ys: List α},
   ∀{z}, z ∈ sorted_difference xs ys -> z ∈ xs := by
   apply sorted_induction'
@@ -98,7 +85,7 @@ def sorted_difference.contains
     contradiction
   }
   {
-    intros x xs z z_in_difference
+    intros
     assumption
   }
   {
@@ -126,15 +113,13 @@ def sorted_difference.contains
     assumption
   }
 
-def sorted_difference.sorted
-  { a: Sort _ }
-  [Ord α] [TotalOrder α]:
+def sorted_difference.sorted:
   (xs ys: List α) ->
   is_sorted xs ->
   is_sorted (sorted_difference xs ys) := by
   apply sorted_induction'
   {
-    intro ys sorted_xs
+    intro _ _
     trivial
   }
   {
@@ -171,8 +156,6 @@ def sorted_difference.sorted
   }
 
 def SortedList.difference
-  [Ord α] [TotalOrder α]
   (xs ys: SortedList α) : SortedList α := SortedList.mk (sorted_difference xs.items ys.items) <| by
   apply sorted_difference.sorted
-  assumption
   exact xs.is_sorted

@@ -105,8 +105,8 @@ instance nat.prime.instDec (a: nat) : Decidable a.prime := by
   exact .isTrue h
   apply nat.prime.search a a h
   intro k a_lt_k k_dvd_a
-  have := nat.dvd.le (lt_trans (nat.lt_succ_self _) h) k_dvd_a
-  have := not_lt_and_ge a_lt_k this
+  have := nat.dvd.le (lt_trans nat.lt_succ_self h) k_dvd_a
+  have := not_lt_of_le this
   contradiction
 
 def nat.first_factor.find (a: nat) (current: nat) (fuel: nat) : nat :=
@@ -177,7 +177,6 @@ def nat.first_factor.find.is_smallest_factor (a current fuel: nat) :
       | inr h =>
         unfold find
         rw [h]
-        apply le_refl
     | .zero =>
     apply zero_le
   | succ fuel ih =>
@@ -189,7 +188,7 @@ def nat.first_factor.find.is_smallest_factor (a current fuel: nat) :
       cases (inferInstance: Decidable (current ≤ k)) with
       | isTrue => assumption
       | isFalse h =>
-        have k_lt_current := not_ge_implies_lt h
+        have k_lt_current := lt_of_not_le h
         apply False.elim
         have := prev k k_gt_1 k_lt_current
         contradiction
@@ -228,7 +227,7 @@ def nat.first_factor.is_smallest_factor (a: nat) : 1 < a -> ∀k, 1 < k -> k ∣
     match b with
     | 0 | 1 => contradiction
     | .succ (.succ b) =>
-      have := nat.not_lt_zero b_lt_two
+      have := nat.not_lt_zero <| nat.lt_of_succ_lt_succ <| nat.lt_of_succ_lt_succ b_lt_two
       contradiction
   }
   repeat assumption
@@ -263,7 +262,7 @@ def nat.first_factor.is_prime (a: nat) : 1 < a -> a.first_factor.prime := by
     cases (inferInstance: Decidable (0 < first_factor a)) with
     | isTrue => assumption
     | isFalse h =>
-      have := not_lt_implies_ge h
+      have := le_of_not_lt h
       rw [nat.le_zero this] at is_factor
       rw [dvd.eq_zero_of_by_zero is_factor] at one_lt_a
       contradiction

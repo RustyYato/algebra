@@ -128,7 +128,7 @@ def fract.to_rat (r: fract) : rat := rat.mk
         contradiction
       | inr d_lt_gcd =>
         simp only at d_lt_gcd
-        apply not_lt_and_ge d_lt_gcd
+        apply not_lt_of_le _ d_lt_gcd
         apply nat.dvd.le _ (nat.gcd.dvd_right n den)
         assumption
       )
@@ -370,7 +370,7 @@ def fract.to_rat_to_simple (a: fract) : a.to_rat.to_simple.equiv a := by
           contradiction
         | inr h =>
           apply False.elim
-          apply not_lt_and_ge h
+          apply not_lt_of_le _ h
           apply nat.dvd.le
           assumption
           apply nat.gcd.dvd_right
@@ -390,7 +390,7 @@ def fract.to_rat_to_simple (a: fract) : a.to_rat.to_simple.equiv a := by
           contradiction
         | inr h =>
           apply False.elim
-          apply not_lt_and_ge h
+          apply not_lt_of_le _ h
           apply nat.dvd.le
           assumption
           apply nat.gcd.dvd_right
@@ -417,7 +417,7 @@ def fract.to_rat_to_simple (a: fract) : a.to_rat.to_simple.equiv a := by
       contradiction
     | inr h =>
       apply False.elim
-      apply not_lt_and_ge h
+      apply not_lt_of_le _ h
       apply nat.dvd.le
       apply nat.zero_lt_succ
       apply nat.gcd.dvd_right

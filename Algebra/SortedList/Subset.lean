@@ -1,5 +1,7 @@
 import Algebra.SortedList.Basic
 
+variable [LE α] [LT α] [IsLinearOrder α] [@DecidableRel α (· ≤ ·)] [DecidableEq α]
+
 -- if as is a subset of bs
 def List.sorted_subset (as bs: List α) : Prop := match as with
   | [] => True
@@ -149,7 +151,7 @@ def List.sorted_subset.pop_left
   exact (push_pop as bs).right a as_sub_bs
 
 def List.sorted_subset.proof
-  [Ord α] [TotalOrder α]:
+  [LE α] [DecidableEq α]:
   ∀(as bs: List α),
   is_sorted bs ->
   as.sorted_subset bs ->
@@ -191,17 +193,15 @@ def List.sorted_subset.proof
       exact aas_in_bs.pop_left
       assumption
 
-def List.sorted_subset.first_not_picked
-  [Ord α] [tle: TotalOrder α]
-  : ∀(a b: α) (as bs: List α),
+def List.sorted_subset.first_not_picked: ∀(a b: α) (as bs: List α),
      a ≠ b
   -> (a::as).sorted_subset (b::bs)
   -> is_sorted (b::bs)
   -> b ≤ a := by
     intro a b as bs a_ne_b as_sub_bs sorted_bs
-    match tle.decide a b with
+    match compare a b with
     | .Gt a_ge_b =>
-      apply tle.le_of_lt
+      apply le_of_lt
       assumption
     | .Eq a_eq_b => contradiction
     | .Lt a_le_b =>
@@ -217,14 +217,13 @@ def List.sorted_subset.first_not_picked
           intro y y_in_bs
           have := sorted_bs.first
           have := this y y_in_bs
-          apply tle.ne_of_lt
-          apply tle.lt_of_lt_of_le <;> assumption
+          apply ne_of_lt
+          apply lt_of_lt_of_le <;> assumption
         have a_in_bs := List.sorted_subset.proof (a::as) bs sorted_bs.pop aas_sub_bs a (.head _)
         have := this a a_in_bs
         contradiction
 
 def List.sorted_subset.trans
-  [Ord α] [tle: TotalOrder α]
   (as bs cs: List α) :
   is_sorted as ->
   is_sorted bs ->
@@ -295,15 +294,15 @@ def List.sorted_subset.trans
           have ⟨ a_ne_b, as_sub_bs ⟩ := h
           have b_le_a := List.sorted_subset.first_not_picked a b as bs a_ne_b (by apply as_sub_bs.push_right) sorted_bs
           have c_le_b := List.sorted_subset.first_not_picked b c bs cs b_ne_c (by apply bbs_sub_cs.push_right) sorted_cs
-          have c_lt_b := tle.lt_of_le_and_ne c_le_b b_ne_c.symm
-          have b_lt_a := tle.lt_of_le_and_ne b_le_a a_ne_b.symm
+          have c_lt_b := lt_of_le_of_ne c_le_b b_ne_c.symm
+          have b_lt_a := lt_of_le_of_ne b_le_a a_ne_b.symm
           apply And.intro
-          apply tle.ne_of_gt
-          apply tle.lt_trans <;> assumption
+          symm
+          apply ne_of_lt
+          apply lt_trans <;> assumption
           exact ih (a::as) bs sorted_as sorted_bs.pop sorted_cs.pop as_sub_bs bbs_sub_cs.pop_left
 
 def List.sorted_subset.antisymm
-  [Ord α] [TotalOrder α]
   (as bs: List α) :
   is_sorted as ->
   is_sorted bs ->
@@ -335,12 +334,12 @@ def List.sorted_subset.antisymm
           have := this sorted_bs sorted_as.pop sorted_bs.pop as_sub_bs
           have ge := List.sorted_subset.len_check (b::bs) bs this
           have lt : bs.len < (b::bs).len := by apply nat.lt_succ_self
-          have := nat.not_lt_and_ge lt ge
+          have := not_lt_of_le ge lt
           contradiction
       | inr h =>
           have := bs_sub_as.trans bs
           have := this sorted_bs sorted_as sorted_bs.pop h.right
           have ge := List.sorted_subset.len_check (b::bs) bs this
           have lt : bs.len < (b::bs).len := by apply nat.lt_succ_self
-          have := nat.not_lt_and_ge lt ge
+          have := not_lt_of_le ge lt
           contradiction

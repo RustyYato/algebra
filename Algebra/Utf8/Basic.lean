@@ -394,11 +394,7 @@ def Nat.or_le_or  (a b k: Nat) : a ≤ b -> a ||| k ≤ b ||| k := by
 
 
 
-
-
     sorry
-
-
 
 
 
@@ -445,8 +441,6 @@ def String.utf8EncodeChar.IsValidUtf8 (c: Char) : IsValidUtf8 (String.utf8Encode
     dsimp
     apply @Nat.le_trans _  (63 ||| 128)
     sorry
-
-
 
 
 

@@ -65,7 +65,7 @@ def nat.find_divisor (a b: nat) (n: nat) (prev: ∀k, n < k -> a * k ≠ b) : Fi
           assumption
          | .succ k =>
           apply prev
-          rfl
+          exact zero_lt_succ
         | .succ n =>
           apply nat.find_divisor a b n
           intro k n_lt_k
@@ -75,7 +75,7 @@ def nat.find_divisor (a b: nat) (n: nat) (prev: ∀k, n < k -> a * k ≠ b) : Fi
             contradiction
           | .succ k =>
             match lt_or_eq_of_le <| le_of_lt_succ n_lt_k with
-            | .inl n_lt_k => exact prev k.succ n_lt_k
+            | .inl n_lt_k => exact prev k.succ (succ_lt_succ n_lt_k)
             | .inr n_eq_k =>
               rw [←n_eq_k]
               assumption
@@ -98,7 +98,7 @@ instance nat.dvd.dec (a b: nat) : Decidable (a ∣ b) := by
       rw [zero_eq, zero_mul] at ak_eq_b
       contradiction
     | .succ a =>
-    have := nat.mul.ge k.succ a.succ rfl
+    have := nat.mul.ge k.succ a.succ zero_lt_succ
     rw [mul.comm] at this
     rw [←ak_eq_b] at b_lt_k
     exact not_lt_of_le this b_lt_k
@@ -127,7 +127,7 @@ def nat.dvd.le { a b: nat } ( b_nz: 0 < b ) (a_dvd_b: a ∣ b) : a ≤ b := by
     rw [zero_eq, zero_mul] at prf
     contradiction
   | .succ a =>
-    have := mul.ge a.succ k.succ rfl
+    have := mul.ge a.succ k.succ zero_lt_succ
     rw [prf] at this
     exact this
 
@@ -146,8 +146,8 @@ def nat.dvd.antisymm { a b: nat } : a ∣ b -> b ∣ a -> a = b := by
     rfl
   | .succ a =>
   apply le_antisymm
-  exact nat.dvd.le rfl a_dvd_b
-  exact nat.dvd.le rfl b_dvd_a
+  exact nat.dvd.le zero_lt_succ a_dvd_b
+  exact nat.dvd.le zero_lt_succ b_dvd_a
 
 def nat.dvd.add { a b c: nat } : a ∣ (b + c) -> a ∣ b -> a ∣ c := by
   intro a_dvd_bc a_dvd_b
@@ -189,9 +189,9 @@ def nat.dvd.mod_eq_zero: ∀{ a b: nat }, b ∣ a -> a % b = 0 := by
     cases a with
     | zero => rfl
     | succ a =>
-      apply False.elim <| not_lt_and_ge a_lt_b _
+      apply False.elim <| not_lt_of_le _ a_lt_b
       exact nat.dvd.le zero_lt_succ b_dvd_a
-    apply zero_lt_of_lt a_lt_b
+    apply pos_of_lt a_lt_b
     assumption
   }
   {
@@ -301,68 +301,68 @@ def nat.dvd.of_div : ∀(a b k: nat), k ∣ a -> a ∣ b -> (a / k) ∣ (b / k) 
   apply zero_lt_succ
   apply zero_lt_succ
 
-def nat.div.compare_strict (a b c: nat) :
-  0 < c ->
-  c ∣ a ->
-  c ∣ b ->
-  compare (a / c) (b / c) = compare a b := by
-  intro c_pos
-  apply nat.div_mod.induction (fun a c _ => ∀b, c ∣ a -> c ∣ b -> compare (a / c) (b / c) = compare a b) _ _ a c c_pos
-  all_goals clear a b c_pos c
-  · intro a c a_lt_c b c_dvd_a c_dvd_b
-    have : 0 < c := lt_of_le_of_lt (nat.zero_le _) a_lt_c
-    cases a with
-    | succ a =>
-      have := fun h => nat.dvd.le h c_dvd_a
-      have := this nat.zero_lt_succ
-      have := not_lt_of_le this a_lt_c
-      contradiction
-    | zero =>
-      rw [nat.zero_eq, nat.zero_div]
-      rw [nat.div.spec]
-      split
-      · cases b with
-        | succ b =>
-          have := fun h => nat.dvd.le h c_dvd_b
-          have := this nat.zero_lt_succ
-          have := not_lt_of_le this (by assumption)
-          contradiction
-        | zero =>
-          rfl
-      · rename_i b_ge_c
-        have := le_of_not_lt b_ge_c
-        have := lt_of_lt_of_le (by assumption) this
-        rw [nat.zero_eq] at this
-        rw [this]
-        rfl
-      · assumption
-  · intro a c c_pos a_ge_c ih b c_dvd_a c_dvd_b
-    rw [nat.div.if_ge]
-    · cases b with
-      | zero =>
-        rw [nat.zero_eq, nat.zero_div]
-        rw [swap_compare rfl, nat.zero_lt_succ, Ordering.swap]
-        dsimp
-        apply Eq.symm
-        apply compare_of_gt
-        apply lt_of_lt_of_le c_pos
-        assumption
-      | succ b =>
-        rw [nat.div.spec b.succ]
-        split
-        rw [swap_compare nat.zero_lt_succ, Ordering.swap]
-        dsimp
-        apply Eq.symm
-        apply compare_of_gt
-        apply lt_of_lt_of_le <;> assumption
-        have c_le_bsucc := le_of_not_lt (by assumption)
-        rw [nat.compare.succ]
-        rw [ih]
-        · rw [nat.sub.compare_strict]
-          assumption
-          assumption
-        exact dvd.sub a_ge_c c_dvd_a
-        apply dvd.sub c_le_bsucc c_dvd_b
-        assumption
-    · assumption
-    · assumption
+-- def nat.div.compare_strict (a b c: nat) :
+--   0 < c ->
+--   c ∣ a ->
+--   c ∣ b ->
+--   compare (a / c) (b / c) = compare a b := by
+--   intro c_pos
+--   apply nat.div_mod.induction (fun a c _ => ∀b, c ∣ a -> c ∣ b -> compare (a / c) (b / c) = compare a b) _ _ a c c_pos
+--   all_goals clear a b c_pos c
+--   · intro a c a_lt_c b c_dvd_a c_dvd_b
+--     have : 0 < c := lt_of_le_of_lt (nat.zero_le _) a_lt_c
+--     cases a with
+--     | succ a =>
+--       have := fun h => nat.dvd.le h c_dvd_a
+--       have := this nat.zero_lt_succ
+--       have := not_lt_of_le this a_lt_c
+--       contradiction
+--     | zero =>
+--       rw [nat.zero_eq, nat.zero_div]
+--       rw [nat.div.spec]
+--       split
+--       · cases b with
+--         | succ b =>
+--           have := fun h => nat.dvd.le h c_dvd_b
+--           have := this nat.zero_lt_succ
+--           have := not_lt_of_le this (by assumption)
+--           contradiction
+--         | zero =>
+--           rfl
+--       · rename_i b_ge_c
+--         have := le_of_not_lt b_ge_c
+--         have := lt_of_lt_of_le (by assumption) this
+--         rw [nat.zero_eq] at this
+--         rw [this]
+--         rfl
+--       · assumption
+--   · intro a c c_pos a_ge_c ih b c_dvd_a c_dvd_b
+--     rw [nat.div.if_ge]
+--     · cases b with
+--       | zero =>
+--         rw [nat.zero_eq, nat.zero_div]
+--         rw [swap_compare rfl, nat.zero_lt_succ, Ordering.swap]
+--         dsimp
+--         apply Eq.symm
+--         apply compare_of_gt
+--         apply lt_of_lt_of_le c_pos
+--         assumption
+--       | succ b =>
+--         rw [nat.div.spec b.succ]
+--         split
+--         rw [swap_compare nat.zero_lt_succ, Ordering.swap]
+--         dsimp
+--         apply Eq.symm
+--         apply compare_of_gt
+--         apply lt_of_lt_of_le <;> assumption
+--         have c_le_bsucc := le_of_not_lt (by assumption)
+--         rw [nat.compare.succ]
+--         rw [ih]
+--         · rw [nat.sub.compare_strict]
+--           assumption
+--           assumption
+--         exact dvd.sub a_ge_c c_dvd_a
+--         apply dvd.sub c_le_bsucc c_dvd_b
+--         assumption
+--     · assumption
+--     · assumption

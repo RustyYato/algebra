@@ -233,7 +233,6 @@ def InitialSeg.surj_or_principal
   have ⟨z, prf⟩ := h x
   rw [ClassicLogic.not_iff] at prf
 
-
   -- apply PSum.inr
   sorry
 
