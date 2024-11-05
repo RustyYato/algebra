@@ -140,7 +140,7 @@ def nat.sub.le_left (a b c: nat) : a ≤ b -> a - c ≤ b - c := by
     match b with
     | succ b =>
     rw [succ_sub_succ, succ_sub_succ]
-    exact ih a b a_le_b
+    exact ih a b (nat.le_of_succ_le_succ a_le_b)
 
 #print axioms nat.sub.le_left
 
@@ -183,6 +183,7 @@ def nat.sub.lt { a b: nat }: a < b -> a - b = 0 := by
     | succ a =>
       rw [succ_sub_succ]
       apply ih
+      apply nat.lt_of_succ_lt_succ
       assumption
 
 #print axioms nat.sub.lt
@@ -199,6 +200,7 @@ def nat.sub_sub (a b c: nat) : c ≤ b -> a - (b - c) = (a + c) - b := by
     | succ c =>
       rw [succ_sub_succ, add_succ, succ_sub_succ]
       apply ih
+      apply nat.le_of_succ_le_succ
       exact c_le_b
 
 #print axioms nat.sub_sub
@@ -218,7 +220,7 @@ def nat.sub.eq_zero {a b: nat} : a - b = 0 ↔ a ≤ b := by
       intro
       contradiction
       intro h
-      have := not_lt_and_ge nat.zero_lt_succ h
+      have := not_lt_of_le h
       contradiction
     | succ b =>
       rw [succ_sub_succ]
@@ -227,15 +229,15 @@ def nat.sub.eq_zero {a b: nat} : a - b = 0 ↔ a ≤ b := by
       apply succ_le_succ
       exact ih.mp h
       intro h
-      exact ih.mpr h
+      exact ih.mpr (nat.le_of_succ_le_succ h)
 
 #print axioms nat.sub.eq_zero
 
-def nat.sub.compare_strict (a b c: nat) :
-  c ≤ a ->
-  c ≤ b ->
-  compare (a - c) (b - c) = compare a b := by
-  intro c_le_a c_le_b
-  rw [←nat.add.compare_right (a - c) (b - c) c, nat.sub_add_inv, nat.sub_add_inv]
-  assumption
-  assumption
+-- def nat.sub.compare_strict (a b c: nat) :
+--   c ≤ a ->
+--   c ≤ b ->
+--   compare (a - c) (b - c) = compare a b := by
+--   intro c_le_a c_le_b
+--   rw [←nat.add.compare_right (a - c) (b - c) c, nat.sub_add_inv, nat.sub_add_inv]
+--   assumption
+--   assumption

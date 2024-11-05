@@ -1,92 +1,165 @@
-import Algebra.Order.Basic
+import Algebra.Order.Defs
 import Algebra.Int.Basic
 import Algebra.Nat.Cmp
 
-@[simp]
-def int.cmp (a b: int): Ordering := match a, b with
-  | .zero, .zero => .eq
-  | .pos_succ _, .zero => .gt
-  | .neg_succ _, .zero => .lt
-  | .zero, .pos_succ _ => .lt
-  | .zero, .neg_succ _ => .gt
-  | .neg_succ _, .pos_succ _ => .lt
-  | .pos_succ _, .neg_succ _ => .gt
-  | .pos_succ a, .pos_succ b => compare a b
-  | .neg_succ a, .neg_succ b => compare b a
+inductive int.LT : int -> int -> Prop where
+| neg_pos: int.LT (.neg_succ _) (.pos_succ _)
+| zero_pos: int.LT .zero (.pos_succ _)
+| neg_zero: int.LT (.neg_succ _) .zero
+| neg : a < b -> int.LT (.neg_succ b) (.neg_succ a)
+| pos : a < b -> int.LT (.pos_succ a) (.pos_succ b)
 
-instance int.instOrd : Ord int := ⟨ int.cmp ⟩
+inductive int.LE : int -> int -> Prop where
+| neg_pos: int.LE (.neg_succ _) (.pos_succ _)
+| zero_pos: int.LE .zero (.pos_succ _)
+| neg_zero: int.LE (.neg_succ _) .zero
+| zero : int.LE .zero .zero
+| neg : a ≤ b -> int.LE (.neg_succ b) (.neg_succ a)
+| pos : a ≤ b -> int.LE (.pos_succ a) (.pos_succ b)
 
-def int.cmp.def { a b: int } : compare a b = a.cmp b := rfl
+instance : LT int := ⟨int.LT⟩
+instance : LE int := ⟨int.LE⟩
 
-instance int.instTotalOrder : TotalOrder int where
-  compare_transitive := by
-    intro a b c o a_cmp_b b_cmp_c
+instance : IsLinearOrder int where
+  lt_iff_le_and_not_le := by
+    intro a b
     cases a <;> cases b
-    any_goals assumption
-    any_goals (simp [int.instOrd] at a_cmp_b)
-    any_goals try (
-      cases a_cmp_b
-      match c with
-      | .pos_succ _ => (rfl; done)
-    )
-    any_goals try (
-      cases a_cmp_b
-      match c with
-      | .neg_succ _ => (rfl; done)
-    )
-    {
-      rename_i a b
-      cases c
-      any_goals assumption
-      simp [int.instOrd]
-      apply compare_transitive <;> assumption
-    }
-    {
-      rename_i a b
-      cases c
-      any_goals assumption
-      simp [int.instOrd]
-      apply compare_transitive <;> assumption
-    }
-  compare_eq_refl := by
-    intro a
-    cases a
+    any_goals
+      apply Iff.intro
+      try
+        intro
+        contradiction
+      try
+        intro ⟨_,_⟩
+        contradiction
+    any_goals
+      try intro ⟨h₀,h₁⟩
+    any_goals
+      intro h
+      apply And.intro
+    any_goals apply int.LE.zero_pos
+    any_goals apply int.LE.neg_pos
+    any_goals apply int.LE.neg_zero
+    any_goals apply int.LT.zero_pos
+    any_goals apply int.LT.neg_pos
+    any_goals apply int.LT.neg_zero
+    any_goals
+      intro
+      contradiction
+    any_goals cases h
+    any_goals cases h₀
+    any_goals apply int.LE.pos
+    any_goals apply int.LE.neg
+    any_goals apply int.LT.pos
+    any_goals apply int.LT.neg
+    any_goals
+      apply le_of_lt
+      assumption
+    intro h
+    cases h
+    apply not_lt_of_le (α:=nat) <;> assumption
+    rename_i h
+    cases lt_or_eq_of_le h <;> rename_i h
+    assumption
+    subst h
+    exfalso
+    apply h₁
+    apply int.LE.pos
     rfl
-    simp [int.instOrd]; apply compare_eq_refl
-    simp [int.instOrd]; apply compare_eq_refl
-  eq_of_compare_eq := by
-    intro a b a_eq_b
-    cases a <;> cases b
+    intro h
+    cases h
+    apply not_lt_of_le (α:=nat) <;> assumption
+    rename_i h
+    cases lt_or_eq_of_le h <;> rename_i h
+    assumption
+    subst h
+    exfalso
+    apply h₁
+    apply int.LE.neg
+    rfl
+  le_antisymm := by
+    intro a b ab ba
+    induction ab
     any_goals contradiction
     rfl
     congr
-    apply eq_of_compare_eq <;> assumption
+    cases ba
+    apply le_antisymm <;> assumption
     congr
-    simp [int.instOrd] at a_eq_b
-    exact (eq_of_compare_eq a_eq_b).symm
-  compare_antisymm := by
+    cases ba
+    apply le_antisymm <;> assumption
+  le_total := by
     intro a b
     cases a <;> cases b
-    any_goals rfl
-    repeat (simp [int.instOrd]; apply compare_antisymm)
+    apply Or.inl; exact .zero
+    apply Or.inl
+    exact .zero_pos
+    apply Or.inr
+    exact .neg_zero
+    apply Or.inr
+    exact .zero_pos
+    rename_i a b
+    cases le_total a b
+    apply Or.inl; exact .pos (by assumption)
+    apply Or.inr; exact .pos (by assumption)
+    apply Or.inr .neg_pos
+    apply Or.inl .neg_zero
+    apply Or.inl .neg_pos
+    rename_i a b
+    cases le_total a b
+    apply Or.inr; exact .neg (by assumption)
+    apply Or.inl; exact .neg (by assumption)
+  le_complete := by
+    intro a b
+    cases a <;> cases b
+    apply Or.inl; exact .zero
+    apply Or.inl
+    exact .zero_pos
+    apply Or.inr; intro h; contradiction
+    apply Or.inr; intro h; contradiction
+    rename_i a b
+    cases le_complete a b
+    apply Or.inl; exact .pos (by assumption)
+    apply Or.inr; intro h; cases h; contradiction
+    apply Or.inr; intro h; contradiction
+    apply Or.inl .neg_zero
+    apply Or.inl .neg_pos
+    rename_i a b
+    cases le_complete b a
+    apply Or.inl; exact .neg (by assumption)
+    apply Or.inr; intro h; cases h; contradiction
+  le_trans := by
+    intro a b c ab bc
+    induction ab
+    cases bc
+    exact .neg_pos
+    cases bc
+    exact .zero_pos
+    cases bc
+    exact .neg_pos
+    exact .neg_zero
+    assumption
+    cases bc
+    exact .neg_pos
+    exact .neg_zero
+    apply int.LE.neg
+    apply le_trans <;> assumption
+    cases bc
+    apply int.LE.pos
+    apply le_trans <;> assumption
 
+def int.neg_lt_zero : int.neg_succ n < 0 := .neg_zero
+def int.pos_lt_zero : 0 < int.pos_succ n := .zero_pos
+def int.neg_lt_pos : int.neg_succ n < int.pos_succ m := .neg_pos
 
-#print axioms int.instTotalOrder
-
-def int.neg_lt_zero : int.neg_succ n < 0 := rfl
-def int.pos_gt_zero : int.pos_succ n > 0 := rfl
-def int.neg_lt_pos : int.neg_succ n < int.pos_succ m := rfl
-
-def int.of_nat.compare (a b: nat) : compare (int.of_nat a) (int.of_nat b) = compare a b := by
-  cases a with
-  | zero => cases b <;> rfl
-  | succ a =>
-    cases b with
-    | zero => rfl
-    | succ b =>
-      rw [←int.of_nat.pos, ←int.of_nat.pos]
-      rfl
+def int.neg_le_zero : int.neg_succ n ≤ 0 := .neg_zero
+def int.zero_le_pos : 0 ≤ int.pos_succ n := .zero_pos
+def int.neg_le_pos : int.neg_succ n ≤ int.pos_succ m := .neg_pos
 
 def int.lt.pos_nat (a: nat) : 0 < a -> 0 < int.of_nat a := by
   intro h
-  cases a <;> trivial
+  cases h
+  exact .zero_pos
+
+def int.cast_lt : a < b -> int.LT a b := id
+def int.cast_le : a ≤ b -> int.LE a b := id

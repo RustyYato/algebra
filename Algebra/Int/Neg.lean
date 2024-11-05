@@ -31,38 +31,45 @@ def int.neg.inj: ∀{ a b: int }, -a = -b -> a = b := by
 
 #print axioms int.neg.inj
 
-def int.neg.swap_cmp : ∀{ a b: int }, compare (-b) (-a) = compare a b := by
-  intro a b
-  cases a <;> cases b
-  any_goals apply compare_antisymm
-  repeat rfl
-
-#print axioms int.neg.swap_cmp
-
 def int.neg.swap_lt: ∀{ a b: int }, a < b ↔ -b < -a := by
+  suffices ∀{a b: int}, a < b -> -b < -a by
+    intro a b
+    apply Iff.intro this
+    intro h
+    have := this h
+    rw [neg_neg, neg_neg] at this
+    exact this
   intros a b
-  apply Iff.intro
   intro a_lt_b
-  rw [TotalOrder.unfold_lt]
-  rw [int.neg.swap_cmp]
+  induction a_lt_b
+  exact .neg_pos
+  exact .neg_zero
+  exact .zero_pos
+  apply int.LT.pos
   assumption
-  intro a_lt_b
-  rw [TotalOrder.unfold_lt] at a_lt_b
-  rw [int.neg.swap_cmp] at a_lt_b
+  apply int.LT.neg
   assumption
 
 #print axioms int.neg.swap_lt
 
 def int.neg.swap_le: ∀{ a b: int }, a ≤ b ↔ -b ≤ -a := by
+  suffices ∀{a b: int}, a ≤ b -> -b ≤ -a by
+    intro a b
+    apply Iff.intro this
+    intro h
+    have := this h
+    rw [neg_neg, neg_neg] at this
+    exact this
   intros a b
-  apply Iff.intro
-  intro a_le_b
-  rw [TotalOrder.unfold_le]
-  rw [int.neg.swap_cmp]
+  intro a_lt_b
+  induction a_lt_b
+  exact .neg_pos
+  exact .neg_zero
+  exact .zero_pos
+  exact .zero
+  apply int.LE.pos
   assumption
-  intro a_le_b
-  rw [TotalOrder.unfold_le] at a_le_b
-  rw [int.neg.swap_cmp] at a_le_b
+  apply int.LE.neg
   assumption
 
 #print axioms int.neg.swap_le

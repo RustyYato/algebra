@@ -34,10 +34,8 @@ def int.signum.neg (i: int) : i.neg.signum = i.signum.neg := by
 def int.abs.ge (i: int) : i ≤ i.abs := by
   cases i
   trivial
-  apply Or.inr
-  apply compare_eq_refl
-  apply Or.inl
   rfl
+  exact .neg_pos
 
 #print axioms int.abs.ge
 

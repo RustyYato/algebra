@@ -1,3 +1,5 @@
+import Algebra.Function.Basic
+
 class IsLinearOrder (α: Type _) [LT α] [LE α]: Prop where
   lt_iff_le_and_not_le: ∀{a b: α}, a < b ↔ a ≤ b ∧ ¬b ≤ a
   le_antisymm: ∀{a b: α}, a ≤ b -> b ≤ a -> a = b
@@ -12,6 +14,62 @@ def le_antisymm: a ≤ b -> b ≤ a -> a = b := IsLinearOrder.le_antisymm
 def le_total: ∀a b: α, a ≤ b ∨ b ≤ a := IsLinearOrder.le_total
 def le_complete: ∀a b: α, a ≤ b ∨ ¬(a ≤ b) := IsLinearOrder.le_complete
 def le_trans: a ≤ b -> b ≤ c -> a ≤ c := IsLinearOrder.le_trans
+
+def IsLinearOrder.transfer (α β)
+  [LT α] [LT β] [LE α] [LE β]
+  [IsLinearOrder α]
+  (f: β -> α)
+  (finj: Function.Injective f)
+  (lt_iff: ∀{x y: β}, x < y ↔ f x < f y)
+  (le_iff: ∀{x y: β}, x ≤ y ↔ f x ≤ f y):
+  IsLinearOrder β where
+  lt_iff_le_and_not_le := by
+    intro a b
+    apply Iff.trans lt_iff
+    apply Iff.trans (lt_iff_le_and_not_le (α := α))
+    apply Iff.intro
+    intro ⟨h₀,h₁⟩
+    apply And.intro
+    apply le_iff.mpr
+    assumption
+    intro g
+    apply h₁
+    apply le_iff.mp
+    assumption
+    intro ⟨h₀,h₁⟩
+    apply And.intro
+    apply le_iff.mp
+    assumption
+    intro g
+    apply h₁
+    apply le_iff.mpr
+    assumption
+  le_antisymm := by
+    intro a b ab ba
+    apply finj
+    apply le_antisymm
+    apply le_iff.mp
+    assumption
+    apply le_iff.mp
+    assumption
+  le_total := by
+    intro a b
+    cases le_total (f a) (f b)
+    apply Or.inl; apply le_iff.mpr; assumption
+    apply Or.inr; apply le_iff.mpr; assumption
+  le_complete := by
+    intro a b
+    cases le_complete (f a) (f b)
+    apply Or.inl; apply le_iff.mpr; assumption
+    apply Or.inr; intro g; have := le_iff.mp g; contradiction
+  le_trans := by
+    intro a b c ab bc
+    apply le_iff.mpr
+    apply le_trans
+    apply le_iff.mp
+    assumption
+    apply le_iff.mp
+    assumption
 
 def le_of_lt: a < b -> a ≤ b := fun h => (lt_iff_le_and_not_le.mp h).left
 def lt_of_le_of_not_le : a ≤ b -> ¬(b ≤ a) -> a < b := (lt_iff_le_and_not_le.mpr ⟨·, ·⟩)
@@ -70,6 +128,8 @@ def le_of_not_lt : ¬(a < b) -> b ≤ a := by
   apply le_of_eq; symm
   cases lt_or_eq_of_le h <;> trivial
 def le_of_not_le : ¬(a ≤ b) -> b ≤ a := le_of_lt ∘ lt_of_not_le
+
+def lt_asymm : a < b -> b < a -> False := (lt_irrefl <| lt_trans · ·)
 
 class IsDecidableLinearOrder (α: Type _) [LE α] [LT α] [Min α] [Max α] extends IsLinearOrder α where
   decLE (a b: α): Decidable (a ≤ b)

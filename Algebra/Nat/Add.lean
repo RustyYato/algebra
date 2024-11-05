@@ -91,47 +91,101 @@ def nat.add.eq_zero_of_cancel_right (a b: nat) : a = a + b -> b = 0 := by
 
 #print axioms nat.add.eq_zero_of_cancel_right
 
-def nat.add.compare_left (a b k: nat) : compare (k + a) (k + b) = compare a b := by
-  induction k with
-  | zero => rfl
-  | succ k ih => rw [succ_add, succ_add, compare.succ, ih]
+def nat.add.le_left_iff {a b k: nat} : a ≤ b ↔ k + a ≤ k + b := by
+  apply Iff.intro
+  · intro h
+    induction h generalizing k with
+    | zero =>
+      rw [nat.add_zero]
+      apply nat.add.le_left
+    | succ a b _ ih =>
+      rw [nat.add_succ, nat.add_succ]
+      apply nat.succ_le_succ
+      apply ih
+  · intro h
+    induction k generalizing a b with
+    | zero =>
+      rw [nat.zero_eq, nat.zero_add, nat.zero_add] at h
+      assumption
+    | succ k ih =>
+      apply nat.le_of_succ_le_succ
+      apply ih
+      rw [nat.add_succ, nat.add_succ, ←nat.succ_add, ←nat.succ_add]
+      exact h
 
-#print axioms nat.add.compare_left
-
-def nat.add.compare_right (a b k: nat) : compare (a + k) (b + k) = compare a b := by
-  rw [comm _ k, comm _ k, compare_left]
-
-#print axioms nat.add.compare_right
-
-def nat.add.compare_both (a b c d: nat) (o: Ordering) :
-  compare a c = o ->
-  compare b d = o ->
-  compare (a + b) (c + d) = o := by
-  intro h g
-  apply compare_transitive
-  rw [compare_left]
+def nat.add.lt_left_iff {a b k: nat} : a < b ↔ k + a < k + b := by
+  apply Iff.intro
+  intro h
+  have := (add.le_left_iff (k := k)).mp (succ_le_of_lt h)
+  rw [nat.add_succ] at this
+  apply lt_of_succ_le
   assumption
-  rw [compare_right]
+  intro h
+  have := succ_le_of_lt h
+  rw [←nat.add_succ] at this
+  have := add.le_left_iff.mpr this
+  apply lt_of_succ_le
   assumption
 
-#print axioms nat.add.compare_both
+def nat.add.le_right_iff {a b k: nat} : a ≤ b ↔ a + k ≤ b + k := by
+  rw [add.comm _ k, add.comm _ k]
+  apply nat.add.le_left_iff
+
+def nat.add.lt_right_iff {a b k: nat} : a < b ↔ a + k < b + k := by
+  rw [add.comm _ k, add.comm _ k]
+  apply nat.add.lt_left_iff
+
+def nat.add_lt_of_lt_of_le (a b c d: nat) :
+  a < c ->
+  b ≤ d ->
+  a + b < c + d := by
+  intro ac bd
+  apply lt_of_lt_of_le
+  apply nat.add.lt_right_iff.mp
+  assumption
+  apply nat.add.le_left_iff.mp
+  assumption
+
+def nat.add_lt_of_le_of_lt (a b c d: nat) :
+  a ≤ c ->
+  b < d ->
+  a + b < c + d := by
+  intro ac bd
+  apply lt_of_lt_of_le
+  apply nat.add.lt_left_iff.mp
+  assumption
+  apply nat.add.le_right_iff.mp
+  assumption
+
+def nat.add.le {a b c d: nat} :
+  a ≤ c ->
+  b ≤ d ->
+  a + b ≤ c + d := by
+  intro ac bd
+  apply le_trans
+  apply nat.add.le_left_iff.mp
+  assumption
+  apply nat.add.le_right_iff.mp
+  assumption
+
+def nat.add.lt {a b c d: nat} :
+  a < c ->
+  b < d ->
+  a + b < c + d := by
+  intro ac bd
+  apply lt_trans
+  apply nat.add.lt_left_iff.mp
+  assumption
+  apply nat.add.lt_right_iff.mp
+  assumption
 
 def nat.add.lt_right_nz (a b: nat) : 0 < b -> a < a + b := by
-  intro zero_lt_b
-  induction b with
-  | zero =>
-    contradiction
-  | succ b ih =>
-    cases lt_or_eq_of_le <|le_of_lt_succ zero_lt_b with
-    | inl zero_lt_b =>
-      rw [add_succ]
-      apply lt_trans
-      apply ih
-      assumption
-      apply nat.lt_succ_self
-    | inr zero_eq_b =>
-      rw [←zero_eq_b, add_succ, add_zero]
-      apply nat.lt_succ_self
+  intro h
+  suffices a + 0 < a + b from by
+    rw [add_zero] at this
+    exact this
+  apply add.lt_left_iff.mp
+  assumption
 
 #print axioms nat.add.lt_right_nz
 
@@ -195,48 +249,19 @@ def nat.add.of_lt_cancel_right {a b k: nat} : a < b -> a + k < b + k := by
 
 #print axioms nat.add.of_lt_cancel_right
 
-def nat.add.lt_cancel_left {a b k: nat} : k + a < k + b -> a < b := by
-  intro k_add
-  induction k with
-  | zero =>
-    rw [zero_eq, zero_add, zero_add] at k_add
-    exact k_add
-  | succ k ih =>
-    rw [succ_add, succ_add] at k_add
-    apply ih
-    exact k_add
+def nat.add.lt_cancel_left {a b k: nat} : k + a < k + b -> a < b := nat.add.lt_left_iff.mpr
 
 #print axioms nat.add.lt_cancel_left
 
-def nat.add.lt_cancel_right {a b k: nat} : a + k < b + k -> a < b := by
-  rw [comm _ k, comm _ k]
-  exact lt_cancel_left
+def nat.add.lt_cancel_right {a b k: nat} : a + k < b + k -> a < b := nat.add.lt_right_iff.mpr
 
 #print axioms nat.add.lt_cancel_right
 
-def nat.add.of_le_cancel_left (a b c: nat) : b ≤ c -> a + b ≤ a + c := by
-  induction c generalizing a b with
-  | zero =>
-    intro h
-    rw [le_zero h]
-    apply le_refl
-  | succ c ih =>
-    intro h
-    cases b with
-    | zero =>
-      rw [zero_eq, add_zero]
-      apply le_left
-    | succ b =>
-    have := ih a b h
-    rw [add_succ, add_succ]
-    exact this
+def nat.add.of_le_cancel_left (a b c: nat) : b ≤ c -> a + b ≤ a + c := nat.add.le_left_iff.mp
 
 #print axioms nat.add.of_le_cancel_left
 
-def nat.add.of_le_cancel_right (a b c: nat) : b ≤ c -> b + a ≤ c + a:= by
-  intros
-  repeat rw [comm _ a]
-  apply nat.add.of_le_cancel_left <;> assumption
+def nat.add.of_le_cancel_right (a b c: nat) : b ≤ c -> b + a ≤ c + a := nat.add.le_right_iff.mp
 
 #print axioms nat.add.of_le_cancel_right
 
@@ -266,15 +291,3 @@ def nat.add_one (a: nat) : a + 1 = a.succ := by
   rw [add.comm, one_add]
 
 #print axioms nat.add_one
-
-def nat.add.le (a b c d: nat) : a ≤ c -> b ≤ d -> a + b ≤ c + d := by
-  intro a_le_c b_le_d
-  apply le_trans (of_le_cancel_right b a c a_le_c) (of_le_cancel_left c b d b_le_d)
-
-#print axioms nat.add.le
-
-def nat.add.lt (a b c d: nat) : a < c -> b < d -> a + b < c + d := by
-  intro a_le_c b_le_d
-  apply lt_trans (of_lt_cancel_right a_le_c) (of_lt_cancel_left b_le_d)
-
-#print axioms nat.add.lt

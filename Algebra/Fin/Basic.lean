@@ -25,8 +25,8 @@ def fin.val.inj (x y: fin n) : x.val = y.val -> x = y := by
 
 def fin.isLt (x: fin n) : x.val < n := by
   induction x with
-  | zero => trivial
-  | succ _ ih => exact ih
+  | zero => apply nat.zero_lt_succ
+  | succ _ ih => exact ih.succ
 
 def fin.nonzero (x: fin n) : 0 < n := lt_of_le_of_lt (nat.zero_le _) x.isLt
 
@@ -38,7 +38,7 @@ def fin.mk (x: nat) : x < n -> fin n := fun lt =>
   | .succ x =>
     match n with
     | .succ _ =>
-    .succ <| fin.mk x lt
+    .succ <| fin.mk x <| nat.lt_of_succ_lt_succ lt
 
 def fin.mk_val (x: nat) (h: x < n) : (fin.mk x h).val = x := by
   induction x generalizing n with
@@ -69,7 +69,7 @@ def fin.mk.inj (x y: nat) (xLt: x < n) (yLt: y < n) : fin.mk x xLt = fin.mk y yL
 #print axioms fin.mk.inj
 
 def fin.n_gt_zero (x: fin n) : 0 < n := by
-  cases x <;> trivial
+  cases x <;> apply nat.zero_lt_succ
 
 #print axioms fin.n_gt_zero
 
@@ -83,30 +83,11 @@ def fin.of_Fin (x: Fin n) : fin (nat.ofNat n) := by
   apply nat.ofNat_lt
   exact x.isLt
 
-instance Fin.Ord : Ord (fin n) where
-  compare a b := compare a.val b.val
+instance : LT (fin n) where
+  lt a b := a.val < b.val
 
-#print axioms Fin.Ord
+instance : LE (fin n) where
+  le a b := a.val ≤ b.val
 
-instance Fin.TotalOrdInst : TotalOrder (fin n) where
-  compare_antisymm := by
-    intros
-    unfold compare
-    apply compare_antisymm
-  compare_transitive := by
-    intros
-    unfold compare
-    apply compare_transitive <;> assumption
-  eq_of_compare_eq := by
-    unfold compare
-    intros
-    apply fin.val.inj
-    apply eq_of_compare_eq <;> assumption
-  compare_eq_refl := by
-    unfold compare
-    intros
-    unfold Ord
-    dsimp
-    apply compare_eq_refl <;> assumption
-
-#print axioms Fin.TotalOrdInst
+instance : IsLinearOrder (fin n) :=
+  IsLinearOrder.transfer nat (fin n) fin.val (fin.val.inj _ _) (Iff.refl _) (Iff.refl _)
