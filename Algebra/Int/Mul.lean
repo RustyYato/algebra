@@ -550,3 +550,15 @@ def int.abs.tri_lt (a b: int) :
   apply int.abs.tri_lt'
   rw [int.add.comm, nat.add.comm]
   apply int.abs.tri_lt'
+
+def int.mul.pos_succ_pos_succ (a b: nat) :
+  int.pos_succ a * int.pos_succ b = int.of_nat (a.succ * b.succ) := rfl
+
+def int.mul.pos_succ_neg_succ (a b: nat) :
+  int.pos_succ a * int.neg_succ b = -int.of_nat (a.succ * b.succ) := rfl
+
+def int.mul.neg_succ_pos_succ (a b: nat) :
+  int.neg_succ a * int.pos_succ b = -int.of_nat (a.succ * b.succ) := rfl
+
+def int.mul.neg_succ_neg_succ (a b: nat) :
+  int.neg_succ a * int.neg_succ b = int.of_nat (a.succ * b.succ) := rfl

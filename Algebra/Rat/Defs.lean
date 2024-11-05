@@ -515,6 +515,16 @@ def Rat.mk_neg (a: Fract) : -mk a = mk (-a) := by
   unfold Neg.neg
   apply lift_mk
 
+instance : Sub Fract where
+  sub a b := a + -b
+instance : Sub Rat where
+  sub a b := a + -b
+
+def Rat.mk_sub (a b: Fract) : mk a - mk b = mk (a - b) := by
+  unfold HSub.hSub instHSub Sub.sub instSubRat instSubFract
+  dsimp
+  rw [mk_neg, mk_add]
+
 def Fract.abs (a: Fract) : Fract := .mk (int.of_nat a.num.abs) a.den a.den_pos
 
 def Fract.abs.spec (a b: Fract) : a ≈ b -> a.abs ≈ b.abs := by
@@ -549,6 +559,7 @@ instance : OfNat Rat n where
   ofNat := Rat.ofFract (OfNat.ofNat n) nat.gcd.one_right
 
 def Fract.num_zero : (0: Fract).num = 0 := rfl
+def Fract.num_one : (1: Fract).num = 1 := rfl
 def Fract.num_ofNat : (OfNat.ofNat n: Fract).num = n := rfl
 def Fract.den_ofNat : (OfNat.ofNat n: Fract).den = 1 := rfl
 
@@ -632,3 +643,309 @@ def Rat.mk_div (a b: Fract) (h: ¬b ≈ 0) : (mk a) /? mk b = mk a /? b := by
   unfold CheckedDiv.checked_div instCheckedDivOfMulOfInvert
   dsimp
   rw [mk_invert, mk_mul]
+
+def Rat.mk_zero : 0 = mk 0 := rfl
+def Rat.mk_one : 1 = mk 1 := rfl
+
+def Fract.add.comm (a b: Fract) : a + b ≈ b + a := by
+  cases a with | mk a ad ad_pos =>
+  cases b with | mk b bd bd_pos =>
+  rw [Equiv.def]
+  repeat rw [add.def, add]
+  dsimp
+  rw [int.add.comm, nat.mul.comm bd]
+
+def Rat.add.comm (a b: Rat) : a + b = b + a := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  rw [mk_add, mk_add]
+  apply sound
+  apply Fract.add.comm
+
+def Fract.add.assoc (a b c: Fract) : a + b + c ≈ a + (b + c) := by
+  cases a with | mk a ad ad_pos =>
+  cases b with | mk b bd bd_pos =>
+  cases c with | mk c cd cd_pos =>
+  rw [Equiv.def]
+  repeat rw [add.def, add]
+  dsimp
+  repeat rw [int.mul.add_left]
+  repeat rw [←int.mul.lift_nat]
+  rw [int.add.assoc]
+  congr 1
+  repeat rw [int.mul.assoc]
+  congr 2
+  rw [int.mul.comm_left]
+  rw [int.mul.comm_left]
+
+def Rat.add.assoc (a b c: Rat) : a + b + c = a + (b + c) := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  induction c using ind with | mk c =>
+  repeat rw [mk_add]
+  apply sound
+  apply Fract.add.assoc
+
+def Fract.mul.comm (a b: Fract) : a * b ≈ b * a := by
+  cases a with | mk a ad ad_pos =>
+  cases b with | mk b bd bd_pos =>
+  rw [Equiv.def]
+  repeat rw [mul.def, mul]
+  dsimp
+  rw [int.mul.comm a, nat.mul.comm bd]
+
+def Rat.mul.comm (a b: Rat) : a * b = b * a := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  rw [mk_mul, mk_mul]
+  apply sound
+  apply Fract.mul.comm
+
+def Fract.mul.assoc (a b c: Fract) : a * b * c ≈ a * (b * c) := by
+  cases a with | mk a ad ad_pos =>
+  cases b with | mk b bd bd_pos =>
+  cases c with | mk c cd cd_pos =>
+  rw [Equiv.def]
+  repeat rw [mul.def, mul]
+  dsimp
+  repeat rw [←int.mul.lift_nat]
+  repeat rw [int.mul.assoc]
+
+def Rat.mul.assoc (a b c: Rat) : a * b * c = a * (b * c) := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  induction c using ind with | mk c =>
+  repeat rw [mk_mul]
+  apply sound
+  apply Fract.mul.assoc
+
+def Rat.add_zero (a: Rat) : a + 0 = a := by
+  induction a using ind with | mk a =>
+  rw [mk_zero, mk_add]
+  apply sound
+  rw [Fract.Equiv.def, Fract.add.def, Fract.add, Fract.num_zero]
+  dsimp
+  have : int.of_nat 1 = 1 := rfl
+  rw [Fract.den_ofNat, int.mul.zero_left, int.add.zero_right, nat.mul_one, this, int.mul.one_right]
+
+def Rat.zero_add (a: Rat) : 0 + a = a := by
+  rw [add.comm, add_zero]
+
+def Rat.mul_one (a: Rat) : a * 1 = a := by
+  induction a using ind with | mk a =>
+  rw [mk_one, mk_mul]
+  apply sound
+  rw [Fract.Equiv.def, Fract.mul.def, Fract.mul, Fract.num_one]
+  dsimp
+  have : int.of_nat 1 = 1 := rfl
+  rw [Fract.den_ofNat, int.mul.one_right, nat.mul_one]
+
+def Rat.one_mul (a: Rat) : 1 * a = a := by
+  rw [mul.comm, mul_one]
+
+def Rat.mul_zero (a: Rat) : a * 0 = 0 := by
+  induction a using ind with | mk a =>
+  rw [mk_zero, mk_mul]
+  apply sound
+  rw [Fract.Equiv.def, Fract.mul.def, Fract.mul, Fract.num_zero]
+  dsimp
+  have : int.of_nat 1 = 1 := rfl
+  rw [Fract.den_ofNat, int.mul.zero_right, int.mul.zero_left, int.mul.zero_left]
+
+def Rat.zero_mul (a: Rat) : 0 * a = 0 := by
+  rw [mul.comm, mul_zero]
+
+def Rat.neg_eq_neg_one_mul (a: Rat) : -a = -1 * a := by
+  induction a using ind with | mk a =>
+  rw [mk_one, mk_neg, mk_neg, mk_mul]
+  apply sound
+  rw [Fract.neg.def, Fract.neg.def, Fract.mul.def, Fract.mul]
+  unfold Fract.neg
+  rw [Fract.Equiv.def, Fract.num_one]
+  dsimp
+  rw [Fract.den_ofNat, nat.one_mul]
+  conv in -a.num => {
+    rw [←@int.mul.one_left a.num, int.mul.neg_left]
+  }
+
+def Fract.add_mul (a b k: Fract) : (a + b) * k ≈ a * k + b * k := by
+  repeat first|rw [add.def, add]|rw [mul.def,mul]
+  rw [Equiv.def]
+  dsimp
+  repeat first|rw [int.mul.add_left]|rw [←int.mul.lift_nat]
+  repeat rw [int.mul.assoc]
+  congr 2
+  rw [int.mul.comm_left]
+  congr 2
+  rw [int.mul.comm_left]
+  rw [int.mul.comm_left]
+  congr 2
+  rw [int.mul.comm_left]
+
+def Rat.add_mul (a b k: Rat) : (a + b) * k = a * k + b * k := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  induction k using ind with | mk k =>
+  repeat first|rw [mk_mul]|rw [mk_add]
+  apply sound
+  apply Fract.add_mul
+
+def Rat.mul_add (a b k: Rat) : k * (a + b) = k * a + k * b := by
+  repeat rw [mul.comm k]
+  rw [add_mul]
+
+def Rat.sub.eq_add_neg (a b: Rat) : a - b = a + -b := rfl
+
+def Rat.mul_neg (a b: Rat) : a * -b = -(a * b) := by
+  rw [neg_eq_neg_one_mul, neg_eq_neg_one_mul (a * b),
+    mul.comm, mul.assoc, mul.comm b]
+def Rat.neg_mul (a b: Rat) : (-a) * b = -(a * b) := by
+  rw [mul.comm, mul_neg, mul.comm]
+
+def Rat.add.neg (a b: Rat) : -(a + b) = -a - b := by
+  rw [sub.eq_add_neg, neg_eq_neg_one_mul, mul_add, ←neg_eq_neg_one_mul, ←neg_eq_neg_one_mul]
+def Rat.neg_neg (a: Rat): - - a = a := by
+  have : -1 * -1 = (1: Rat) := rfl
+  rw [neg_eq_neg_one_mul, neg_eq_neg_one_mul a, ←mul.assoc, this, one_mul]
+def Rat.sub.neg (a b: Rat) : -(a - b) = b - a := by
+  rw [sub.eq_add_neg, add.neg, sub.eq_add_neg, sub.eq_add_neg, neg_neg, add.comm]
+
+def Rat.sub_mul (a b k: Rat) : (a - b) * k = a * k - b * k := by
+  rw [sub.eq_add_neg, add_mul, neg_mul, sub.eq_add_neg]
+
+def Rat.mul_sub (a b k: Rat) : k * (a + b) = k * a + k * b := by
+  repeat rw [mul.comm k]
+  rw [add_mul]
+
+def Rat.sub.self (a: Rat) : a - a = 0 := by
+  rw [←one_mul a, ←sub_mul]
+  have : (1: Rat) - 1 = 0 := rfl
+  rw [this, zero_mul]
+
+def Rat.abs.neg (a: Rat) : (-a).abs = a.abs := by
+  induction a using ind with | mk a =>
+  rw [mk_neg, mk_abs, mk_abs]
+  apply sound
+  rw [Fract.Equiv.def, Fract.neg.def]
+  unfold Fract.abs Fract.neg
+  dsimp
+  rw [int.abs.neg]
+
+def Rat.abs.sub_comm (a b: Rat) : (a - b).abs = (b - a).abs := by
+  rw [←abs.neg (a - b), sub.neg]
+
+def Rat.div.self (a: Rat) (h: a ≠ 0) : a /? a = 1 := by
+  suffices a * a⁻¹ = 1 from this
+  induction a using ind with | mk a =>
+  rw [mk_invert, mk_mul, mk_one]
+  any_goals invert_tactic
+  apply sound
+  cases a with | mk n d d_pos =>
+  cases d with
+  | zero => contradiction
+  | succ d =>
+  rw [Fract.invert.def, Fract.mul.def, Fract.Equiv.def]
+  unfold Fract.mul Fract.invert int.sign
+  dsimp
+  cases n with
+  | zero =>
+    exfalso
+    apply h
+    rw [mk_zero]
+    apply sound
+    rw [Fract.Equiv.def]
+    rw [Fract.num_zero, int.mul.zero_left, int.zero_eq, int.mul.zero_left]
+  | pos_succ n =>
+    dsimp
+    have : int.of_nat 1 = 1 := rfl
+    rw [Fract.den_ofNat, Fract.num_one, int.mul.one_left, this, int.mul.one_right]
+    rw [int.abs.pos_succ, int.of_nat.pos, int.of_nat.pos, int.mul.lift_nat, nat.mul.comm]
+  | neg_succ n =>
+    dsimp
+    have : int.of_nat 1 = 1 := rfl
+    rw [Fract.den_ofNat, Fract.num_one, int.mul.one_left, this, int.mul.one_right]
+    rw [int.abs.neg_succ, ←int.neg.pos_succ, ←int.mul.neg_left, int.mul.neg_right,
+      int.neg.neg_succ, int.of_nat.pos,int.of_nat.pos, int.mul.lift_nat, nat.mul.comm]
+
+def Rat.div.pos (a: Rat) (h: a ≠ 0) : a /? a = 1 := by
+  suffices a * a⁻¹ = 1 from this
+  induction a using ind with | mk a =>
+  rw [mk_invert, mk_mul, mk_one]
+  any_goals invert_tactic
+  apply sound
+  cases a with | mk n d d_pos =>
+  cases d with
+  | zero => contradiction
+  | succ d =>
+  rw [Fract.invert.def, Fract.mul.def, Fract.Equiv.def]
+  unfold Fract.mul Fract.invert int.sign
+  dsimp
+  cases n with
+  | zero =>
+    exfalso
+    apply h
+    rw [mk_zero]
+    apply sound
+    rw [Fract.Equiv.def]
+    rw [Fract.num_zero, int.mul.zero_left, int.zero_eq, int.mul.zero_left]
+  | pos_succ n =>
+    dsimp
+    have : int.of_nat 1 = 1 := rfl
+    rw [Fract.den_ofNat, Fract.num_one, int.mul.one_left, this, int.mul.one_right]
+    rw [int.abs.pos_succ, int.of_nat.pos, int.of_nat.pos, int.mul.lift_nat, nat.mul.comm]
+  | neg_succ n =>
+    dsimp
+    have : int.of_nat 1 = 1 := rfl
+    rw [Fract.den_ofNat, Fract.num_one, int.mul.one_left, this, int.mul.one_right]
+    rw [int.abs.neg_succ, ←int.neg.pos_succ, ←int.mul.neg_left, int.mul.neg_right,
+      int.neg.neg_succ, int.of_nat.pos,int.of_nat.pos, int.mul.lift_nat, nat.mul.comm]
+
+def Rat.mul_div.assoc (a b c: Rat) (h: c ≠ 0) : a * (b /? c) = (a * b) /? c := by
+  suffices a * (b * c⁻¹) = (a * b) /? c from this
+  rw [←mul.assoc]
+  rfl
+
+def Rat.mul_div.comm_left (a b c: Rat) (h: c ≠ 0) : a * (b /? c) = b * (a /? c) := by
+  suffices a * (b * c⁻¹) = b * (a * c⁻¹) from this
+  rw [←mul.assoc, mul.comm a, mul.assoc]
+
+def Rat.mul_div_cancel (a b: Rat) (h: a ≠ 0) : a * (b /? a) = b := by
+  rw [Rat.mul_div.comm_left, div.self, mul_one]
+
+instance : Div Rat where
+  div a b := if h:b = 0 then 0 else a /? b
+
+def Fract.cmp (a b: Fract) :=
+  compare (a.num * int.of_nat b.den) (b.num * int.of_nat a.den)
+
+def Fract.cmp.spec (a b c d: Fract) :
+  a ≈ c -> b ≈ d -> cmp a b = cmp c d := by
+  intro ac bd
+  cases a with | mk a₀ a₁ a₁_pos =>
+  cases b with | mk b₀ b₁ b₁_pos =>
+  cases c with | mk c₀ c₁ c₁_pos =>
+  cases d with | mk d₀ d₁ d₁_pos =>
+  rw [Equiv.def] at ac bd
+  unfold cmp
+  dsimp at *
+
+  rw [
+    int.mul.compare_left_pos (k := c₁ * d₁),
+    int.mul.assoc, int.mul.comm_left b₁, ←int.mul.assoc, ac,
+    int.mul.assoc, int.mul.comm_right a₁, ←int.mul.assoc,
+    int.mul.assoc b₀, int.mul.comm_right a₁, ←int.mul.assoc b₀, bd,
+    int.mul.assoc d₀, int.mul.comm_left b₁, ←int.mul.assoc d₀,
+    ←int.mul.compare_left_pos]
+
+  rw [int.mul.lift_nat]
+  suffices 0 * 0 < b₁ * a₁ from int.lt.pos_nat _ this
+  apply nat.mul.lt <;> assumption
+  rw [int.mul.lift_nat]
+  suffices 0 * 0 < c₁ * d₁ from int.lt.pos_nat _ this
+  apply nat.mul.lt <;> assumption
+
+def Rat.cmp : Rat -> Rat -> Ordering := by
+  apply lift₂ Fract.cmp _
+  apply Fract.cmp.spec
+
+def Rat.mk_cmp (a b: Fract) : cmp (mk a) (mk b) = a.cmp b := lift₂_mk

@@ -1348,18 +1348,6 @@ def rat.sub.mul_right (a b k: rat) :
   repeat rw [rat.mul.comm _ k]
   rw [rat.sub.mul_left]
 
-def int.mul.pos_succ_pos_succ (a b: nat) :
-  int.pos_succ a * int.pos_succ b = int.of_nat (a.succ * b.succ) := rfl
-
-def int.mul.pos_succ_neg_succ (a b: nat) :
-  int.pos_succ a * int.neg_succ b = -int.of_nat (a.succ * b.succ) := rfl
-
-def int.mul.neg_succ_pos_succ (a b: nat) :
-  int.neg_succ a * int.pos_succ b = -int.of_nat (a.succ * b.succ) := rfl
-
-def int.mul.neg_succ_neg_succ (a b: nat) :
-  int.neg_succ a * int.neg_succ b = int.of_nat (a.succ * b.succ) := rfl
-
 def fract.mul.inv (a b: fract) : (a * b).invert ≈ a.invert * b.invert := by
   rw [mul.def, mul, mul.def, mul]
   cases a with | mk an ad ad_pos =>
