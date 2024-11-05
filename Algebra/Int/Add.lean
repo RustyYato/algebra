@@ -382,13 +382,27 @@ def int.add.assoc (a b c: int) : (a + b) + c = a + (b + c) := by
     repeat rw [dec_add]
     rw [ih]
 
+def int.add.right_comm (a b c: int) :
+  a + b + c = a + c + b := by rw [int.add.assoc, int.add.comm b, int.add.assoc]
+
+def int.add.left_comm (a b c: int) :
+  a + b + c = c + b + a := by rw [int.add.comm _ c, int.add.comm a, int.add.assoc]
+
+def int.add.comm_left (a b c: int) :
+  a + (b + c) = b + (a + c) := by
+  rw [←int.add.assoc, ←int.add.assoc, int.add.comm a]
+
+def int.add.comm_right (a b c: int) :
+  a + (b + c) = c + (b + a) := by
+  rw [int.add.comm _ c, int.add.comm a, int.add.assoc]
+
 def int.add.neg_self { a: int } : a + -a = 0 := by
   induction a using strong_induction with
   | zero => rw [zero_add, neg.zero]
   | inc a ih => rw [inc_add, inc.neg, add_dec, dec_inc_inv, ih]
   | dec a ih => rw [dec_add, dec.neg, add_inc, inc_dec_inv, ih]
 
-def int.sub.refl { a: int } : a - a = 0 := int.add.neg_self
+def int.sub.self { a: int } : a - a = 0 := int.add.neg_self
 
 def int.add.zero_left { a: int } : 0 + a = a := by
   rw [add.def]
@@ -402,19 +416,47 @@ def int.add.zero_right { a: int } : a + 0 = a := rfl
 def int.sub.zero_left { a: int } : 0 - a = -a := by
   rw [sub.def, add.zero_left]
 
-def int.of_gt_zero { a: int } : 0 < a -> ∃x, a = int.pos_succ x := by
-  intros
-  cases a
-  any_goals contradiction
-  rename_i x _
-  exists x
+def int.inc.inj (a b: int) : a.inc = b.inc -> a = b := by
+  intro a_eq_b
+  rw [int.inc.eq_add_one, int.inc.eq_add_one] at a_eq_b
+  have : (a + 1) - 1 = (a + 1) - 1 := rfl
+  conv at this => {
+    conv => {
+      rhs
+      rw [a_eq_b]
+    }
+    rw [int.sub.def, int.sub.def,  int.add.assoc, int.add.assoc, int.add.neg_self, int.add_zero, int.add_zero]
+  }
+  assumption
 
-def int.of_lt_zero { a: int } : 0 > a -> ∃x, a = int.neg_succ x := by
-  intros
-  cases a
-  any_goals contradiction
-  rename_i x _
-  exists x
+def int.dec.inj (a b: int) : a.dec = b.dec -> a = b := by
+  intro a_eq_b
+  rw [int.dec.eq_sub_one, int.dec.eq_sub_one] at a_eq_b
+  have : (a - 1) + 1 = (a - 1) + 1 := rfl
+  conv at this => {
+    conv => {
+      rhs
+      rw [a_eq_b]
+    }
+    rw [int.sub.def, int.sub.def,  int.add.assoc, int.add.assoc, @int.add.comm _ 1, int.add.neg_self, int.add_zero, int.add_zero]
+  }
+  assumption
+
+def int.inc_eq_iff_eq_dec {a b: int} : a.inc = b ↔ a = b.dec := by
+  apply Iff.intro
+  intro h
+  apply inc.inj
+  rw [h, dec_inc_inv]
+  intro h
+  apply inc.inj
+  rw [h, dec_inc_inv]
+
+def int.eq_inc_iff_dec_eq {a b: int} : a = b.inc ↔ a.dec = b := by
+  apply Iff.trans
+  apply Iff.intro Eq.symm Eq.symm
+  apply flip Iff.trans
+  apply Iff.intro Eq.symm Eq.symm
+  apply int.inc_eq_iff_eq_dec
 
 def int.inc_dec_le' : ∀{a b: int}, a ≤ b -> a.inc ≤ b.inc ∧ a.dec ≤ b.dec := by
   intro a b h
@@ -634,7 +676,27 @@ def int.add.lt_right {a b k: int} : a < b ↔ k + a < k + b := by
   rw [add.comm k, add.comm k]
   apply int.add.lt_left
 
-def int.add_le_iff_le_sub {a b k: int} : a + k < b ↔ a < b - k := by
+def int.add_le_iff_le_sub {a b k: int} : a + k ≤ b ↔ a ≤ b - k := by
+  induction k using strong_induction generalizing a b with
+  | zero => rw [add_zero, sub_zero]
+  | inc k ih =>
+    rw [add_inc, sub_inc, ←dec_sub]
+    apply Iff.trans inc_le_iff_le_dec ih
+  | dec k ih =>
+    rw [add_dec, sub_dec, ←inc_sub]
+    apply Iff.trans le_inc_iff_dec_le.symm ih
+
+def int.le_add_iff_sub_le {a b k: int} : a ≤ b + k ↔ a - k ≤ b := by
+  induction k using strong_induction generalizing a b with
+  | zero => rw [add_zero, sub_zero]
+  | inc k ih =>
+    rw [add_inc, sub_inc, ←dec_sub]
+    apply Iff.trans le_inc_iff_dec_le ih
+  | dec k ih =>
+    rw [add_dec, sub_dec, ←inc_sub]
+    apply Iff.trans inc_le_iff_le_dec.symm ih
+
+def int.add_lt_iff_lt_sub {a b k: int} : a + k < b ↔ a < b - k := by
   induction k using strong_induction generalizing a b with
   | zero => rw [add_zero, sub_zero]
   | inc k ih =>
@@ -642,7 +704,17 @@ def int.add_le_iff_le_sub {a b k: int} : a + k < b ↔ a < b - k := by
     apply Iff.trans inc_lt_iff_lt_dec ih
   | dec k ih =>
     rw [add_dec, sub_dec, ←inc_sub]
-    apply Iff.trans dec_lt_iff_lt_inc ih
+    apply Iff.trans lt_inc_iff_dec_lt.symm ih
+
+def int.lt_add_iff_sub_lt {a b k: int} : a < b + k ↔ a - k < b := by
+  induction k using strong_induction generalizing a b with
+  | zero => rw [add_zero, sub_zero]
+  | inc k ih =>
+    rw [add_inc, sub_inc, ←dec_sub]
+    apply Iff.trans lt_inc_iff_dec_lt ih
+  | dec k ih =>
+    rw [add_dec, sub_dec, ←inc_sub]
+    apply Iff.trans inc_lt_iff_lt_dec.symm ih
 
 def int.add.lift_nat { a b: nat } : (of_nat (a + b)) = (of_nat a) + (of_nat b) := by
   induction b generalizing a with
@@ -701,6 +773,9 @@ def int.add.neg { a b: int } : -(a + b) = -a + -b := by
     simp only
     rw [int.sub_nat.neg, neg.neg_succ, add.def, dec.neg]
     rfl
+
+def int.sub.neg { a b: int } : -(a - b) = b - a := by
+  rw [sub.def, sub.def, add.neg, neg_neg, add.comm]
 
 def int.add.sign_mul { s: int.Sign } { a b: nat } :  s * (a + b) = s * a + s * b := by
   cases a with
@@ -830,32 +905,6 @@ def int.add.lift_neg_pos_lt_to_nat { a b: nat } : a < b -> (int.neg_succ a) + (i
   apply int.add.lift_pos_neg_gt_to_nat
   assumption
 
-def int.inc.inj (a b: int) : a.inc = b.inc -> a = b := by
-  intro a_eq_b
-  rw [int.inc.eq_add_one, int.inc.eq_add_one] at a_eq_b
-  have : (a + 1) - 1 = (a + 1) - 1 := rfl
-  conv at this => {
-    conv => {
-      rhs
-      rw [a_eq_b]
-    }
-    rw [int.sub.def, int.sub.def,  int.add.assoc, int.add.assoc, int.add.neg_self, int.add_zero, int.add_zero]
-  }
-  assumption
-
-def int.dec.inj (a b: int) : a.dec = b.dec -> a = b := by
-  intro a_eq_b
-  rw [int.dec.eq_sub_one, int.dec.eq_sub_one] at a_eq_b
-  have : (a - 1) + 1 = (a - 1) + 1 := rfl
-  conv at this => {
-    conv => {
-      rhs
-      rw [a_eq_b]
-    }
-    rw [int.sub.def, int.sub.def,  int.add.assoc, int.add.assoc, @int.add.comm _ 1, int.add.neg_self, int.add_zero, int.add_zero]
-  }
-  assumption
-
 def int.add.le {a b c d: int}: a ≤ c -> b ≤ d -> a + b ≤ c + d := by
   intro ac bd
   apply le_trans
@@ -935,3 +984,55 @@ def int.neg.dec (a: int) : -a.dec = (-a).inc := by
   cases a <;> rfl
   rename_i a
   cases a <;> rfl
+
+def int.add_eq_iff_eq_sub {a b k: int} : a + k = b ↔ a = b - k := by
+  induction k using strong_induction generalizing a b with
+  | zero => rw [add_zero, sub_zero]
+  | inc k ih =>
+    rw [sub_inc, add_inc]
+    apply Iff.trans inc_eq_iff_eq_dec
+    rw [←dec_sub]
+    apply ih
+  | dec k ih =>
+    rw [sub_dec, add_dec]
+    apply Iff.trans eq_inc_iff_dec_eq.symm
+    rw [←inc_sub]
+    apply ih
+
+def int.eq_add_iff_sub_eq {a b k: int} : a = b + k ↔ a - k = b := by
+  apply Iff.trans
+  apply Iff.intro Eq.symm Eq.symm
+  apply flip Iff.trans
+  apply Iff.intro Eq.symm Eq.symm
+  apply int.add_eq_iff_eq_sub
+
+def int.add.zero_le (a b: int) : 0 ≤ a -> 0 ≤ b -> 0 ≤ a + b := by
+  intro h₀ h₁
+  rw [←add_zero (a := 0)]
+  apply add.le <;> assumption
+
+def int.of_nat.of_zero_le {a: int} : 0 ≤ a -> ∃n, a = int.of_nat n := by
+  intro h
+  cases h
+  rename_i n
+  exists n.succ
+  exists 0
+
+def int.of_nat.of_zero_lt {a: int} : 0 < a -> ∃n, a = .pos_succ n := by
+  intro h
+  cases h
+  rename_i n
+  exists n
+
+def int.of_nat.of_lt_zero {a: int} : a < 0 -> ∃n, a = .neg_succ n := by
+  intro h
+  cases h
+  rename_i n
+  exists n
+
+def int.of_nat.of_le_zero {a: int} : a ≤ 0 -> ∃n, a = -int.of_nat n := by
+  intro h
+  cases h
+  rename_i n
+  exists n.succ
+  exists 0

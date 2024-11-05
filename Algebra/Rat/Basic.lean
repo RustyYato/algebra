@@ -687,7 +687,7 @@ def fract.mul (a b: fract) : fract := fract.mk (a.num * b.num) (a.den * b.den) (
   apply Decidable.byContradiction
   intro h
   replace h := nat.le_zero (le_of_not_lt h)
-  cases nat.mul.eq_zero h
+  cases nat.mul.eq_zero hint.sub.self
   · cases a with | mk n d nz =>
     dsimp at *
     subst d

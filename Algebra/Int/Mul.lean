@@ -1,6 +1,7 @@
 import Algebra.Int.Add
 import Algebra.Int.Abs
 import Algebra.Nat.Mul
+import Algebra.ClassicLogic
 
 def int.mul (a b: int) : int := a.sign * b.sign * (a.abs * b.abs)
 
@@ -8,17 +9,17 @@ instance int.mul.inst : Mul int := ⟨ int.mul ⟩
 
 def int.mul.def { a b: int } : a * b = int.mul a b := rfl
 
-def int.mul.zero_left { b: int } :  0 * b = 0 := by
+def int.zero_mul { b: int } : 0 * b = 0 := by
   rw [mul.def]
   unfold mul
   rw [int.sign.zero, int.Sign.zero_left, int.Sign.int_zero]
 
-def int.mul.zero_right { b: int } :  b * 0 = 0 := by
+def int.mul_zero { b: int } : b * 0 = 0 := by
   rw [mul.def]
   unfold mul
   rw [int.sign.zero, int.Sign.zero_right, int.Sign.int_zero]
 
-def int.mul.one_left { b: int } :  1 * b = b := by
+def int.one_mul { b: int } : 1 * b = b := by
   rw [mul.def]
   unfold mul
   rw [←one_eq, sign.pos, int.Sign.pos_left]
@@ -29,7 +30,7 @@ def int.mul.one_left { b: int } :  1 * b = b := by
   }
   rw [nat.one_eq, nat.one_mul, abs.sign]
 
-def int.mul.neg_one_left { b: int } :  -1 * b = -b := by
+def int.neg_one_mul { b: int } : -1 * b = -b := by
   rw [mul.def]
   unfold mul
   rw [←one_eq, neg.pos_succ, sign.neg, int.Sign.neg_left]
@@ -40,10 +41,10 @@ def int.mul.neg_one_left { b: int } :  -1 * b = -b := by
   }
   rw [nat.one_eq, nat.one_mul, abs.flip_sign]
 
-def int.mul.neg_left { a b: int } : -(a * b) = -a * b := by
+def int.neg_mul { a b: int } : -a * b = -(a * b) := by
   cases a <;> cases b <;> rfl
 
-def int.mul.neg_right { a b: int } : -(a * b) = a * -b := by
+def int.mul_neg { a b: int } : a * -b = -(a * b) := by
   cases a <;> cases b <;> rfl
 
 def int.mul.comm (a b: int) : a * b = b * a := by
@@ -53,11 +54,11 @@ def int.mul.comm (a b: int) : a * b = b * a := by
   congr 1
   cases a <;> cases b <;> rfl
 
-def int.mul.one_right { b: int } :  b * 1 = b := by
-  rw [int.mul.comm, int.mul.one_left]
+def int.mul_one { b: int } :  b * 1 = b := by
+  rw [int.mul.comm, one_mul]
 
-def int.mul.neg_one_right { b: int } :  b * -1 = -b := by
-  rw [int.mul.comm, int.mul.neg_one_left]
+def int.mul_neg_one { b: int } :  b * -1 = -b := by
+  rw [int.mul.comm, neg_one_mul]
 
 def int.mul.assoc (a b c: int) : a * b * c = a * (b * c) := by
   repeat rw [mul.def]
@@ -113,135 +114,98 @@ def int.mul.comm_right (a b c: int) :
 def int.mul.abs_sign_mul_pos : ∀(x: nat) (y: int), y.sign * (nat.succ x * y.abs) = (int.pos_succ x) * y := by intro x y; cases y <;> rfl
 def int.mul.abs_sign_mul_neg : ∀(x: nat) (y: int), y.sign.flip * (nat.succ x * y.abs) = (int.neg_succ x) * y := by intro x y; cases y <;> rfl
 
-def int.mul.add_left { a b k: int } : (a + b) * k = a * k + b * k := by
+def int.inc_mul (a b: int) : a.inc * b = a * b + b := by
+  rw [mul.def, mul.def]
+  unfold mul
   cases a with
-  | zero => rw [zero_eq, add.zero_left, zero_left, add.zero_left]
+  | zero =>
+    erw [int.zero_eq, inc.zero, sign.zero, sign.pos, nat.one_mul]
+    rw [Sign.pos_left, Sign.zero_left, Sign.int_zero, zero_add, int.abs.sign]
   | pos_succ a =>
-    cases b with
-    | zero => rw [zero_eq, add.zero_right, zero_left, add.zero_right]
-    | pos_succ b =>
-      rw [int.add.lift_pos_pos_to_nat, mul.def]
-      unfold mul
-      rw [sign.pos, int.Sign.pos_left, int.abs.pos_succ]
-      rw [←nat.add_succ, ←nat.succ_add, nat.add_mul, int.add.sign_mul]
-      congr 1 <;> apply int.mul.abs_sign_mul_pos
-    | neg_succ b =>
-      cases h:compare a b with
-      | lt =>
-        rw [int.add.lift_pos_neg_lt_to_nat]
-        any_goals assumption
-        rw [mul.def]
-        unfold mul
-        rw [sign.neg, int.Sign.neg_left, abs.neg_succ, ←nat.succ_sub, nat.sub_mul, int.sub.sign_mul]
-        rw [sub.def, neg.sign_mul, Sign.flip_flip]
-        rw [int.mul.abs_sign_mul_neg, int.mul.abs_sign_mul_pos]
-        apply add.comm
-        apply nat.mul.of_le_cancel_right
-        apply le_of_lt
-        assumption
-        apply nat.succ_le_of_lt h
-      | eq =>
-        cases eq_of_compare_eq h
-        clear h
-        rw [←neg_neg (.neg_succ a), ←sub.def, neg.neg_succ, sub.refl, zero_left]
-        rw [←neg_left, add.neg_self]
-      | gt =>
-        rw [int.add.lift_pos_neg_gt_to_nat]
-        any_goals (apply gt_of_compare; assumption)
-        rw [mul.def]
-        unfold mul
-        rw [sign.pos, int.Sign.pos_left, abs.pos_succ, ←nat.succ_sub, nat.sub_mul, int.sub.sign_mul]
-        rw [sub.def, neg.sign_mul]
-        rw [int.mul.abs_sign_mul_neg, int.mul.abs_sign_mul_pos]
-        apply nat.mul.of_le_cancel_right
-        apply le_of_lt
-        apply gt_of_compare
-        assumption
-        apply nat.succ_le_of_lt
-        apply gt_of_compare
-        assumption
+    conv => {
+      lhs; rhs
+      rw [inc.pos_succ, abs.pos_succ, nat.succ_mul]
+    }
+    rw [int.add.sign_mul,  ←mul, inc.pos_succ, int.sign.pos]
+    conv in Sign.pos * _ * (a.succ * b.abs) => {
+      rw [←int.abs.pos_succ (a := a), ←int.sign.pos (x := a)]
+    }
+    rw [←mul, Sign.pos_left, int.abs.sign, int.add.comm]
   | neg_succ a =>
-    cases b with
-    | zero => rw [zero_eq, add.zero_right, zero_left, add.zero_right]
-    | pos_succ b =>
-      rw [add.comm, @add.comm (_ * k)]
+    cases a with
+    | zero =>
+      erw [int.sign.zero, int.sign.neg, Sign.zero_left, Sign.int_zero, nat.one_mul,
+        Sign.neg_left, int.abs.flip_sign, int.add.comm, ←int.sub.def, int.sub.self]
+    | succ a =>
+      erw [int.sign.neg, int.abs.neg_succ, int.abs.neg_succ]
+      conv in Sign.neg * _ * (a.succ.succ * b.abs) => {
+        rw [nat.succ_mul, int.add.sign_mul]
+        lhs
+        rw [Sign.neg_left, int.abs.flip_sign]
+      }
+      rw [int.add.comm, ←add.assoc, ←sub.def, sub.self, zero_add]
 
-      cases h:compare b a with
-      | lt =>
-        rw [int.add.lift_pos_neg_lt_to_nat]
-        any_goals assumption
-        rw [mul.def]
-        unfold mul
-        rw [sign.neg, int.Sign.neg_left, abs.neg_succ, ←nat.succ_sub, nat.sub_mul, int.sub.sign_mul]
-        rw [sub.def, neg.sign_mul, Sign.flip_flip]
-        rw [int.mul.abs_sign_mul_neg, int.mul.abs_sign_mul_pos]
-        apply add.comm
-        apply nat.mul.of_le_cancel_right
-        apply le_of_lt
-        assumption
-        apply nat.succ_le_of_lt h
-      | eq =>
-        cases eq_of_compare_eq h
-        clear h
-        rw [←neg_neg (.neg_succ a), ←sub.def, neg.neg_succ, sub.refl, zero_left]
-        rw [←neg_left, add.neg_self]
-      | gt =>
-        rw [int.add.lift_pos_neg_gt_to_nat]
-        any_goals (apply gt_of_compare; assumption)
-        rw [mul.def]
-        unfold mul
-        rw [sign.pos, int.Sign.pos_left, abs.pos_succ, ←nat.succ_sub, nat.sub_mul, int.sub.sign_mul]
-        rw [sub.def, neg.sign_mul]
-        rw [int.mul.abs_sign_mul_neg, int.mul.abs_sign_mul_pos]
-        apply nat.mul.of_le_cancel_right
-        apply le_of_lt
-        apply gt_of_compare
-        assumption
-        apply nat.succ_le_of_lt
-        apply gt_of_compare
-        assumption
-    | neg_succ b =>
-      apply int.neg.inj
-      rw [neg_left, add.neg, add.neg, neg_left, neg_left, neg.neg_succ, neg.neg_succ]
-      rw [int.add.lift_pos_pos_to_nat, mul.def]
-      unfold mul
-      rw [sign.pos, int.Sign.pos_left, int.abs.pos_succ]
-      rw [←nat.add_succ, ←nat.succ_add, nat.add_mul, int.add.sign_mul]
-      congr 1 <;> apply int.mul.abs_sign_mul_pos
+def int.mul_inc (a b: int) : a * b.inc = a * b + a := by
+  rw [mul.comm, inc_mul, mul.comm]
 
-def int.mul.add_right { a b k: int } : k * (a + b) = k * a + k * b := by
+def int.dec_mul (a b: int) : a.dec * b = a * b - b := by
+  apply neg.inj
+  rw [←neg_mul, int.dec.neg, inc_mul, sub.neg, add.comm, sub.def, neg_mul]
+
+def int.mul_dec (a b: int) : a * b.dec = a * b - a := by
+  rw [mul.comm, dec_mul, mul.comm]
+
+def int.add_mul { a b k: int } : (a + b) * k = a * k + b * k := by
+  induction k using strong_induction generalizing a b with
+  | zero => rw [mul_zero, mul_zero, mul_zero, add_zero]
+  | inc k ih => rw [mul_inc, mul_inc, mul_inc, ih, add.assoc,
+    add.comm_left (b * _), ←add.assoc]
+  | dec k ih => rw [mul_dec, mul_dec, mul_dec, ih, sub.def, sub.def, sub.def,
+    add.neg, add.assoc, add.comm_left (b * _), ←add.assoc]
+
+def int.mul_add { a b k: int } : k * (a + b) = k * a + k * b := by
   repeat rw [int.mul.comm k]
-  apply int.mul.add_left
+  apply int.add_mul
+
+def int.sub_mul { a b k: int } : (a - b) * k = a * k - b * k := by
+  rw [sub.def, sub.def, add_mul, neg_mul]
+
+def int.mul_sub { a b k: int } : k * (a - b) = k * a - k * b := by
+  rw [sub.def, sub.def, mul_add, mul_neg]
 
 def int.mul.sub_left { a b k: int } : (a - b) * k = a * k - b * k := by
-  rw [sub.def, add_left, ←neg_left, ←sub.def]
+  rw [sub.def, add_mul, neg_mul, ←sub.def]
 
 def int.mul.sub_right { a b k: int } : k * (a - b) = k * a - k * b := by
-  rw [sub.def, add_right, ←neg_right, ←sub.def]
+  rw [sub.def, mul_add, mul_neg, ←sub.def]
 
 def int.mul.pos_pos_is_pos { a b: int } : 0 < a -> 0 < b -> 0 < a * b := by
   intros pos_a pos_b
   cases a <;> cases b
   any_goals assumption
-  rfl
+  any_goals exact .zero_pos
+  all_goals contradiction
 
 def int.mul.neg_neg_is_pos { a b: int } : 0 > a -> 0 > b -> 0 < a * b := by
   intros pos_a pos_b
   cases a <;> cases b
   any_goals assumption
-  rfl
+  any_goals exact .zero_pos
+  all_goals contradiction
 
 def int.mul.pos_neg_is_neg { a b: int } : 0 < a -> 0 > b -> 0 > a * b := by
   intros pos_a pos_b
   cases a <;> cases b
   any_goals assumption
-  rfl
+  any_goals exact .neg_zero
+  all_goals contradiction
 
 def int.mul.neg_pos_is_neg { a b: int } : 0 > a -> 0 < b -> 0 > a * b := by
   intros pos_a pos_b
   cases a <;> cases b
   any_goals assumption
-  rfl
+  any_goals exact .neg_zero
+  all_goals contradiction
 
 def int.mul.eq_zero { a b: int } : a * b = 0 -> a = 0 ∨ b = 0 := by
   intro ab_eq_zero
@@ -254,22 +218,22 @@ def int.mul.eq_pos { a b: int } : a * b > 0 -> (a < 0 ∧ b < 0) ∨ (a > 0 ∧ 
   intro ab_gt_zero
   cases a <;> cases b
   any_goals contradiction
-  apply Or.inr <;> apply And.intro <;> assumption
-  apply Or.inl <;> apply And.intro <;> assumption
+  apply Or.inr <;> apply And.intro <;> exact .zero_pos
+  apply Or.inl <;> apply And.intro <;> exact .neg_zero
 
 def int.mul.eq_neg { a b: int } : a * b < 0 -> (a < 0 ∧ b > 0) ∨ (a > 0 ∧ b < 0) := by
   intro ab_lt_zero
   cases a <;> cases b
   any_goals contradiction
-  apply Or.inr <;> apply And.intro <;> assumption
-  apply Or.inl <;> apply And.intro <;> assumption
+  apply Or.inr <;> exact And.intro .zero_pos .neg_zero
+  apply Or.inl <;> exact And.intro .neg_zero .zero_pos
 
 def int.sign_mul.mul_of_nat { s: int.Sign } { a b: nat } : s * a * (b: int) = s * (a * b) := by
   cases b with
   | zero =>
     unfold of_nat
     simp only
-    rw [zero_eq, mul.zero_right, nat.zero_eq, nat.mul_zero]
+    rw [zero_eq, mul_zero, nat.zero_eq, nat.mul_zero]
     cases s <;> rfl
   | succ b =>
   cases a with
@@ -297,82 +261,106 @@ def int.sign_mul.mul_of_nat { s: int.Sign } { a b: nat } : s * a * (b: int) = s 
       apply nat.noConfusion
     }
 
-def int.mul.add_inc (a b: int) : a * b.inc = a * b + a := by
-  rw [int.inc.eq_add_one, int.mul.add_right]
-  congr
-  rw [int.mul.one_right]
-
-def int.mul.inc_add (a b: int) : a.inc * b = a * b + b := by
-  rw [int.inc.eq_add_one, int.mul.add_left]
-  congr
-  rw [int.mul.one_left]
-
-def int.mul.add_dec (a b: int) : a * b.dec = a * b - a := by
-  rw [int.dec.eq_add_neg_one, int.mul.add_right]
-  congr
-  rw [int.mul.neg_one_right]
-
-def int.mul.dec_add (a b: int) : a.dec * b = a * b - b := by
-  rw [int.dec.eq_add_neg_one, int.mul.add_left]
-  congr
-  rw [int.mul.neg_one_left]
-
 def int.mul.lift_nat (a b: nat) : (a: int) * (b: int) = of_nat (a * b) := by
   induction b with
   | zero =>
     have : of_nat 0 = 0 := rfl
-    rw [nat.zero_eq, nat.mul_zero, this, mul.zero_right]
+    rw [nat.zero_eq, nat.mul_zero, this, mul_zero]
   | succ b ih =>
-    rw [int.inc.of_nat_succ, int.mul.add_inc, nat.mul_succ, int.add.lift_nat, ih, int.add.comm]
+    rw [int.inc.of_nat_succ, int.mul_inc, nat.mul_succ, int.add.lift_nat, ih, int.add.comm]
 
 def int.mul.of_eq (a b: int) : ∀k, k ≠ 0 -> a * k = b * k -> a = b := by
-  apply int.induction (fun a => ∀b k, k ≠ 0 -> a * k = b * k -> a = b) _ _ _ a
-  {
-    clear a b
-    intro b k k_nz ak_eq_bk
-    rw [int.mul.zero_left] at ak_eq_bk
-    cases int.mul.eq_zero ak_eq_bk.symm with
-    | inr h => contradiction
-    | inl h => exact h.symm
-  }
-  {
-    clear a b
-    intro a ih b k k_nz ak_eq_bk
-    apply int.inc.inj
-    apply ih b.inc k k_nz
-    rw [int.mul.inc_add, int.mul.inc_add, ak_eq_bk]
-  }
-  {
-    clear a b
-    intro a ih b k k_nz ak_eq_bk
-    apply int.dec.inj
-    apply ih b.dec k k_nz
-    rw [int.mul.dec_add, int.mul.dec_add, ak_eq_bk]
-  }
-
-def int.mul.compare_left_pos { a b k: int } :
-  0 < k ->
-  compare a b = compare (a * k) (b * k) := by
-  intro h
-  cases k with
-  | zero | neg_succ k => contradiction
-  | pos_succ k =>
-    induction k with
-    | zero => rw [int.one_eq, int.mul.one_right, int.mul.one_right]
-    | succ k ih =>
-      rw [int.pos_succ.succ, int.mul.add_inc, int.mul.add_inc]
-      rw [ih]
-      rw [int.add.compare_strict]
-      rfl
-      apply ih
-      trivial
-      trivial
+  intro k k_ne_zero eq
+  induction a using strong_induction generalizing b with
+  | zero =>
+    rw [zero_mul] at eq
+    cases int.mul.eq_zero eq.symm
+    symm; assumption
+    contradiction
+  | inc a ih =>
+    rw [inc_mul] at eq
+    have := int.add_eq_iff_eq_sub.mp eq
+    rw [←dec_mul] at this
+    rw [ih _ this, dec_inc_inv]
+  | dec a ih =>
+    rw [dec_mul] at eq
+    have := int.eq_add_iff_sub_eq.mpr eq
+    rw [←inc_mul] at this
+    rw [ih _ this, inc_dec_inv]
 
 def int.abs.mul (a b: int) : int.abs (a * b) = int.abs a * int.abs b := by
   cases a <;> cases b
   any_goals rfl
-  all_goals rw [zero_eq, int.abs.zero, int.mul.zero_right, nat.mul_zero]
+  all_goals rw [zero_eq, int.abs.zero, int.mul_zero, nat.mul_zero]
   rfl; rfl
+
+def int.mul.le_mul_pos { a b: int } :
+  ∀{k}, 0 < k -> (a ≤ b ↔ a * k ≤ b * k)
+| .pos_succ k, h => by
+  clear h
+  suffices (0 ≤ b - a ↔ 0 ≤ (b - a) * .pos_succ k) by
+    apply Iff.trans _ (Iff.trans this _)
+    conv in a ≤ b => { rw [←@zero_add a] }
+    exact add_le_iff_le_sub
+    conv in a * pos_succ k => { rw [←@zero_add (a * pos_succ k)] }
+    symm
+    rw [sub_mul]
+    exact add_le_iff_le_sub
+  apply Iff.intro
+  intro h
+  have ⟨n,prf⟩ := of_nat.of_zero_le h
+  rw [prf]
+  cases n
+  exact .zero
+  exact .zero_pos
+  intro h
+  have ⟨n,nprf⟩ := of_nat.of_zero_le h
+  apply Decidable.byContradiction
+  intro h₀
+  have ⟨m,mprf⟩ := of_nat.of_lt_zero (lt_of_not_le h₀)
+  rw [mprf] at nprf
+  cases n <;> contradiction
+
+def int.mul.lt_mul_pos { a b: int } :
+  ∀{k}, 0 < k -> (a < b ↔ a * k < b * k)
+| .pos_succ k, h => by
+  clear h
+  suffices (0 < b - a ↔ 0 < (b - a) * .pos_succ k) by
+    apply Iff.trans _ (Iff.trans this _)
+    conv in a < b => { rw [←@zero_add a] }
+    exact add_lt_iff_lt_sub
+    conv in a * pos_succ k => { rw [←@zero_add (a * pos_succ k)] }
+    symm
+    rw [sub_mul]
+    exact add_lt_iff_lt_sub
+  apply Iff.intro
+  intro h
+  have ⟨n,prf⟩ := of_nat.of_zero_lt h
+  rw [prf]
+  exact .zero_pos
+  intro h
+  have ⟨n,nprf⟩ := of_nat.of_zero_lt h
+  apply Decidable.byContradiction
+  intro h₀
+  have ⟨m,mprf⟩ := of_nat.of_le_zero (le_of_not_lt h₀)
+  rw [mprf] at nprf
+  cases m <;> contradiction
+
+def int.mul.le_mul_neg { a b: int } :
+  ∀{k}, k < 0 -> (a ≤ b ↔ b * k ≤ a * k)
+| .neg_succ k, _ => by
+  apply Iff.trans _ neg.swap_le.symm
+  rw [←mul_neg, ←mul_neg, neg.neg_succ]
+  apply int.mul.le_mul_pos
+  exact pos_lt_zero
+
+def int.mul.lt_mul_neg { a b: int } :
+  ∀{k}, k < 0 -> (a < b ↔ b * k < a * k)
+| .neg_succ k, _ => by
+  apply Iff.trans _ neg.swap_lt.symm
+  rw [←mul_neg, ←mul_neg, neg.neg_succ]
+  apply int.mul.lt_mul_pos
+  exact pos_lt_zero
 
 def int.abs.inc_succ (a: int) : int.abs a.inc ≤ (int.abs a).succ := by
   cases a

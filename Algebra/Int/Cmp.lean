@@ -163,3 +163,31 @@ def int.lt.pos_nat (a: nat) : 0 < a -> 0 < int.of_nat a := by
 
 def int.cast_lt : a < b -> int.LT a b := id
 def int.cast_le : a ≤ b -> int.LE a b := id
+
+instance int.decLE (a b: int) : Decidable (a ≤ b) := by
+  cases a <;> cases b
+  any_goals
+    apply Decidable.isFalse
+    intro h
+    contradiction
+  exact .isTrue .zero
+  exact .isTrue .zero_pos
+  rename_i a b
+  if h:a ≤ b then
+    exact .isTrue (.pos h)
+  else
+    apply Decidable.isFalse
+    intro h
+    cases h; contradiction
+  exact .isTrue .neg_zero
+  exact .isTrue .neg_pos
+  rename_i a b
+  if h:b ≤ a then
+    exact .isTrue (.neg h)
+  else
+    apply Decidable.isFalse
+    intro h
+    cases h; contradiction
+instance : Min int := minOfLe
+instance : Max int := maxOfLe
+instance : IsDecidableLinearOrder int where
