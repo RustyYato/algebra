@@ -98,7 +98,7 @@ def CauchySeq.upper_bound (s: CauchySeq) : ∃r: Rat, ∀k, s k < r := by
     rfl
 
 def CauchySeq.upper_bound_with (s: CauchySeq) (x: Rat) : ∃r > x, ∀k, s k < r := by
-  have ⟨ r, prf ⟩  := s.upper_bound
+  have ⟨ r, prf ⟩ := s.upper_bound
   exists max r (x + 1)
   apply And.intro
   apply flip lt_of_lt_of_le
@@ -240,6 +240,8 @@ instance : Add ℝ := ⟨.add⟩
 def Real.mk_add (a b: CauchySeq) : mk a + mk b = mk (a + b) := lift₂_mk
 def Real.ofRat.add (a b: ℚ) : (a + b: ℝ) = ((a + b): ℚ) := lift₂_mk
 
+def CauchySeq.add.def (a b: CauchySeq) : a + b = a.add b := rfl
+
 def CauchySeq.neg.spec (a b: CauchySeq):
   a ≈ b ->
   is_cauchy_equiv (fun n => -a n) (fun n => -b n) := by
@@ -269,6 +271,8 @@ instance : Neg ℝ := ⟨.neg⟩
 def Real.mk_neg (a: CauchySeq) : -mk a = mk (-a) := lift_mk
 def Real.ofRat.neg (a: ℚ) : (-a: ℝ) = ((-a): ℚ) := lift_mk
 
+def CauchySeq.neg.def (a: CauchySeq) : -a = a.neg := rfl
+
 instance : Sub CauchySeq where
   sub a b := a + -b
 instance : Sub ℝ where
@@ -282,3 +286,53 @@ def Real.mk_sub (a b: CauchySeq) : mk a - mk b = mk (a - b) := by
   rfl
 
 def Real.ofRat.sub (a b: ℚ) : (a - b: ℝ) = ((a - b): ℚ) := mk_sub _ _
+
+def CauchySeq.lower_bound (s: CauchySeq) : ∃r: Rat, ∀k, r < s k := by
+  have ⟨r,prf⟩  := (-s).upper_bound
+  exists -r
+  intro k
+  apply Rat.neg.swap_lt.mpr
+  rw [Rat.neg_neg]
+  apply prf
+
+def CauchySeq.lower_bound_with (s: CauchySeq) (x: Rat) : ∃r < x, ∀k, r < s k := by
+  have ⟨r,prf⟩ := (-s).upper_bound_with (-x)
+  exists -r
+  apply And.intro
+  apply Rat.neg.swap_lt.mpr
+  rw [Rat.neg_neg]
+  apply prf.left
+  intro k
+  apply Rat.neg.swap_lt.mpr
+  rw [Rat.neg_neg]
+  apply prf.right
+
+def CauchySeq.LT (a b: CauchySeq) := ∃k, ∀n m, k ≤ n -> k ≤ m -> a n < b m
+
+instance : LT CauchySeq := ⟨CauchySeq.LT⟩
+
+def CauchySeq.shifted (a: CauchySeq) (x: nat) : CauchySeq := by
+  apply CauchySeq.mk (fun n => a (n + x))
+  intro ε ε_pos
+  have ⟨n,prf⟩ := (is_cauchy_iff_is_cauchy_equiv.mp a.seq_is_cauchy) ε ε_pos
+  exists n - x
+  intro k hk
+  dsimp
+  apply prf
+  by_cases h:n ≤ x
+  rw [nat.sub.eq_zero.mpr, nat.zero_add]
+  assumption
+  assumption
+  replace h := lt_of_not_le h
+  rw [nat.sub_add_inv]
+  apply le_of_lt
+  assumption
+  by_cases h:n ≤ x
+  apply le_trans h
+  apply nat.add.le_right
+  replace h := lt_of_not_le h
+  have := nat.add.of_le_cancel_left x (n - x) k hk
+  rw [nat.add.comm]
+  rw [nat.add.comm, nat.sub_add_inv] at this
+  assumption
+  apply le_of_lt; assumption

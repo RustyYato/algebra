@@ -1491,3 +1491,5 @@ def Rat.abs.zero : ‖0: ℚ‖ = 0 := rfl
 
 def Rat.neg_add (a b: ℚ) : -(a + b) = -a + -b := by
   rw [neg_eq_neg_one_mul, mul_add, neg_eq_neg_one_mul a, neg_eq_neg_one_mul b]
+
+def Rat.add_le_iff_le_sub {a b k: ℚ} : a + k ≤ b ↔ a ≤ b - k := sorry
