@@ -1486,3 +1486,8 @@ def Rat.abs.zero_le (a: ℚ) : 0 ≤ ‖a‖ := by
   rw [neg_neg, Rat.neg.zero]
   apply le_of_lt
   exact lt_of_not_le h
+
+def Rat.abs.zero : ‖0: ℚ‖ = 0 := rfl
+
+def Rat.neg_add (a b: ℚ) : -(a + b) = -a + -b := by
+  rw [neg_eq_neg_one_mul, mul_add, neg_eq_neg_one_mul a, neg_eq_neg_one_mul b]
