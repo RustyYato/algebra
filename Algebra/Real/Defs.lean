@@ -236,3 +236,49 @@ def Real.add : ℝ -> ℝ -> ℝ := by
 
 instance : Add CauchySeq := ⟨.add⟩
 instance : Add ℝ := ⟨.add⟩
+
+def Real.mk_add (a b: CauchySeq) : mk a + mk b = mk (a + b) := lift₂_mk
+def Real.ofRat.add (a b: ℚ) : (a + b: ℝ) = ((a + b): ℚ) := lift₂_mk
+
+def CauchySeq.neg.spec (a b: CauchySeq):
+  a ≈ b ->
+  is_cauchy_equiv (fun n => -a n) (fun n => -b n) := by
+  intro ab ε ε_pos
+  have ⟨n,nprf⟩  := ab _ ε_pos
+  exists n
+  intro x y hx hy
+  dsimp
+  rw [←Rat.abs.neg, Rat.sub.eq_add_neg, Rat.neg_add, Rat.neg_neg, Rat.neg_neg, ←Rat.sub.eq_add_neg]
+  apply nprf <;> assumption
+
+def CauchySeq.neg (a: CauchySeq) : CauchySeq := by
+  apply CauchySeq.mk (fun n => -a n)
+  apply is_cauchy_iff_is_cauchy_equiv.mpr
+  apply neg.spec <;> trivial
+
+def Real.neg : ℝ -> ℝ := by
+  apply Real.lift (fun _ => mk _) _
+  exact CauchySeq.neg
+  intro a b ab
+  apply sound
+  apply CauchySeq.neg.spec <;> assumption
+
+instance : Neg CauchySeq := ⟨.neg⟩
+instance : Neg ℝ := ⟨.neg⟩
+
+def Real.mk_neg (a: CauchySeq) : -mk a = mk (-a) := lift_mk
+def Real.ofRat.neg (a: ℚ) : (-a: ℝ) = ((-a): ℚ) := lift_mk
+
+instance : Sub CauchySeq where
+  sub a b := a + -b
+instance : Sub ℝ where
+  sub a b := a + -b
+
+def CauchySeq.sub.eq_add_neg (a b: CauchySeq) : a - b = a + -b := rfl
+def Real.sub.eq_add_neg (a b: ℝ) : a - b = a + -b := rfl
+
+def Real.mk_sub (a b: CauchySeq) : mk a - mk b = mk (a - b) := by
+  rw [sub.eq_add_neg, mk_neg, mk_add]
+  rfl
+
+def Real.ofRat.sub (a b: ℚ) : (a - b: ℝ) = ((a - b): ℚ) := mk_sub _ _
