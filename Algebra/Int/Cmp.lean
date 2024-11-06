@@ -191,3 +191,17 @@ instance int.decLE (a b: int) : Decidable (a ≤ b) := by
 instance : Min int := minOfLe
 instance : Max int := maxOfLe
 instance : IsDecidableLinearOrder int where
+
+def int.of_nat.le {a b: nat} : int.of_nat a ≤ int.of_nat b ↔ a ≤ b := by
+  cases a <;> cases b
+  exact ⟨fun _ => .zero _, fun _ => .zero⟩
+  exact ⟨fun _ => .zero _, fun _ => .zero_pos⟩
+  exact ⟨(nomatch ·), (nomatch ·)⟩
+  exact ⟨fun (int.LE.pos h) => (nat.succ_le_succ h), int.LE.pos ∘ nat.le_of_succ_le_succ⟩
+
+def int.of_nat.lt {a b: nat} : int.of_nat a < int.of_nat b ↔ a < b := by
+  cases a <;> cases b
+  exact ⟨(nomatch ·), (nomatch ·)⟩
+  exact ⟨fun _ => .zero _, fun _ => .zero_pos⟩
+  exact ⟨(nomatch ·), (nomatch ·)⟩
+  exact ⟨fun (int.LT.pos h) => (nat.succ_lt_succ h), int.LT.pos ∘ nat.lt_of_succ_lt_succ⟩

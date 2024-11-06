@@ -320,6 +320,14 @@ def int.mul.le_mul_pos { a b: int } :
   rw [mprf] at nprf
   cases n <;> contradiction
 
+def int.mul.inj_mul_pos { a b k: int } : 0 < k -> a * k = b * k -> a = b := by
+  intro k_pos h
+  apply le_antisymm
+  apply (int.mul.le_mul_pos k_pos).mpr
+  rw [h]
+  apply (int.mul.le_mul_pos k_pos).mpr
+  rw [h]
+
 def int.mul.lt_mul_pos { a b: int } :
   ∀{k}, 0 < k -> (a < b ↔ a * k < b * k)
 | .pos_succ k, h => by

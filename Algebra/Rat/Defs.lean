@@ -310,7 +310,7 @@ def Rat.sound (a b: Fract) :
   apply Fract.trans; assumption
   apply Fract.Equiv.reduce
 
-def Rat.exact (a b: Fract) :
+def Rat.exact {a b: Fract} :
   mk a = mk b -> a ≈ b := by
   intro eq
   apply Fract.trans
@@ -612,7 +612,7 @@ macro_rules | `(tactic|invert_tactic) => `(tactic|apply Rat.non_zero_of_non_zero
 def Rat.non_zero_of_non_zero₁ (a: Fract) : ¬a ≈ 0 -> mk a ≠ 0 := by
   intro h g
   apply h
-  exact exact _ _ g
+  exact exact g
 
 macro_rules | `(tactic|invert_tactic) => `(tactic|apply Rat.non_zero_of_non_zero₁; invert_tactic)
 
@@ -1041,8 +1041,6 @@ instance Rat.defLE (a b: Rat) : Decidable (a ≤ b) := by
   dsimp
   exact inferInstance
 
-#print axioms Rat.IsLinearOrderInst
-
 instance : Min Rat := minOfLe
 instance : Max Rat := maxOfLe
 instance : IsDecidableLinearOrder Rat where
@@ -1265,3 +1263,70 @@ def Rat.midpoint_lt_max {a b: Rat}: a ≠ b -> midpoint a b < max a b := by
   rfl
   assumption
   decide
+
+def Rat.abs.add_le (a b: Rat) : ‖a + b‖ ≤ ‖a‖ + ‖b‖ := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  rw [mk_add, mk_abs, mk_abs, mk_abs, mk_add]
+  apply mk_le.mpr
+  repeat rw [Fract.add.def]
+  repeat rw [Fract.abs.def]
+  rw [Fract.le.def]
+  unfold Fract.le Fract.add Fract.abs
+  dsimp
+  repeat first|rw [int.mul.lift_nat]|rw [←int.add.lift_nat]
+  apply int.of_nat.le.mpr
+  apply le_trans
+  apply nat.mul.le
+  apply int.abs.tri
+  rfl
+  rw [nat.add_mul, nat.add_mul, int.abs.mul, int.abs.mul, int.abs.of_nat, int.abs.of_nat]
+
+def Rat.abs.add_lt (a b: Rat) : (0 < a ∧ b < 0) ∨ (a < 0 ∧ 0 < b) -> ‖a + b‖ < ‖a‖ + ‖b‖ := by
+  intro h
+  apply lt_of_le_of_ne
+  apply abs.add_le
+  intro g
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  repeat first|rw [mk_add] at g|rw [mk_abs] at g|rw [Fract.add.def] at g|rw [Fract.abs.def] at g
+  unfold Fract.add Fract.abs at g
+  replace g := exact g
+  rw [Fract.Equiv.def] at g
+  dsimp at g
+  repeat first|rw [int.mul.lift_nat] at g|rw [←int.add.lift_nat] at g
+  replace g := int.of_nat.inj g
+  replace g := (nat.mul.cancel_right _ _ _ · g) (by
+    rw [←nat.mul_zero 0]
+    apply nat.mul.lt
+    exact a.den_pos
+    exact b.den_pos)
+  replace h : 0 < a ∧ b < 0 ∨ a < 0 ∧ 0 < b := by
+    clear g
+    cases h <;> (rename_i h; cases h)
+    apply Or.inl
+    rw_rat_cmp
+    apply Or.inr
+    rw_rat_cmp
+  repeat rw [Fract.lt.def] at h
+  unfold Fract.lt at h
+  erw [int.zero_mul, int.zero_mul, int.mul_one, int.mul_one] at h
+
+  have := int.abs.tri_lt (a.num * b.den) (b.num * a.den) <| by
+    cases h <;> rename_i h
+    apply Or.inl; apply And.intro
+    apply int.mul.pos_pos_is_pos
+    exact h.left
+    exact int.lt.pos_nat _ b.den_pos
+    apply int.mul.neg_pos_is_neg
+    exact h.right
+    exact int.lt.pos_nat _ a.den_pos
+    apply Or.inr; apply And.intro
+    apply int.mul.neg_pos_is_neg
+    exact h.left
+    exact int.lt.pos_nat _ b.den_pos
+    apply int.mul.pos_pos_is_pos
+    exact h.right
+    exact int.lt.pos_nat _ a.den_pos
+  rw [g, int.abs.mul, int.abs.mul, int.abs.of_nat, int.abs.of_nat] at this
+  exact lt_irrefl this
