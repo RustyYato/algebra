@@ -1,22 +1,7 @@
 import Algebra.Nat.Gcd
 import Algebra.Int.Mul
 import Algebra.Order.Basic
-
-class Invert (α: Sort u) (P: outParam (α -> Prop)) where
-  invert: ∀a: α, P a -> α
-
-class CheckedDiv (α: Sort u) (P: outParam (α -> Prop)) where
-  checked_div: α -> ∀den: α, P den -> α
-
-syntax "invert_tactic" : tactic
-
-macro_rules | `(tactic|invert_tactic) => `(tactic|trivial)
-
-syntax:max term noWs "⁻¹" : term
-macro_rules | `($x⁻¹) => `(Invert.invert $x (by invert_tactic))
-
-syntax:max term:70 "/?" term:71 : term
-macro_rules | `($x /? $y) => `(CheckedDiv.checked_div $x $y (by invert_tactic))
+import Algebra.Operators.CheckedDiv
 
 instance [Mul α] [Invert α P] : CheckedDiv α P where
   checked_div a b _ := a * b⁻¹
@@ -639,7 +624,7 @@ instance : Invert Rat (· ≠ 0) where
 
 def Rat.mk_invert (a: Fract) (h: ¬a ≈ 0) : (mk a)⁻¹ = mk a⁻¹ := liftWith_mk
 
-def Rat.mk_div (a b: Fract) (h: ¬b ≈ 0) : (mk a) /? mk b = mk a /? b := by
+def Rat.mk_div (a b: Fract) (h: ¬b ≈ 0) : (mk a) /? mk b = mk (a /? b) := by
   unfold CheckedDiv.checked_div instCheckedDivOfMulOfInvert
   dsimp
   rw [mk_invert, mk_mul]
@@ -867,39 +852,6 @@ def Rat.div.self (a: Rat) (h: a ≠ 0) : a /? a = 1 := by
     rw [int.abs.neg_succ, ←int.neg.pos_succ, int.neg_mul, ←int.mul_neg,
       int.neg.neg_succ, int.of_nat.pos,int.of_nat.pos, int.mul.lift_nat, nat.mul.comm]
 
-def Rat.div.pos (a: Rat) (h: a ≠ 0) : a /? a = 1 := by
-  suffices a * a⁻¹ = 1 from this
-  induction a using ind with | mk a =>
-  rw [mk_invert, mk_mul, mk_one]
-  any_goals invert_tactic
-  apply sound
-  cases a with | mk n d d_pos =>
-  cases d with
-  | zero => contradiction
-  | succ d =>
-  rw [Fract.invert.def, Fract.mul.def, Fract.Equiv.def]
-  unfold Fract.mul Fract.invert int.sign
-  dsimp
-  cases n with
-  | zero =>
-    exfalso
-    apply h
-    rw [mk_zero]
-    apply sound
-    rw [Fract.Equiv.def]
-    rw [Fract.num_zero, int.zero_mul, int.zero_eq, int.zero_mul]
-  | pos_succ n =>
-    dsimp
-    have : int.of_nat 1 = 1 := rfl
-    rw [Fract.den_ofNat, Fract.num_one, int.one_mul, this, int.mul_one]
-    rw [int.abs.pos_succ, int.of_nat.pos, int.of_nat.pos, int.mul.lift_nat, nat.mul.comm]
-  | neg_succ n =>
-    dsimp
-    have : int.of_nat 1 = 1 := rfl
-    rw [Fract.den_ofNat, Fract.num_one, int.one_mul, this, int.mul_one]
-    rw [int.abs.neg_succ, ←int.neg.pos_succ, int.neg_mul, ←int.mul_neg,
-      int.neg.neg_succ, int.of_nat.pos,int.of_nat.pos, int.mul.lift_nat, nat.mul.comm]
-
 def Rat.mul_div.assoc (a b c: Rat) (h: c ≠ 0) : a * (b /? c) = (a * b) /? c := by
   suffices a * (b * c⁻¹) = (a * b) /? c from this
   rw [←mul.assoc]
@@ -976,6 +928,9 @@ def Fract.lt.spec (a b c d: Fract) :
   suffices 0 * 0 < c₁ * d₁ from int.lt.pos_nat _ this
   apply nat.mul.lt <;> assumption
 
+def Rat.le' (a b: Rat) := a.num * int.of_nat b.den ≤ b.num * int.of_nat a.den
+def Rat.lt' (a b: Rat) := a.num * int.of_nat b.den < b.num * int.of_nat a.den
+
 def Rat.le : Rat -> Rat -> Prop := by
   apply liftProp₂ Fract.le
   apply Fract.le.spec
@@ -994,6 +949,22 @@ def Rat.mk_le {a b: Fract} : (mk a) ≤ (mk b) ↔ a ≤ b := by
 def Rat.mk_lt {a b: Fract} : (mk a) < (mk b) ↔ a < b := by
   unfold LT.lt
   exact liftProp₂_mk
+
+def Rat.le.def {a b: Rat} : a ≤ b ↔  a.toFract ≤ b.toFract := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  apply Iff.trans mk_le
+  apply Fract.le.spec
+  apply Fract.Equiv.reduce
+  apply Fract.Equiv.reduce
+
+def Rat.lt.def {a b: Rat} : a < b ↔  a.toFract < b.toFract := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  apply Iff.trans mk_lt
+  apply Fract.lt.spec
+  apply Fract.Equiv.reduce
+  apply Fract.Equiv.reduce
 
 syntax "rw_rat_cmp" : tactic
 
@@ -1062,3 +1033,222 @@ instance Rat.defLE (a b: Rat) : Decidable (a ≤ b) := by
 instance : Min Rat := minOfLe
 instance : Max Rat := maxOfLe
 instance : IsDecidableLinearOrder Rat where
+
+def Fract.num_pos_iff_pos {a: Fract} : 0 < a.num ↔ 0 < a := by
+  erw [Fract.lt.def, Fract.lt, int.zero_mul, int.mul_one]
+
+def Rat.num_pos_iff_pos {a: Rat} : 0 < a.num ↔ 0 < a := by
+  apply Iff.trans _ Rat.lt.def.symm
+  exact Fract.num_pos_iff_pos
+
+def Rat.neg.swap_lt {a b: Rat} : a < b ↔ (-b < -a) := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  rw [mk_neg, mk_neg]
+  apply Iff.trans mk_lt
+  apply Iff.trans _ mk_lt.symm
+  rw [Fract.lt.def, Fract.lt.def, Fract.neg.def, Fract.neg.def]
+  unfold Fract.lt Fract.neg
+  repeat rw [int.neg_mul]
+  exact int.neg.swap_lt
+
+def Rat.neg.swap_le {a b: Rat} : a ≤ b ↔ (-b ≤ -a) := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  rw [mk_neg, mk_neg]
+  apply Iff.trans mk_le
+  apply Iff.trans _ mk_le.symm
+  rw [Fract.le.def, Fract.le.def, Fract.neg.def, Fract.neg.def]
+  unfold Fract.le Fract.neg
+  repeat rw [int.neg_mul]
+  exact int.neg.swap_le
+
+def Rat.add.le_left { a b k: Rat } : a ≤ b ↔ a + k ≤ b + k := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  induction k using ind with | mk k =>
+  rw [mk_add, mk_add]
+  apply Iff.trans mk_le
+  apply Iff.trans _ mk_le.symm
+  rw [Fract.le.def, Fract.le.def]
+  repeat rw [Fract.add.def]
+  unfold Fract.le Fract.add
+  dsimp
+  rw [int.add_mul, int.add_mul]
+  repeat rw [←int.mul.lift_nat]
+  repeat rw [int.mul.comm k.num]
+  repeat rw [int.mul.assoc]
+  rw [int.mul.comm_left k.den, int.mul.comm_left k.den,
+    int.mul.comm_left k.num, int.mul.comm_left k.num,
+    ←int.mul.assoc a.num, ←int.mul.assoc b.num,
+    ←int.mul.assoc a.den, ←int.mul.assoc b.den,
+    int.mul.comm b.den a.den]
+  apply Iff.trans _ int.add.le_left
+  apply Iff.trans _ (int.mul.le_mul_pos _)
+  rfl
+  apply int.mul.pos_pos_is_pos  <;> exact int.lt.pos_nat _ k.den_pos
+
+def Rat.add.lt_left { a b k: Rat } : a < b ↔ a + k < b + k := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  induction k using ind with | mk k =>
+  rw [mk_add, mk_add]
+  apply Iff.trans mk_lt
+  apply Iff.trans _ mk_lt.symm
+  rw [Fract.lt.def, Fract.lt.def]
+  repeat rw [Fract.add.def]
+  unfold Fract.lt Fract.add
+  dsimp
+  rw [int.add_mul, int.add_mul]
+  repeat rw [←int.mul.lift_nat]
+  repeat rw [int.mul.comm k.num]
+  repeat rw [int.mul.assoc]
+  rw [int.mul.comm_left k.den, int.mul.comm_left k.den,
+    int.mul.comm_left k.num, int.mul.comm_left k.num,
+    ←int.mul.assoc a.num, ←int.mul.assoc b.num,
+    ←int.mul.assoc a.den, ←int.mul.assoc b.den,
+    int.mul.comm b.den a.den]
+  apply Iff.trans _ int.add.lt_left
+  apply Iff.trans _ (int.mul.lt_mul_pos _)
+  rfl
+  apply int.mul.pos_pos_is_pos  <;> exact int.lt.pos_nat _ k.den_pos
+
+def Rat.add.le_right { a b k: Rat } : a ≤ b ↔ k + a ≤ k + b := by
+  rw [add.comm k, add.comm k]
+  apply add.le_left
+
+def Rat.add.lt_right { a b k: Rat } : a < b ↔ k + a < k + b := by
+  rw [add.comm k, add.comm k]
+  apply add.lt_left
+
+def Rat.add.le { a b c d: Rat } : a ≤ c -> b ≤ d -> a + b ≤ c + d := by
+  intro ac bd
+  apply le_trans
+  apply (add.le_left (b := c)).mp
+  assumption
+  apply add.le_right.mp
+  assumption
+
+def Rat.add.lt { a b c d: Rat } : a < c -> b < d -> a + b < c + d := by
+  intro ac bd
+  apply lt_trans
+  apply (add.lt_left (b := c)).mp
+  assumption
+  apply add.lt_right.mp
+  assumption
+
+def Rat.add_lt_of_lt_of_le { a b c d: Rat } : a < c -> b ≤ d -> a + b < c + d := by
+  intro ac bd
+  apply lt_of_lt_of_le
+  apply (add.lt_left (b := c)).mp
+  assumption
+  apply add.le_right.mp
+  assumption
+
+def Rat.add_lt_of_le_of_lt { a b c d: Rat } : a ≤ c -> b < d -> a + b < c + d := by
+  intro ac bd
+  apply lt_of_le_of_lt
+  apply (add.le_left (b := c)).mp
+  assumption
+  apply add.lt_right.mp
+  assumption
+
+def Rat.mul.le_mul_pos { a b k: Rat } : 0 < k -> (a ≤ b ↔ a * k ≤ b * k) := by
+  intro h
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  induction k using ind with | mk k =>
+  rw [mk_mul, mk_mul]
+  apply Iff.trans mk_le
+  apply Iff.trans _ mk_le.symm
+  rw [Fract.le.def, Fract.le.def]
+  repeat rw [Fract.mul.def]
+  unfold Fract.mul Fract.le
+  dsimp
+  repeat rw [←int.mul.lift_nat]
+  rw [int.mul.assoc, int.mul.comm_left k.num]
+  rw [int.mul.assoc, int.mul.comm_left k.num]
+  rw [←int.mul.assoc a.num, ←int.mul.assoc b.num]
+  apply int.mul.le_mul_pos
+  apply int.mul.pos_pos_is_pos
+  apply Fract.num_pos_iff_pos.mpr
+  exact mk_lt.mp h
+  exact int.lt.pos_nat _ k.den_pos
+
+def Rat.mul.lt_mul_pos { a b k: Rat } : 0 < k -> (a < b ↔ a * k < b * k) := by
+  intro h
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  induction k using ind with | mk k =>
+  rw [mk_mul, mk_mul]
+  apply Iff.trans mk_lt
+  apply Iff.trans _ mk_lt.symm
+  rw [Fract.lt.def, Fract.lt.def]
+  repeat rw [Fract.mul.def]
+  unfold Fract.mul Fract.lt
+  dsimp
+  repeat rw [←int.mul.lift_nat]
+  rw [int.mul.assoc, int.mul.comm_left k.num]
+  rw [int.mul.assoc, int.mul.comm_left k.num]
+  rw [←int.mul.assoc a.num, ←int.mul.assoc b.num]
+  apply int.mul.lt_mul_pos
+  apply int.mul.pos_pos_is_pos
+  apply Fract.num_pos_iff_pos.mpr
+  exact mk_lt.mp h
+  exact int.lt.pos_nat _ k.den_pos
+
+def Rat.midpoint (a b: Rat) := (a + b) /? 2
+
+def Rat.two_mul (a: Rat) : 2 * a = a + a := by
+  have : (2: Rat) = 1 + 1 := rfl
+  rw [this, add_mul, one_mul]
+
+def Rat.min_le_midpoint (a b: Rat): min a b ≤ midpoint a b := by
+  unfold midpoint
+  rw [←mul_div_cancel 2 (min a b) (by decide), mul_div.assoc, two_mul]
+  apply (mul.le_mul_pos _).mp
+  apply add.le
+  exact min_le_left a b
+  exact min_le_right a b
+  decide
+
+def Rat.midpoint_le_max (a b: Rat): midpoint a b ≤ max a b := by
+  unfold midpoint
+  rw [←mul_div_cancel 2 (max a b) (by decide), mul_div.assoc, two_mul]
+  apply (mul.le_mul_pos _).mp
+  apply add.le
+  exact le_max_left a b
+  exact le_max_right a b
+  decide
+
+def Rat.min_lt_midpoint {a b: Rat}: a ≠ b -> min a b < midpoint a b := by
+  intro h
+  unfold midpoint
+  rw [←mul_div_cancel 2 (min a b) (by decide), mul_div.assoc, two_mul]
+  apply (mul.lt_mul_pos _).mp
+  cases lt_or_gt_of_ne h <;> rename_i h
+  rw [min_of_le _ _ (le_of_lt h)]
+  apply add_lt_of_le_of_lt
+  rfl
+  assumption
+  rw [min_comm, min_of_le _ _ (le_of_lt h)]
+  apply add_lt_of_lt_of_le
+  assumption
+  rfl
+  decide
+
+def Rat.midpoint_lt_max {a b: Rat}: a ≠ b -> midpoint a b < max a b := by
+  intro h
+  unfold midpoint
+  rw [←mul_div_cancel 2 (max a b) (by decide), mul_div.assoc, two_mul]
+  apply (mul.lt_mul_pos _).mp
+  cases lt_or_gt_of_ne h <;> rename_i h
+  rw [max_of_le _ _ (le_of_lt h)]
+  apply add_lt_of_lt_of_le
+  assumption
+  rfl
+  rw [max_comm, max_of_le _ _ (le_of_lt h)]
+  apply add_lt_of_le_of_lt
+  rfl
+  assumption
+  decide

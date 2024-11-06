@@ -131,6 +131,19 @@ def le_of_not_le : ¬(a ≤ b) -> b ≤ a := le_of_lt ∘ lt_of_not_le
 
 def lt_asymm : a < b -> b < a -> False := (lt_irrefl <| lt_trans · ·)
 
+def lt_or_gt_of_ne : a ≠ b -> a < b ∨ b < a := by
+  intro h
+  cases le_total a b <;> rename_i h
+  cases lt_or_eq_of_le h
+  apply Or.inl
+  assumption
+  contradiction
+  apply Or.inr
+  apply lt_of_le_of_ne
+  assumption
+  symm
+  assumption
+
 class IsDecidableLinearOrder (α: Type _) [LE α] [LT α] [Min α] [Max α] extends IsLinearOrder α where
   decLE (a b: α): Decidable (a ≤ b) := by intros; exact inferInstance
   decLT (a b: α): Decidable (a < b) := decidable_of_iff _ (IsLinearOrder.lt_iff_le_and_not_le (a := a) (b := b)).symm
@@ -346,6 +359,10 @@ def le_max_right (a b: α) : b ≤ max a b := by
 def min_of_le (a b: α) : a ≤ b -> min a b = a := by
   intro h
   rw [min_def, if_pos h]
+
+def max_of_le (a b: α) : a ≤ b -> max a b = b := by
+  intro h
+  rw [max_def, if_pos h]
 
 def min_le_comm (a b: α) : min a b ≤ min b a := by
   apply le_min_iff.mpr
