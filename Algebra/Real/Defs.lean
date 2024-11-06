@@ -1,6 +1,9 @@
 import Algebra.Rat.Defs
 import Algebra.Equiv
 
+def CauchySeq.Eventually (P: nat -> Prop) : Prop := ∃k, ∀n, k ≤ n -> P n
+def CauchySeq.Eventually₂ (P: nat -> nat -> Prop) : Prop := ∃k, ∀n m, k ≤ n -> k ≤ m -> P n m
+
 def CauchySeq.is_cauchy (f: nat -> Rat) : Prop :=
   ∀ε: Rat, 0 < ε -> ∃n: nat, ∀k ≥ n, ‖f n - f k‖ < ε
 
@@ -307,9 +310,12 @@ def CauchySeq.lower_bound_with (s: CauchySeq) (x: Rat) : ∃r < x, ∀k, r < s k
   rw [Rat.neg_neg]
   apply prf.right
 
-def CauchySeq.LT (a b: CauchySeq) := ∃k, ∀n m, k ≤ n -> k ≤ m -> a n < b m
+def CauchySeq.IsPos (a: CauchySeq) := ∃B > 0, Eventually fun n => B ≤ a n
+def CauchySeq.IsNeg (a: CauchySeq) := ∃B < 0, Eventually fun n => a n ≤ B
+def CauchySeq.IsZero (a: CauchySeq) := ∀ε > 0, Eventually fun n => ‖a n‖ ≤ ε
 
-instance : LT CauchySeq := ⟨CauchySeq.LT⟩
+instance : LT CauchySeq where
+  lt a b := (a - b).IsPos
 
 def CauchySeq.shifted (a: CauchySeq) (x: nat) : CauchySeq := by
   apply CauchySeq.mk (fun n => a (n + x))
