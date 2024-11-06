@@ -1045,6 +1045,9 @@ instance : Min Rat := minOfLe
 instance : Max Rat := maxOfLe
 instance : IsDecidableLinearOrder Rat where
 
+def Fract.zero_le_num_iff_zero_le {a: Fract} : 0 ≤ a.num ↔ 0 ≤ a := by
+  erw [Fract.le.def, Fract.le, int.zero_mul, int.mul_one]
+
 def Fract.num_pos_iff_pos {a: Fract} : 0 < a.num ↔ 0 < a := by
   erw [Fract.lt.def, Fract.lt, int.zero_mul, int.mul_one]
 
@@ -1330,3 +1333,154 @@ def Rat.abs.add_lt (a b: Rat) : (0 < a ∧ b < 0) ∨ (a < 0 ∧ 0 < b) -> ‖a 
     exact int.lt.pos_nat _ a.den_pos
   rw [g, int.abs.mul, int.abs.mul, int.abs.of_nat, int.abs.of_nat] at this
   exact lt_irrefl this
+
+def Rat.ne_zero_of_pos (a: Rat) : 0 < a -> a ≠ 0 := by
+  intro h
+  symm
+  apply ne_of_lt
+  assumption
+
+macro_rules | `(tactic|invert_tactic) => `(tactic|apply Rat.ne_zero_of_pos; invert_tactic)
+
+def Rat.mul.pos { a b: Rat } : 0 < a -> 0 < b -> 0 < a * b := by
+  intro a_pos b_pos
+  rw [←zero_mul b]
+  apply (mul.lt_mul_pos b_pos).mp
+  exact a_pos
+
+def Rat.invert.pos { a: Rat } : (h: 0 < a) -> 0 < a⁻¹ := by
+  intro a_pos
+  induction a using ind with | mk a =>
+  rw [mk_invert]
+  rw [mk_zero] at *
+  have a_pos := mk_lt.mp a_pos
+  apply (mk_lt (a := 0) (b := a.invert (by
+    apply Ne.symm
+    apply ne_of_lt
+    assumption))).mpr
+  apply Fract.num_pos_iff_pos.mp
+  rw [Fract.invert]
+  dsimp only
+  have := Fract.num_pos_iff_pos.mpr a_pos
+  rw [←@int.abs.sign a.num] at this
+  match h:a.num with
+  | .pos_succ _ =>
+    have := a.den_pos
+    cases h:a.den
+    rw [h] at this
+    contradiction
+    exact .zero_pos
+  | .zero =>
+    rw [h] at this
+    contradiction
+  | .neg_succ a =>
+    rw [h] at this
+    contradiction
+  intro ha
+  rw [sound _ _ ha] at a_pos
+  exact lt_irrefl a_pos
+
+def Rat.div.pos { ε k: Rat } : 0 < ε -> (h: 0 < k) -> 0 < ε /? k := by
+  intro ε_pos k_pos
+  apply Rat.mul.pos
+  assumption
+  apply Rat.invert.pos
+  assumption
+
+def Rat.half_pos {ε: Rat} : 0 < ε -> 0 < ε / 2 := by
+  intro h
+  apply div.pos h
+  trivial
+
+def Rat.div.of_pos {a b: Rat} : (h: 0 < b) -> a / b = a /? b := by
+  intro h
+  unfold HDiv.hDiv instHDiv Div.div instDivRat
+  dsimp
+  rw [dif_neg]
+
+def Rat.half_sum (ε: Rat) : ε = ε / 2 + ε / 2 := by
+  rw [←Rat.two_mul (ε / 2)]
+  rw [div.of_pos, mul_div.assoc, mul.comm 2, ←mul_div.assoc, div.self, mul_one]
+  trivial
+
+def Rat.mul.right_comm (a b c: Rat) :
+  a * b * c = a * c * b := by rw [Rat.mul.assoc, Rat.mul.comm b, Rat.mul.assoc]
+
+def Rat.mul.left_comm (a b c: Rat) :
+  a * b * c = c * b * a := by rw [Rat.mul.comm _ c, Rat.mul.comm a, Rat.mul.assoc]
+
+def Rat.mul.comm_left (a b c: Rat) :
+  a * (b * c) = b * (a * c) := by
+  rw [←Rat.mul.assoc, ←Rat.mul.assoc, Rat.mul.comm a]
+
+def Rat.mul.comm_right (a b c: Rat) :
+  a * (b * c) = c * (b * a) := by
+  rw [Rat.mul.comm _ c, Rat.mul.comm a, Rat.mul.assoc]
+
+def Rat.add.right_comm (a b c: Rat) :
+  a + b + c = a + c + b := by rw [Rat.add.assoc, Rat.add.comm b, Rat.add.assoc]
+
+def Rat.add.left_comm (a b c: Rat) :
+  a + b + c = c + b + a := by rw [Rat.add.comm _ c, Rat.add.comm a, Rat.add.assoc]
+
+def Rat.add.comm_left (a b c: Rat) :
+  a + (b + c) = b + (a + c) := by
+  rw [←Rat.add.assoc, ←Rat.add.assoc, Rat.add.comm a]
+
+def Rat.add.comm_right (a b c: Rat) :
+  a + (b + c) = c + (b + a) := by
+  rw [Rat.add.comm _ c, Rat.add.comm a, Rat.add.assoc]
+
+def Rat.neg.zero : (-0: Rat) = 0 := rfl
+
+def Rat.abs.eq_max (a: Rat) : ‖a‖ = max a (-a) := by
+  induction a using ind with | mk a =>
+  cases a with | mk n d d_pos =>
+  rw [mk_abs, Fract.abs.def, Fract.abs, max_def, int.abs.def, int.abs, mk_neg]
+  cases n <;> dsimp
+  rw [if_pos]
+  apply sound
+  rfl
+  apply mk_le.mpr
+  erw [int.zero_eq, Fract.neg.def, Fract.neg]
+  dsimp
+  rw [int.neg.zero]
+  apply mk_le.mp
+  rfl
+  rw [if_neg]
+  apply sound
+  rfl
+  intro h
+  replace h := mk_le.mp h
+  rw [Fract.neg.def, Fract.neg, Fract.le.def, Fract.le, int.neg.pos_succ] at h
+  dsimp at h
+  rename_i a
+  have : int.neg_succ a * int.of_nat d < int.pos_succ a * int.of_nat d := by
+    apply (int.mul.lt_mul_pos _).mp
+    exact .neg_pos
+    apply int.lt.pos_nat
+    assumption
+  exact lt_irrefl <| lt_of_le_of_lt h this
+  rw [if_pos]
+  apply sound
+  rfl
+  rw [Fract.neg.def, Fract.neg, int.neg.neg_succ]
+  dsimp
+  apply mk_le.mpr
+  rw [Fract.le.def, Fract.le]
+  dsimp
+  apply (int.mul.le_mul_pos _).mp
+  exact .neg_pos
+  apply int.lt.pos_nat
+  assumption
+
+def Rat.abs.zero_le (a: Rat) : 0 ≤ ‖a‖ := by
+  rw [abs.eq_max]
+  apply le_max_iff.mpr
+  by_cases h:0 ≤ a
+  exact .inl h
+  apply Or.inr
+  apply neg.swap_le.mpr
+  rw [neg_neg, Rat.neg.zero]
+  apply le_of_lt
+  exact lt_of_not_le h
