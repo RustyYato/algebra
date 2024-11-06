@@ -2,6 +2,7 @@ import Algebra.Nat.Gcd
 import Algebra.Int.Mul
 import Algebra.Order.Basic
 import Algebra.Operators.CheckedDiv
+import Algebra.Operators.AbsVal
 
 instance [Mul α] [Invert α P] : CheckedDiv α P where
   checked_div a b _ := a * b⁻¹
@@ -12,7 +13,7 @@ structure Fract where
   den_pos: 0 < den
 deriving Repr, DecidableEq
 
-def Fract.is_reduced (f: Fract) : Prop := f.num.abs.gcd f.den = 1
+def Fract.is_reduced (f: Fract) : Prop := ‖f.num‖.gcd f.den = 1
 
 structure Rat extends Fract where
   ofFract ::
@@ -106,14 +107,14 @@ def Fract.symm {a: Fract} : a ≈ b -> b ≈ a := Fract.instEquiv.symm
 def Fract.trans {a b c: Fract} : a ≈ b -> b ≈ c -> a ≈ c := Fract.instEquiv.trans
 
 def Fract.reduce (r: Fract) : Fract := ⟨
-    (r.num.sign * (r.num.abs / (r.num.abs.gcd r.den))),
-    (r.den / (r.num.abs.gcd r.den)), by
+    (r.num.sign * (‖r.num‖ / (‖r.num‖.gcd r.den))),
+    (r.den / (‖r.num‖.gcd r.den)), by
     apply nat.div.gt_zero r.den
     apply nat.gcd.gt_zero (Or.inr _)
     exact r.den_pos
     apply nat.dvd.le
     exact r.den_pos
-    exact nat.gcd.dvd_right r.num.abs r.den⟩
+    exact nat.gcd.dvd_right ‖r.num‖ r.den⟩
 
 def Fract.reduce.spec (r: Fract) : r.reduce.is_reduced := by
   cases r with | mk n d dpos =>
@@ -339,8 +340,8 @@ def Fract.reduce.of_is_reduced (f: Fract) :
   | zero => congr; rw [red, nat.div.one]
   | pos_succ n
   | neg_succ n =>
-    unfold int.abs
-    unfold int.abs at red
+    try rw [int.abs.pos_succ] at red
+    try rw [int.abs.neg_succ] at red
     dsimp at *
     congr
     · split <;> rename_i h
@@ -356,8 +357,12 @@ def Fract.reduce.of_is_reduced (f: Fract) :
         rw [int.neg.neg_succ, int.neg.neg_succ]
       rw [int.of_nat.pos, int.of_nat.pos, ←h]
       congr
+      try rw [int.abs.pos_succ]
+      try rw [int.abs.neg_succ]
       rw [red, nat.div.one]
-    · rw [red, nat.div.one]
+    · try rw [int.abs.pos_succ]
+      try rw [int.abs.neg_succ]
+      rw [red, nat.div.one]
 
 def Rat.lift : (f: Fract -> α) -> (∀a b, a ≈ b -> f a = f b) -> Rat -> α := fun f _ r => f r.toFract
 def Rat.lift_mk : lift f all_eq (mk a) = f a := by
@@ -510,11 +515,14 @@ def Rat.mk_sub (a b: Fract) : mk a - mk b = mk (a - b) := by
   dsimp
   rw [mk_neg, mk_add]
 
-def Fract.abs (a: Fract) : Fract := .mk (int.of_nat a.num.abs) a.den a.den_pos
+def Fract.abs (a: Fract) : Fract := .mk ‖a.num‖ a.den a.den_pos
 
-def Fract.abs.spec (a b: Fract) : a ≈ b -> a.abs ≈ b.abs := by
+instance : AbsoluteValue Fract Fract := ⟨Fract.abs⟩
+def Fract.abs.def (a: Fract) : ‖a‖ = a.abs := rfl
+
+def Fract.abs.spec (a b: Fract) : a ≈ b -> ‖a‖ ≈ ‖b‖ := by
   intro ab
-  rw [Equiv.def]; unfold abs
+  rw [Equiv.def, abs.def, abs.def]; unfold abs
   dsimp
   cases a with | mk an ad ad_pos =>
   cases b with | mk bn bd bd_pos =>
@@ -536,7 +544,11 @@ def Rat.abs : Rat -> Rat := by
   apply Fract.abs.spec
   assumption
 
-def Rat.mk_abs (a: Fract) : (mk a).abs = mk a.abs := lift_mk
+instance : AbsoluteValue Rat Rat := ⟨Rat.abs⟩
+
+def Rat.mk_abs (a: Fract) : ‖mk a‖ = mk ‖a‖ := by
+  unfold AbsoluteValue.abs
+  exact lift_mk
 
 instance : OfNat Fract n where
   ofNat := Fract.mk n 1 nat.zero_lt_succ
@@ -563,7 +575,7 @@ def Rat.mk_ofNat : mk (OfNat.ofNat n) = OfNat.ofNat n := by
   rw [nat.gcd.one_right]
 
 def Fract.invert (a: Fract) : ¬a ≈ 0 -> Fract :=
-  fun h => .mk (a.num.sign * a.den) a.num.abs <| by
+  fun h => .mk (a.num.sign * a.den) ‖a.num‖ <| by
     cases a with | mk n d d_pos =>
     cases n
     exfalso
@@ -807,16 +819,17 @@ def Rat.sub.self (a: Rat) : a - a = 0 := by
   have : (1: Rat) - 1 = 0 := rfl
   rw [this, zero_mul]
 
-def Rat.abs.neg (a: Rat) : (-a).abs = a.abs := by
+def Rat.abs.neg (a: Rat) : ‖-a‖ = ‖a‖ := by
   induction a using ind with | mk a =>
   rw [mk_neg, mk_abs, mk_abs]
   apply sound
   rw [Fract.Equiv.def, Fract.neg.def]
-  unfold Fract.abs Fract.neg
-  dsimp
-  rw [int.abs.neg]
+  rw [Fract.abs.def, Fract.abs.def]
+  unfold Fract.abs
+  erw [int.abs.neg]
+  rfl
 
-def Rat.abs.sub_comm (a b: Rat) : (a - b).abs = (b - a).abs := by
+def Rat.abs.sub_comm (a b: Rat) : ‖a - b‖ = ‖b - a‖ := by
   rw [←abs.neg (a - b), sub.neg]
 
 def Rat.div.self (a: Rat) (h: a ≠ 0) : a /? a = 1 := by

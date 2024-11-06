@@ -3,7 +3,7 @@ import Algebra.Int.Abs
 import Algebra.Nat.Mul
 import Algebra.ClassicLogic
 
-def int.mul (a b: int) : int := a.sign * b.sign * (a.abs * b.abs)
+def int.mul (a b: int) : int := a.sign * b.sign * (‖a‖ * ‖b‖)
 
 instance int.mul.inst : Mul int := ⟨ int.mul ⟩
 
@@ -28,7 +28,7 @@ def int.one_mul { b: int } : 1 * b = b := by
     unfold abs
     simp
   }
-  rw [nat.one_eq, nat.one_mul, abs.sign]
+  erw [abs.one, nat.one_mul, abs.sign]
 
 def int.neg_one_mul { b: int } : -1 * b = -b := by
   rw [mul.def]
@@ -39,7 +39,7 @@ def int.neg_one_mul { b: int } : -1 * b = -b := by
     unfold abs
     simp
   }
-  rw [nat.one_eq, nat.one_mul, abs.flip_sign]
+  erw [abs.neg_one, nat.one_mul, abs.flip_sign]
 
 def int.neg_mul { a b: int } : -a * b = -(a * b) := by
   cases a <;> cases b <;> rfl
@@ -127,7 +127,7 @@ def int.inc_mul (a b: int) : a.inc * b = a * b + b := by
       rw [inc.pos_succ, abs.pos_succ, nat.succ_mul]
     }
     rw [int.add.sign_mul,  ←mul, inc.pos_succ, int.sign.pos]
-    conv in Sign.pos * _ * (a.succ * b.abs) => {
+    conv in Sign.pos * _ * (a.succ * ‖b‖) => {
       rw [←int.abs.pos_succ (a := a), ←int.sign.pos (x := a)]
     }
     rw [←mul, Sign.pos_left, int.abs.sign, int.add.comm]
@@ -138,7 +138,7 @@ def int.inc_mul (a b: int) : a.inc * b = a * b + b := by
         Sign.neg_left, int.abs.flip_sign, int.add.comm, ←int.sub.def, int.sub.self]
     | succ a =>
       erw [int.sign.neg, int.abs.neg_succ, int.abs.neg_succ]
-      conv in Sign.neg * _ * (a.succ.succ * b.abs) => {
+      conv in Sign.neg * _ * (a.succ.succ * ‖b‖) => {
         rw [nat.succ_mul, int.add.sign_mul]
         lhs
         rw [Sign.neg_left, int.abs.flip_sign]
@@ -288,11 +288,10 @@ def int.mul.of_eq (a b: int) : ∀k, k ≠ 0 -> a * k = b * k -> a = b := by
     rw [←inc_mul] at this
     rw [ih _ this, inc_dec_inv]
 
-def int.abs.mul (a b: int) : int.abs (a * b) = int.abs a * int.abs b := by
+def int.abs.mul (a b: int) : ‖a * b‖ = ‖a‖ * ‖b‖ := by
   cases a <;> cases b
   any_goals rfl
-  all_goals rw [zero_eq, int.abs.zero, int.mul_zero, nat.mul_zero]
-  rfl; rfl
+  all_goals rw [zero_eq, int.mul_zero, int.abs.zero, nat.mul_zero]
 
 def int.mul.le_mul_pos { a b: int } :
   ∀{k}, 0 < k -> (a ≤ b ↔ a * k ≤ b * k)
@@ -362,7 +361,7 @@ def int.mul.lt_mul_neg { a b: int } :
   apply int.mul.lt_mul_pos
   exact pos_lt_zero
 
-def int.abs.inc_succ (a: int) : int.abs a.inc ≤ (int.abs a).succ := by
+def int.abs.inc_succ (a: int) : ‖a.inc‖ ≤ ‖a‖.succ := by
   cases a
   rfl
   rfl
@@ -378,14 +377,14 @@ def int.abs.inc_succ (a: int) : int.abs a.inc ≤ (int.abs a).succ := by
   apply le_of_lt
   apply nat.lt_succ_self
 
-def int.abs.dec_succ (a: int) : int.abs a.dec ≤ (int.abs a).succ := by
+def int.abs.dec_succ (a: int) : ‖a.dec‖ ≤ ‖a‖.succ := by
   rw [←int.abs.neg, int.neg.dec]
   apply le_trans
   apply int.abs.inc_succ
   rw [int.abs.neg]
 
-def int.abs.tri (a b: int) : int.abs (a + b) ≤ int.abs a + int.abs b := by
-  have : ∀a b: nat, (int.pos_succ a + int.neg_succ b).abs ≤ a.succ + b.succ := by
+def int.abs.tri (a b: int) : ‖a + b‖ ≤ ‖a‖ + ‖b‖ := by
+  have : ∀a b: nat, ‖int.pos_succ a + int.neg_succ b‖ ≤ a.succ + b.succ := by
     clear a b
     intro a b
     rw [int.add.def, add]
@@ -438,8 +437,7 @@ def int.abs.tri (a b: int) : int.abs (a + b) ≤ int.abs a + int.abs b := by
     dsimp
     rw [int.add_nat.pos_succ, int.abs.pos_succ, nat.add_succ]
 
-def int.abs.tri_lt' (a b: nat) :
-(int.pos_succ a + int.neg_succ b).abs < (int.pos_succ a).abs + (int.neg_succ b).abs := by
+def int.abs.tri_lt' (a b: nat) : ‖int.pos_succ a + int.neg_succ b‖ < ‖int.pos_succ a‖ + ‖int.neg_succ b‖ := by
 rw [int.add.def, int.add]
 dsimp
 rw [int.sub_nat.dec]
@@ -466,9 +464,7 @@ induction b with
   clear ih
   rw [int.abs.pos_succ, int.abs.neg_succ, int.abs.neg_succ, nat.add_succ _ b.succ]
 
-def int.abs.tri_lt (a b: int) :
-  (0 < a ∧ b < 0) ∨ (a < 0 ∧ 0 < b) ->
-  int.abs (a + b) < int.abs a + int.abs b := by
+def int.abs.tri_lt (a b: int) : (0 < a ∧ b < 0) ∨ (a < 0 ∧ 0 < b) -> ‖a + b‖ < ‖a‖ + ‖b‖ := by
   intro h
   cases a <;> cases b
   all_goals (
