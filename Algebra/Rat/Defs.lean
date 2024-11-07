@@ -1544,15 +1544,44 @@ def Rat.le_add_iff_sub_le {a b k: ℚ} : a ≤ b + k ↔ a - k ≤ b := by
   apply Iff.trans _ (Rat.add.le_left (k := k)).symm
   rw [sub.eq_add_neg, add.assoc, add.comm (-k), ←sub.eq_add_neg, sub.self, add_zero]
 
-def Rat.add.le_left_pos (a b: ℚ) : 0 ≤ b -> a ≤ a + b :=
-  sorry
+def Rat.sub_add_cancel (a b: ℚ) : a - b + b = a := by
+  rw [sub.eq_add_neg, add.assoc, add.comm (-b), ←sub.eq_add_neg, sub.self, add_zero]
 
-def Rat.sub.le_left_pos (a b: ℚ) : 0 ≤ b -> a - b ≤ a :=
-  sorry
+def Rat.zero_sub (a: ℚ) : 0 - a = -a := by
+  rw [sub.eq_add_neg, zero_add]
+def Rat.add_neg_self (a: ℚ) : a + -a = 0 := by
+  rw [←sub.eq_add_neg, sub.self]
+def Rat.neg_self_add (a: ℚ) : -a + a = 0 := by
+  rw [add.comm, add_neg_self]
+
+def Rat.add_sub_cancel (a b: ℚ) : a + b - b = a := by
+  rw [sub.eq_add_neg, add.assoc, ←sub.eq_add_neg, sub.self, add_zero]
+
+def Rat.add.le_left_pos (a b: ℚ) : 0 ≤ b -> a ≤ a + b := by
+  intro h
+  conv => { lhs; rw [←add_zero a] }
+  apply add.le_right.mp
+  assumption
+
+def Rat.sub.le_left_pos (a b: ℚ) : 0 ≤ b -> a - b ≤ a := by
+  intro h
+  apply add.le_left.mpr
+  rw [sub_add_cancel]
+  apply add.le_left_pos
+  assumption
 
 def Rat.sub_zero (a: ℚ) : a - 0 = a := add_zero _
 
-def Rat.abs.mul (a b: ℚ) : ‖a‖ * ‖b‖ = ‖a * b‖ := sorry
+def Rat.abs.mul (a b: ℚ) : ‖a‖ * ‖b‖ = ‖a * b‖ := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  rw [mk_abs, mk_abs, mk_mul, mk_mul, mk_abs]
+  apply sound
+  rw [Fract.abs.def, Fract.abs.def, Fract.abs.def,
+    Fract.mul.def, Fract.mul.def]
+  unfold Fract.abs Fract.mul
+  dsimp
+  rw [int.mul.lift_nat, int.abs.mul]
 
 def Rat.abs.of_zero_le {a: ℚ} : 0 ≤ a ↔ ‖a‖ = a := by
   apply Iff.intro
@@ -1588,19 +1617,6 @@ def Rat.abs.of_le_zero {a: ℚ} : a ≤ 0 ↔ ‖a‖ = -a := by
   apply neg.swap_le.mpr
   rw [←h]
   exact zero_le a
-
-def Rat.sub_add_cancel (a b: ℚ) : a - b + b = a := by
-  rw [sub.eq_add_neg, add.assoc, add.comm (-b), ←sub.eq_add_neg, sub.self, add_zero]
-
-def Rat.zero_sub (a: ℚ) : 0 - a = -a := by
-  rw [sub.eq_add_neg, zero_add]
-def Rat.add_neg_self (a: ℚ) : a + -a = 0 := by
-  rw [←sub.eq_add_neg, sub.self]
-def Rat.neg_self_add (a: ℚ) : -a + a = 0 := by
-  rw [add.comm, add_neg_self]
-
-def Rat.add_sub_cancel (a b: ℚ) : a + b - b = a := by
-  rw [sub.eq_add_neg, add.assoc, ←sub.eq_add_neg, sub.self, add_zero]
 
 def Rat.add.is_pos_iff {a b: ℚ} : -b < a ↔ 0 < a + b := by
   apply Iff.intro
