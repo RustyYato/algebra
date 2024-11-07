@@ -3,6 +3,7 @@ import Algebra.Int.Mul
 import Algebra.Order.Basic
 import Algebra.Operators.CheckedDiv
 import Algebra.Operators.AbsVal
+import Algebra.AxiomBlame
 
 instance [Mul α] [Invert α P] : CheckedDiv α P where
   checked_div a b _ := a * b⁻¹
@@ -1488,14 +1489,26 @@ def Rat.abs.zero_le (a: ℚ) : 0 ≤ ‖a‖ := by
 
 def Rat.abs.zero : ‖0: ℚ‖ = 0 := rfl
 
+def Rat.neg.inj {a b: ℚ} : -a = -b -> a = b := by
+  intro h
+  rw [←neg_neg a, ←neg_neg b, h]
+
+def Rat.abs.eq_zero_of_le_zero (a: ℚ) : ‖a‖ ≤ 0 -> a = 0 := by
+  intro h
+  have := le_antisymm h (abs.zero_le _)
+  rw [eq_max, max_def] at this
+  split at this
+  exact neg.inj this
+  exact this
+
 def Rat.neg_add (a b: ℚ) : -(a + b) = -a + -b := by
   rw [neg_eq_neg_one_mul, mul_add, neg_eq_neg_one_mul a, neg_eq_neg_one_mul b]
 
-def Rat.div.lt_pos (a b: ℚ) : 0 < a -> 1 < b -> a / b < a := by
+def Rat.div.lt_pos (a b: ℚ) : 0 < a -> (h: 1 < b) ->
+  have : 0 < b := lt_trans (by decide) h
+  a /? b < a := by
   intro a_pos one_le_b
   have : 0 < b := lt_trans (by decide) one_le_b
-  rw [div.of_pos]
-  any_goals assumption
   apply (Rat.mul.lt_mul_pos this).mpr
   rw [mul.comm, mul_div.assoc, mul.comm, ←mul_div.assoc, div.self, mul_one]
   conv => { lhs; rw [←mul_one a] }
@@ -1576,5 +1589,190 @@ def Rat.abs.of_le_zero {a: ℚ} : a ≤ 0 ↔ ‖a‖ = -a := by
   rw [←h]
   exact zero_le a
 
-def Rat.sub_add_cancel (a b: Rat) : a - b + b = a := by
+def Rat.sub_add_cancel (a b: ℚ) : a - b + b = a := by
   rw [sub.eq_add_neg, add.assoc, add.comm (-b), ←sub.eq_add_neg, sub.self, add_zero]
+
+def Rat.zero_sub (a: ℚ) : 0 - a = -a := by
+  rw [sub.eq_add_neg, zero_add]
+def Rat.add_neg_self (a: ℚ) : a + -a = 0 := by
+  rw [←sub.eq_add_neg, sub.self]
+def Rat.neg_self_add (a: ℚ) : -a + a = 0 := by
+  rw [add.comm, add_neg_self]
+
+def Rat.add_sub_cancel (a b: ℚ) : a + b - b = a := by
+  rw [sub.eq_add_neg, add.assoc, ←sub.eq_add_neg, sub.self, add_zero]
+
+def Rat.add.is_pos_iff {a b: ℚ} : -b < a ↔ 0 < a + b := by
+  apply Iff.intro
+  intro h
+  apply (add.lt_left (k := -b)).mpr
+  rw [zero_add, ←Rat.sub.eq_add_neg, add_sub_cancel]
+  assumption
+  intro h
+  apply (add.lt_left (k := b)).mpr
+  rw [add.comm, ←sub.eq_add_neg, sub.self]
+  assumption
+
+def Rat.add.is_neg_iff {a b: ℚ} : b < -a ↔ a + b < 0 := by
+  apply Iff.trans _ neg.swap_lt.symm
+  conv in b < -a => {
+    rw [←neg_neg b]
+  }
+  rw [neg_add]
+  apply Rat.add.is_pos_iff
+
+def Rat.add.is_pos (a b: ℚ) : 0 < a -> 0 < b -> 0 < a + b := by
+  intro ha hb
+  rw [←add_zero 0]
+  apply add.lt <;> assumption
+
+def Rat.add.is_neg (a b: ℚ) : a < 0 -> b < 0 -> a + b < 0 := by
+  intro ha hb
+  rw [←add_zero 0]
+  apply add.lt <;> assumption
+
+def Rat.mul.is_pos_of_pos_pos (a b: ℚ) : 0 < a -> 0 < b -> 0 < a * b := by
+  intro ha hb
+  rw [←zero_mul b]
+  apply (mul.lt_mul_pos _).mp
+  repeat assumption
+
+def Rat.mul.is_pos_of_neg_neg (a b: ℚ) : a < 0 -> b < 0 -> 0 < a * b := by
+  intro ha hb
+  rw [←neg_neg (_ * _), ←mul_neg, ←neg_mul]
+  apply mul.is_pos_of_pos_pos
+  exact Rat.neg.swap_lt.mp ha
+  exact Rat.neg.swap_lt.mp hb
+
+def Rat.mul.is_neg_of_pos_neg (a b: ℚ) : 0 < a -> b < 0 -> a * b < 0 := by
+  intro ha hb
+  apply neg.swap_lt.mpr
+  rw [←mul_neg]
+  apply mul.is_pos_of_pos_pos
+  exact ha
+  exact Rat.neg.swap_lt.mp hb
+
+def Rat.mul.is_neg_of_neg_pos (a b: ℚ) : a < 0 -> 0 < b -> a * b < 0 := by
+  intro ha hb
+  apply neg.swap_lt.mpr
+  rw [←neg_mul]
+  apply mul.is_pos_of_pos_pos
+  exact Rat.neg.swap_lt.mp ha
+  exact hb
+
+def Rat.neg_zero : -(0: ℚ) = 0 := rfl
+
+def Rat.sub_neg (a b: ℚ) : a - -b = a + b := by rw [sub.eq_add_neg, neg_neg]
+
+def Rat.zero_le_iff_neg_le {a: ℚ} : 0 ≤ a ↔ -a ≤ a := by
+  apply Iff.intro
+  · intro h
+    apply le_trans _ h
+    exact neg.swap_le.mp h
+  · intro h
+    apply Decidable.byContradiction
+    intro g
+    replace g := lt_of_not_le g
+    have := lt_of_le_of_lt h g
+    have : 0 < a := neg.swap_lt.mpr this
+    exact lt_asymm g this
+
+def Rat.le_zero_iff_le_neg {a: ℚ} : a ≤ 0 ↔ a ≤ -a := by
+  apply Iff.trans neg.swap_le
+  apply Iff.trans _ neg.swap_le.symm
+  rw [neg_zero]
+  exact zero_le_iff_neg_le
+
+def Rat.abs.add_le_sub (a b: ℚ) : ¬(0 ≤ a ↔ 0 ≤ b) -> ‖a + b‖ ≤ ‖a - b‖ := by
+  intro diff_sign
+  rw [abs.eq_max, abs.eq_max, max_def, max_def]
+  have prf1 : a + b + (a - b) = a * 2 := by
+    rw [add.assoc, sub.eq_add_neg, add.comm_left b,
+      ←add.assoc, ←sub.eq_add_neg, sub.self, add_zero,
+      mul.comm, two_mul]
+  have prf2 : a + b + -(a - b) = b * 2 := by
+      rw [sub.neg, sub.eq_add_neg, add.assoc, add.comm_right b, ←add.assoc,
+        add_neg_self, zero_add, mul.comm, two_mul]
+
+  have prf1' : -(a + b) + -(a - b) = (-a) * 2 := by
+    rw [←neg_neg (_ + _), add.neg, sub.eq_add_neg, neg_neg, neg_neg, prf1, neg_mul]
+  have prf2' : -(a + b) + (a - b) = (-b) * 2 := by
+    rw [←neg_neg (_ + _), add.neg, neg_neg, sub.eq_add_neg, prf2, neg_mul]
+
+  split <;> split <;> rename_i h g
+
+  · have a_nonpos := add.le h g
+    rw [prf1, prf1'] at a_nonpos
+    replace a_nonpos := (mul.le_mul_pos (by decide)).mpr a_nonpos
+    replace a_nonpos := le_zero_iff_le_neg.mpr a_nonpos
+    cases lt_or_eq_of_le a_nonpos <;> rename_i ha
+    have := (Decidable.not_iff'.mp diff_sign).mp (not_le_of_lt ha)
+    rw [add.neg, sub.neg, sub.eq_add_neg, sub.eq_add_neg, add.comm b]
+    apply add.le_right.mp
+    apply zero_le_iff_neg_le.mp
+    assumption
+    subst a
+    rw [zero_add] at h
+    rw [zero_sub, neg_neg] at g
+    have g := zero_le_iff_neg_le.mpr g
+    have h := le_zero_iff_le_neg.mpr h
+    cases le_antisymm h g
+    rfl
+  · rw [add.neg]
+    apply add.le_left.mp
+    replace g := lt_of_not_le g
+    have b_nonpos := add.le h (le_of_lt g)
+    rw [prf2, prf2'] at b_nonpos
+    replace b_nonpos := (mul.le_mul_pos (by decide)).mpr b_nonpos
+    replace b_nonpos := le_zero_iff_le_neg.mpr b_nonpos
+    cases lt_or_eq_of_le b_nonpos <;> rename_i hb
+    apply zero_le_iff_neg_le.mp
+    exact (Decidable.not_iff'.mp (by
+      intro h
+      exact diff_sign (Iff.comm.mp h))).mp (not_le_of_lt hb)
+    subst b
+    rw [add_zero] at h
+    rw [sub_zero] at g
+    cases lt_irrefl <| lt_of_le_of_lt h g
+  · rw [sub.neg, add.comm]
+    apply add.le_right.mp
+    replace h := lt_of_not_le h
+    have b_nonneg := add.le (le_of_lt h) g
+    rw [prf2, prf2'] at b_nonneg
+    replace b_nonneg := (mul.le_mul_pos (by decide)).mpr b_nonneg
+    replace b_nonneg := zero_le_iff_neg_le.mpr b_nonneg
+    have a_neg := lt_of_not_le <| (Decidable.not_iff'.mp diff_sign).mpr b_nonneg
+    apply le_zero_iff_le_neg.mp
+    apply le_of_lt; assumption
+  · rw [sub.eq_add_neg]
+    apply add.le_right.mp
+    replace h := lt_of_not_le h
+    replace g := lt_of_not_le g
+    have a_nonneg := add.le (le_of_lt h) (le_of_lt g)
+    rw [prf1, prf1'] at a_nonneg
+    replace a_nonneg := (mul.le_mul_pos (by decide)).mpr a_nonneg
+    replace a_nonneg := zero_le_iff_neg_le.mpr a_nonneg
+    have a_neg := lt_of_not_le <| (Decidable.not_iff'.mp (by
+      intro h
+      exact diff_sign (Iff.comm.mp h))).mpr a_nonneg
+    apply le_zero_iff_le_neg.mp
+    apply le_of_lt; assumption
+
+def Rat.abs.sub_le_add (a b: ℚ) : (0 ≤ a ↔ 0 ≤ b) -> ‖a - b‖ ≤ ‖a + b‖ := by
+  intro h
+  by_cases hb:b=0
+  subst b
+  rw [sub_zero, add_zero]
+  have := add_le_sub a (-b)
+  rw [sub_neg, ←sub.eq_add_neg] at this
+  apply this
+  intro g
+  have := h.symm.trans g
+  apply hb
+  by_cases hb:0 ≤ b
+  apply neg.inj
+  exact le_antisymm (neg.swap_le.mp hb) (this.mp hb)
+  have hb₁ := (not_iff_not this).mp hb
+  replace hb := lt_of_not_le hb
+  replace hb₁ := lt_of_not_le hb₁
+  exact (lt_asymm (neg.swap_lt.mp hb) hb₁).elim

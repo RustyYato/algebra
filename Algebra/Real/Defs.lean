@@ -557,3 +557,84 @@ def Real.IsNeg : ℝ -> Prop := by
 
 def Real.mk_IsPos (a: CauchySeq) : (mk a).IsPos ↔ a.IsPos := liftProp_mk
 def Real.mk_IsNeg (a: CauchySeq) : (mk a).IsNeg ↔ a.IsNeg := liftProp_mk
+
+def CauchySeq.abs.proof1 (a b: Rat) :
+  0 ≤ a -> b ≤ 0 -> ‖a - b‖ < ε -> ‖a + b‖ < ε := by
+  intro ha hb habs
+  cases lt_or_eq_of_le hb <;> rename_i hb
+  apply lt_of_le_of_lt _ habs
+  apply Rat.abs.add_le_sub
+  intro h
+  have := h.mp ha
+  exact lt_irrefl <| lt_of_le_of_lt (h.mp ha) hb
+  subst b
+  rw [Rat.sub_zero] at habs
+  rw [Rat.add_zero]
+  assumption
+
+def CauchySeq.abs.spec (a : CauchySeq) :
+  a ≈ b ->
+  is_cauchy_equiv (fun n => ‖a n‖) (fun n => ‖b n‖)
+  := by
+  intro ab ε ε_pos
+  dsimp
+  have ⟨n,prf⟩ := ab _ (Rat.half_pos ε_pos)
+  exists n
+  intro x y hx hy
+  rw [Rat.abs.eq_max (a x), Rat.abs.eq_max (b y)]
+  rw [max_def, max_def]
+  split <;> split <;> rename_i h g
+  rw [←Rat.add.neg, ←Rat.sub.eq_add_neg, Rat.abs.neg]
+  apply lt_trans
+  apply prf <;> assumption
+  apply Rat.div.lt_pos ε 2
+  assumption
+  decide
+  rw [←Rat.add.neg, Rat.abs.neg]
+  rw [Rat.add.comm]
+  apply abs.proof1
+  apply Rat.zero_le_iff_neg_le.mpr
+  apply le_of_lt
+  apply lt_of_not_le
+  assumption
+  apply Rat.le_zero_iff_le_neg.mpr
+  assumption
+  rw [Rat.abs.sub_comm]
+  apply lt_trans
+  apply prf <;> assumption
+  apply Rat.div.lt_pos
+  assumption
+  decide
+  rw [Rat.sub_neg]
+  apply abs.proof1
+  apply Rat.zero_le_iff_neg_le.mpr
+  apply le_of_lt
+  apply lt_of_not_le
+  assumption
+  apply Rat.le_zero_iff_le_neg.mpr
+  assumption
+  apply lt_trans
+  apply prf <;> assumption
+  apply Rat.div.lt_pos
+  assumption
+  decide
+  apply lt_trans
+  apply prf <;> assumption
+  apply Rat.div.lt_pos
+  assumption
+  decide
+
+def CauchySeq.abs (a: CauchySeq) : CauchySeq := by
+  apply CauchySeq.mk (fun n => ‖a n‖)
+  apply abs.spec
+  rfl
+
+def Real.abs : ℝ -> ℝ := by
+  apply lift (mk ∘ CauchySeq.abs)
+  intros
+  apply sound
+  apply CauchySeq.abs.spec
+  assumption
+
+instance : AbsoluteValue CauchySeq CauchySeq := ⟨CauchySeq.abs⟩
+instance : AbsoluteValue ℝ ℝ := ⟨Real.abs⟩

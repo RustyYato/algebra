@@ -7,6 +7,30 @@ def not_iff_not (a: P ↔ Q) : ¬P ↔ ¬Q := by
   apply p
   apply a.mp q
 
+def Decidable.not_iff' [Decidable P] [Decidable Q] :
+  ¬(P ↔ Q) ↔ (¬P ↔ Q) := by
+  apply Iff.intro
+  intro h
+  apply Iff.intro
+  intro p
+  by_cases q:Q
+  assumption
+  apply (h _).elim
+  apply Iff.intro <;> (intro; contradiction)
+  intro q p
+  apply h
+  apply Iff.intro <;> (intro; assumption)
+  intro h g
+  by_cases q:Q
+  have := h.mpr q
+  have := g.mpr q
+  contradiction
+  replace h := _root_.not_iff_not h
+  replace g := _root_.not_iff_not g
+  have := h.mpr q
+  have := g.mpr q
+  contradiction
+
 namespace ClassicLogic
 
 axiom propDecide (P: Prop) : Decidable P
@@ -82,29 +106,10 @@ def iff_iff_and_or_not_and_not : (P ↔ Q) ↔ (P ∧ Q ∨ ¬P ∧ ¬Q) := by
   intro p
   exact Or.inr ⟨ p, h'.mp p ⟩
 
-def not_iff : ¬(P ↔ Q) ↔ (¬P ↔ Q) := by
-  apply flip Iff.intro
-  intro h g
-  have g' := not_iff_not g
-  have h' := not_iff_not h
-  apply byCases Q
-  intro q
-  have := h.mpr q
-  have := g.mpr q
-  contradiction
-  intro q
-  have := h'.mpr q
-  have := g'.mpr q
-  contradiction
-  intro h
-  rw [iff_iff_and_or_not_and_not,
-    not_or, not_and, not_and, not_not, not_not, And.comm] at h
-  cases h with
-  | intro l r =>
-  cases l <;> cases r
-  any_goals contradiction
-  apply Iff.intro <;> intro <;> trivial
-  apply Iff.intro <;> intro <;> trivial
+def not_iff : ¬(P ↔ Q) ↔ (¬P ↔ Q) :=
+  have := propDecide P
+  have := propDecide Q
+  Decidable.not_iff'
 
 theorem not_imp : ¬(a → b) ↔ a ∧ ¬b :=
   have := propDecide
