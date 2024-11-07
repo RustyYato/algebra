@@ -13,7 +13,7 @@ macro_rules | `(tactic|invert_tactic) => `(tactic|trivial)
 syntax:max term noWs "⁻¹" : term
 macro_rules | `($x⁻¹) => `(Invert.invert $x (by invert_tactic))
 
-syntax:max (name := checked_div) term:70 " /? " term:71 : term
+syntax:70 (name := checked_div) term:70 " /? " term:71 : term
 macro_rules | `($x /? $y) => `(CheckedDiv.checked_div $x $y (by invert_tactic))
 
 open Lean Meta PrettyPrinter Delaborator SubExpr in

@@ -1389,7 +1389,7 @@ def Rat.div.pos { ε k: ℚ } : 0 < ε -> (h: 0 < k) -> 0 < ε /? k := by
   apply Rat.invert.pos
   assumption
 
-def Rat.half_pos {ε: ℚ} : 0 < ε -> 0 < ε / 2 := by
+def Rat.half_pos {ε: ℚ} : 0 < ε -> 0 < ε /? 2 := by
   intro h
   apply div.pos h
   trivial
@@ -1400,10 +1400,9 @@ def Rat.div.of_pos {a b: ℚ} : (h: 0 < b) -> a / b = a /? b := by
   dsimp
   rw [dif_neg]
 
-def Rat.half_sum (ε: ℚ) : ε = ε / 2 + ε / 2 := by
-  rw [←Rat.two_mul (ε / 2)]
-  rw [div.of_pos, mul_div.assoc, mul.comm 2, ←mul_div.assoc, div.self, mul_one]
-  trivial
+def Rat.half_sum (ε: ℚ) : ε = ε /? 2 + ε /? 2 := by
+  rw [←Rat.two_mul (ε /? 2)]
+  rw [mul_div.assoc, mul.comm 2, ←mul_div.assoc, div.self, mul_one]
 
 def Rat.mul.right_comm (a b c: ℚ) :
   a * b * c = a * c * b := by rw [Rat.mul.assoc, Rat.mul.comm b, Rat.mul.assoc]
@@ -1492,4 +1491,90 @@ def Rat.abs.zero : ‖0: ℚ‖ = 0 := rfl
 def Rat.neg_add (a b: ℚ) : -(a + b) = -a + -b := by
   rw [neg_eq_neg_one_mul, mul_add, neg_eq_neg_one_mul a, neg_eq_neg_one_mul b]
 
-def Rat.add_le_iff_le_sub {a b k: ℚ} : a + k ≤ b ↔ a ≤ b - k := sorry
+def Rat.div.lt_pos (a b: ℚ) : 0 < a -> 1 < b -> a / b < a := by
+  intro a_pos one_le_b
+  have : 0 < b := lt_trans (by decide) one_le_b
+  rw [div.of_pos]
+  any_goals assumption
+  apply (Rat.mul.lt_mul_pos this).mpr
+  rw [mul.comm, mul_div.assoc, mul.comm, ←mul_div.assoc, div.self, mul_one]
+  conv => { lhs; rw [←mul_one a] }
+  rw [mul.comm a, mul.comm a]
+  apply (Rat.mul.lt_mul_pos _).mp
+  assumption
+  assumption
+
+def Rat.div.le_pos (a b: ℚ) : 0 ≤ a -> 1 ≤ b -> a / b ≤ a := by
+  intro a_pos one_le_b
+  have : 0 < b := lt_of_lt_of_le (by decide) one_le_b
+  rw [div.of_pos]
+  any_goals assumption
+  apply (Rat.mul.le_mul_pos this).mpr
+  rw [mul.comm, mul_div.assoc, mul.comm, ←mul_div.assoc, div.self, mul_one]
+  conv => { lhs; rw [←mul_one a] }
+  rw [mul.comm a, mul.comm a]
+  by_cases h:a = 0
+  subst h
+  rw [mul_zero, mul_zero]
+  apply (Rat.mul.le_mul_pos _).mp
+  assumption
+  apply lt_of_le_of_ne
+  assumption
+  symm
+  assumption
+
+def Rat.add_le_iff_le_sub {a b k: ℚ} : a + k ≤ b ↔ a ≤ b - k := by
+  apply Iff.trans _ (Rat.add.le_left (k := k)).symm
+  rw [sub.eq_add_neg, add.assoc, add.comm (-k), ←sub.eq_add_neg, sub.self, add_zero]
+
+def Rat.le_add_iff_sub_le {a b k: ℚ} : a ≤ b + k ↔ a - k ≤ b := by
+  apply Iff.trans _ (Rat.add.le_left (k := k)).symm
+  rw [sub.eq_add_neg, add.assoc, add.comm (-k), ←sub.eq_add_neg, sub.self, add_zero]
+
+def Rat.add.le_left_pos (a b: ℚ) : 0 ≤ b -> a ≤ a + b :=
+  sorry
+
+def Rat.sub.le_left_pos (a b: ℚ) : 0 ≤ b -> a - b ≤ a :=
+  sorry
+
+def Rat.sub_zero (a: ℚ) : a - 0 = a := add_zero _
+
+def Rat.abs.mul (a b: ℚ) : ‖a‖ * ‖b‖ = ‖a * b‖ := sorry
+
+def Rat.abs.of_zero_le {a: ℚ} : 0 ≤ a ↔ ‖a‖ = a := by
+  apply Iff.intro
+  intro h
+  rw [abs.eq_max]
+  apply flip le_antisymm
+  apply le_max_left
+  apply max_le_iff.mpr
+  apply And.intro
+  rfl
+  apply le_trans _ h
+  apply neg.swap_le.mpr
+  rw [neg_neg]
+  exact h
+  intro h
+  rw [←h]
+  exact zero_le a
+
+def Rat.abs.of_le_zero {a: ℚ} : a ≤ 0 ↔ ‖a‖ = -a := by
+  apply Iff.intro
+  intro h
+  rw [abs.eq_max]
+  apply flip le_antisymm
+  apply le_max_right
+  apply max_le_iff.mpr
+  apply And.intro
+  apply le_trans h
+  apply neg.swap_le.mpr
+  rw [neg_neg]
+  exact h
+  rfl
+  intro h
+  apply neg.swap_le.mpr
+  rw [←h]
+  exact zero_le a
+
+def Rat.sub_add_cancel (a b: Rat) : a - b + b = a := by
+  rw [sub.eq_add_neg, add.assoc, add.comm (-b), ←sub.eq_add_neg, sub.self, add_zero]
