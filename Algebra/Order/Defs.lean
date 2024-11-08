@@ -1,76 +1,20 @@
 import Algebra.Function.Basic
 import Algebra.ClassicLogic
 
-class IsLinearOrder (α: Type _) [LT α] [LE α] [Min α] [Max α]: Prop where
+class IsLinearOrder' (α: Type _) [LT α] [LE α] [Min α] [Max α]: Prop where
   lt_iff_le_and_not_le: ∀{a b: α}, a < b ↔ a ≤ b ∧ ¬b ≤ a
   le_antisymm: ∀{a b: α}, a ≤ b -> b ≤ a -> a = b
   le_total: ∀a b: α, a ≤ b ∨ b ≤ a
   le_complete: ∀a b: α, a ≤ b ∨ ¬(a ≤ b)
   le_trans: ∀{a b c: α}, a ≤ b -> b ≤ c -> a ≤ c
 
-variable [LT α] [LE α] [Min α] [Max α] [IsLinearOrder α] { a b c d k: α }
+variable [LT α] [LE α] [Min α] [Max α] [IsLinearOrder' α] { a b c d k: α }
 
-def lt_iff_le_and_not_le: ∀{a b: α}, a < b ↔ a ≤ b ∧ ¬b ≤ a := IsLinearOrder.lt_iff_le_and_not_le
-def le_antisymm: a ≤ b -> b ≤ a -> a = b := IsLinearOrder.le_antisymm
-def le_total: ∀a b: α, a ≤ b ∨ b ≤ a := IsLinearOrder.le_total
-def le_complete: ∀a b: α, a ≤ b ∨ ¬(a ≤ b) := IsLinearOrder.le_complete
-def le_trans: a ≤ b -> b ≤ c -> a ≤ c := IsLinearOrder.le_trans
-
-def IsLinearOrder.transfer (α β)
-  [LT α] [LT β] [LE α] [LE β] [Min α] [Max α] [Min β] [Max β]
-  [IsLinearOrder α]
-  (f: β -> α)
-  (finj: Function.Injective f)
-  (lt_iff: ∀{x y: β}, x < y ↔ f x < f y)
-  (le_iff: ∀{x y: β}, x ≤ y ↔ f x ≤ f y):
-  IsLinearOrder β where
-  lt_iff_le_and_not_le := by
-    intro a b
-    apply Iff.trans lt_iff
-    apply Iff.trans (lt_iff_le_and_not_le (α := α))
-    apply Iff.intro
-    intro ⟨h₀,h₁⟩
-    apply And.intro
-    apply le_iff.mpr
-    assumption
-    intro g
-    apply h₁
-    apply le_iff.mp
-    assumption
-    intro ⟨h₀,h₁⟩
-    apply And.intro
-    apply le_iff.mp
-    assumption
-    intro g
-    apply h₁
-    apply le_iff.mpr
-    assumption
-  le_antisymm := by
-    intro a b ab ba
-    apply finj
-    apply le_antisymm
-    apply le_iff.mp
-    assumption
-    apply le_iff.mp
-    assumption
-  le_total := by
-    intro a b
-    cases le_total (f a) (f b)
-    apply Or.inl; apply le_iff.mpr; assumption
-    apply Or.inr; apply le_iff.mpr; assumption
-  le_complete := by
-    intro a b
-    cases le_complete (f a) (f b)
-    apply Or.inl; apply le_iff.mpr; assumption
-    apply Or.inr; intro g; have := le_iff.mp g; contradiction
-  le_trans := by
-    intro a b c ab bc
-    apply le_iff.mpr
-    apply le_trans
-    apply le_iff.mp
-    assumption
-    apply le_iff.mp
-    assumption
+def lt_iff_le_and_not_le: ∀{a b: α}, a < b ↔ a ≤ b ∧ ¬b ≤ a := IsLinearOrder'.lt_iff_le_and_not_le
+def le_antisymm: a ≤ b -> b ≤ a -> a = b := IsLinearOrder'.le_antisymm
+def le_total: ∀a b: α, a ≤ b ∨ b ≤ a := IsLinearOrder'.le_total
+def le_complete: ∀a b: α, a ≤ b ∨ ¬(a ≤ b) := IsLinearOrder'.le_complete
+def le_trans: a ≤ b -> b ≤ c -> a ≤ c := IsLinearOrder'.le_trans
 
 def le_of_lt: a < b -> a ≤ b := fun h => (lt_iff_le_and_not_le.mp h).left
 def lt_of_le_of_not_le : a ≤ b -> ¬(b ≤ a) -> a < b := (lt_iff_le_and_not_le.mpr ⟨·, ·⟩)
@@ -162,9 +106,185 @@ def le_iff_of_lt_iff : (a < b ↔ c < d) -> (b ≤ a ↔ d ≤ c) := by
   apply not_iff_not
   assumption
 
+class IsLinearOrder (α: Type _) [LT α] [LE α] [Min α] [Max α] extends IsLinearOrder' α: Prop where
+  min_iff_le_left: ∀{a b: α}, a ≤ b ↔ min a b = a := by
+    intro a b
+    apply Iff.intro
+    intro h
+    suffices (if a ≤ b then a else b) = a from this
+    rw [if_pos h]
+    intro h
+    have h : (if a ≤ b then a else b) = a := h
+    split at h
+    assumption
+    subst h
+    apply le_refl
+  min_iff_le_right: ∀{a b: α}, b ≤ a ↔ min a b = b := by
+    intro a b
+    apply Iff.intro
+    intro h
+    suffices (if a ≤ b then a else b) = b from this
+    split
+    apply le_antisymm <;> assumption
+    rfl
+    intro h
+    have h : (if a ≤ b then a else b) = b := h
+    split at h
+    subst h
+    apply le_refl
+    apply le_of_lt
+    apply lt_of_not_le
+    assumption
+  max_iff_le_left: ∀{a b: α}, a ≤ b ↔ max a b = b := by
+    intro a b
+    apply Iff.intro
+    intro h
+    suffices (if a ≤ b then b else a) = b from this
+    rw [if_pos]
+    assumption
+    intro h
+    have h : (if a ≤ b then b else a) = b := h
+    split at h
+    assumption
+    subst h
+    apply le_refl
+  max_iff_le_right: ∀{a b: α}, b ≤ a ↔ max a b = a := by
+    intro a b
+    apply Iff.intro
+    intro h
+    suffices (if a ≤ b then b else a) = a from this
+    split
+    apply le_antisymm <;> assumption
+    rfl
+    intro h
+    have h : (if a ≤ b then b else a) = a := h
+    split at h
+    subst h
+    apply le_refl
+    apply le_of_lt
+    apply lt_of_not_le
+    assumption
+
+variable [IsLinearOrder α]
+
+def min_iff_le_left: a ≤ b ↔ min a b = a := IsLinearOrder.min_iff_le_left
+def min_iff_le_right: b ≤ a ↔ min a b = b := IsLinearOrder.min_iff_le_right
+def max_iff_le_left: a ≤ b ↔ max a b = b := IsLinearOrder.max_iff_le_left
+def max_iff_le_right: b ≤ a ↔ max a b = a := IsLinearOrder.max_iff_le_right
+
+def IsLinearOrder.transfer (α β)
+  [LT α] [LT β] [LE α] [LE β] [Min α] [Max α] [Min β] [Max β]
+  [IsLinearOrder α]
+  (f: β -> α)
+  (finj: Function.Injective f)
+  (lt_iff: ∀{x y: β}, x < y ↔ f x < f y)
+  (le_iff: ∀{x y: β}, x ≤ y ↔ f x ≤ f y)
+  (min_def: ∀{x y: β}, f (min x y) = min (f x) (f y))
+  (max_def: ∀{x y: β}, f (max x y) = max (f x) (f y)):
+  IsLinearOrder β where
+  lt_iff_le_and_not_le := by
+    intro a b
+    apply Iff.trans lt_iff
+    apply Iff.trans (lt_iff_le_and_not_le (α := α))
+    apply Iff.intro
+    intro ⟨h₀,h₁⟩
+    apply And.intro
+    apply le_iff.mpr
+    assumption
+    intro g
+    apply h₁
+    apply le_iff.mp
+    assumption
+    intro ⟨h₀,h₁⟩
+    apply And.intro
+    apply le_iff.mp
+    assumption
+    intro g
+    apply h₁
+    apply le_iff.mpr
+    assumption
+  le_antisymm := by
+    intro a b ab ba
+    apply finj
+    apply le_antisymm
+    apply le_iff.mp
+    assumption
+    apply le_iff.mp
+    assumption
+  le_total := by
+    intro a b
+    cases le_total (f a) (f b)
+    apply Or.inl; apply le_iff.mpr; assumption
+    apply Or.inr; apply le_iff.mpr; assumption
+  le_complete := by
+    intro a b
+    cases le_complete (f a) (f b)
+    apply Or.inl; apply le_iff.mpr; assumption
+    apply Or.inr; intro g; have := le_iff.mp g; contradiction
+  le_trans := by
+    intro a b c ab bc
+    apply le_iff.mpr
+    apply le_trans
+    apply le_iff.mp
+    assumption
+    apply le_iff.mp
+    assumption
+  min_iff_le_left := by
+    intro a b
+    apply Iff.intro
+    intro h
+    apply finj
+    rw [min_def]
+    apply min_iff_le_left.mp
+    apply le_iff.mp h
+    intro h
+    apply le_iff.mpr
+    apply min_iff_le_left.mpr
+    rw [←min_def]
+    congr
+  min_iff_le_right := by
+    intro a b
+    apply Iff.intro
+    intro h
+    apply finj
+    rw [min_def]
+    apply min_iff_le_right.mp
+    apply le_iff.mp h
+    intro h
+    apply le_iff.mpr
+    apply min_iff_le_right.mpr
+    rw [←min_def]
+    congr
+  max_iff_le_left := by
+    intro a b
+    apply Iff.intro
+    intro h
+    apply finj
+    rw [max_def]
+    apply max_iff_le_left.mp
+    apply le_iff.mp h
+    intro h
+    apply le_iff.mpr
+    apply max_iff_le_left.mpr
+    rw [←max_def]
+    congr
+  max_iff_le_right := by
+    intro a b
+    apply Iff.intro
+    intro h
+    apply finj
+    rw [max_def]
+    apply max_iff_le_right.mp
+    apply le_iff.mp h
+    intro h
+    apply le_iff.mpr
+    apply max_iff_le_right.mpr
+    rw [←max_def]
+    congr
+
 class IsDecidableLinearOrder (α: Type _) [LE α] [LT α] [Min α] [Max α] extends IsLinearOrder α where
   decLE (a b: α): Decidable (a ≤ b) := by intros; exact inferInstance
-  decLT (a b: α): Decidable (a < b) := decidable_of_iff _ (IsLinearOrder.lt_iff_le_and_not_le (a := a) (b := b)).symm
+  decLT (a b: α): Decidable (a < b) := decidable_of_iff _ (lt_iff_le_and_not_le (a := a) (b := b)).symm
   decEQ (a b: α): Decidable (a = b) := decidable_of_iff (a ≤ b ∧ b ≤ a) (by
   apply Iff.intro
   · rintro ⟨ab,ba⟩
@@ -195,6 +315,10 @@ instance : IsDecidableLinearOrder Bool where
   le_trans := by decide
   min_def := by decide
   max_def := by decide
+  min_iff_le_left := by decide
+  min_iff_le_right := by decide
+  max_iff_le_left := by decide
+  max_iff_le_right := by decide
 
 def min_def [IsDecidableLinearOrder α] : ∀a b: α, min a b = if a ≤ b then a else b := by
   intro a b

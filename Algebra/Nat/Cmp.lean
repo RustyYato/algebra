@@ -23,7 +23,7 @@ instance nat.decLe : ∀(a b: nat), Decidable (a ≤ b)
 instance : Min nat := minOfLe
 instance : Max nat := maxOfLe
 
-instance : IsLinearOrder nat where
+instance : IsLinearOrder' nat where
   lt_iff_le_and_not_le := by
     intro a b
     induction b generalizing a with
@@ -105,6 +105,7 @@ instance : IsLinearOrder nat where
       apply nat.LE.succ
       apply ih
       assumption
+instance : IsLinearOrder nat where
 
 def nat.lt_succ_self {a: nat} : a < a.succ := by
   induction a with

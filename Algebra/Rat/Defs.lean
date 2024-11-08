@@ -1013,7 +1013,7 @@ instance Rat.defLE (a b: ℚ) : Decidable (a ≤ b) := by
 instance : Min ℚ := minOfLe
 instance : Max ℚ := maxOfLe
 
-instance Rat.IsLinearOrderInst : IsLinearOrder ℚ where
+instance Rat.IsLinearOrderInst : IsLinearOrder' ℚ where
   lt_iff_le_and_not_le := lt_iff_le_and_not_le (α := int)
   le_antisymm := by
     intro a b ab ba
@@ -1049,6 +1049,7 @@ instance Rat.IsLinearOrderInst : IsLinearOrder ℚ where
     exact int.lt.pos_nat a.den a.den_pos
     exact int.lt.pos_nat b.den b.den_pos
 
+instance : IsLinearOrder ℚ where
 instance : IsDecidableLinearOrder ℚ where
 
 def Fract.zero_le_num_iff_zero_le {a: Fract} : 0 ≤ a.num ↔ 0 ≤ a := by

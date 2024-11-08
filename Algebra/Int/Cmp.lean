@@ -78,7 +78,7 @@ def int.of_nat.lt {a b: nat} : int.of_nat a < int.of_nat b ↔ a < b := by
   exact ⟨fun (int.LT.pos h) => (nat.succ_lt_succ h), int.LT.pos ∘ nat.lt_of_succ_lt_succ⟩
 
 
-instance : IsLinearOrder int where
+instance : IsLinearOrder' int where
   lt_iff_le_and_not_le := by
     intro a b
     cases a <;> cases b
@@ -206,4 +206,5 @@ instance : IsLinearOrder int where
     apply int.LE.pos
     apply le_trans <;> assumption
 
+instance : IsLinearOrder int where
 instance : IsDecidableLinearOrder int where
