@@ -1563,6 +1563,16 @@ def Rat.add.le_left_pos (a b: ℚ) : 0 ≤ b -> a ≤ a + b := by
   apply add.le_right.mp
   assumption
 
+def Rat.add.of_le_left_pos (a b: ℚ) : a ≤ a + b -> 0 ≤ b := by
+  intro h
+  apply add.le_right.mpr
+  rw [add_zero]
+  assumption
+
+def Rat.add.of_le_right_pos (a b: ℚ) : b ≤ a + b -> 0 ≤ a := by
+  rw [add.comm]
+  apply Rat.add.of_le_left_pos
+
 def Rat.sub.le_left_pos (a b: ℚ) : 0 ≤ b -> a - b ≤ a := by
   intro h
   apply add.le_left.mpr
@@ -1792,3 +1802,61 @@ def Rat.abs.sub_le_add (a b: ℚ) : (0 ≤ a ↔ 0 ≤ b) -> ‖a - b‖ ≤ ‖
   replace hb := lt_of_not_le hb
   replace hb₁ := lt_of_not_le hb₁
   exact (lt_asymm (neg.swap_lt.mp hb) hb₁).elim
+
+def Rat.max_eq_neg_min_neg (a b: ℚ) : max a b = -min (-a) (-b) := by
+  apply le_antisymm
+  apply max_le_iff.mpr
+  apply And.intro
+  apply neg.swap_le.mpr
+  rw [neg_neg]
+  apply min_le_left
+  apply neg.swap_le.mpr
+  rw [neg_neg]
+  apply min_le_right
+  apply le_max_iff.mpr
+  by_cases h:a < b
+  have := le_of_lt (neg.swap_lt.mp h)
+  rw [min_comm, min_of_le (a := -b) (b := -a) this, neg_neg]
+  apply Or.inr
+  rfl
+  have := neg.swap_le.mp (le_of_not_lt h)
+  rw [min_of_le (a := -a) (b := -b) this, neg_neg]
+  apply Or.inl
+  rfl
+
+def Rat.min_eq_neg_max_neg (a b: ℚ) : min a b = -max (-a) (-b) := by
+  rw [max_eq_neg_min_neg (-a) (-b), neg_neg, neg_neg, neg_neg]
+
+def Rat.abs.lt_iff {a b: ℚ} : ‖a‖ < b ↔ -b < a ∧ a < b := by
+  rw [abs.eq_max]
+  apply Iff.trans max_lt_iff
+  apply Iff.intro
+  intro ⟨h₀,h₁⟩
+  apply And.intro
+  apply neg.swap_lt.mpr
+  rw [neg_neg]
+  exact h₁
+  assumption
+  intro ⟨h₀,h₁⟩
+  apply And.intro
+  assumption
+  apply neg.swap_lt.mpr
+  rw [neg_neg]
+  exact h₀
+
+def Rat.abs.le_iff {a b: ℚ} : ‖a‖ ≤ b ↔ -b ≤ a ∧ a ≤ b := by
+  rw [abs.eq_max]
+  apply Iff.trans max_le_iff
+  apply Iff.intro
+  intro ⟨h₀,h₁⟩
+  apply And.intro
+  apply neg.swap_le.mpr
+  rw [neg_neg]
+  exact h₁
+  assumption
+  intro ⟨h₀,h₁⟩
+  apply And.intro
+  assumption
+  apply neg.swap_le.mpr
+  rw [neg_neg]
+  exact h₀

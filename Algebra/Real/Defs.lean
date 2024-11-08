@@ -638,3 +638,73 @@ def Real.abs : ℝ -> ℝ := by
 
 instance : AbsoluteValue CauchySeq CauchySeq := ⟨CauchySeq.abs⟩
 instance : AbsoluteValue ℝ ℝ := ⟨Real.abs⟩
+
+theorem CauchySeq.abv_pos_of_non_zero {f : CauchySeq} (hf : ¬f ≈ 0) :
+    ∃ K > 0, ∃ i, ∀ j ≥ i, K ≤ ‖f j‖ := by
+  haveI := ClassicLogic.propDecide
+  apply ClassicLogic.byContradiction
+  intro nk
+  refine hf fun ε ε_pos => ?_
+  replace nk : ∀ (x : ℚ), 0 < x → ∀ (x_1 : nat), ∃ x_2, ∃ (_ : x_1 ≤ x_2), ‖f x_2‖ < x := by
+    intro x hx n
+    have nk := not_exists.mp (not_and.mp (not_exists.mp nk x) hx) n
+    have ⟨m,prf⟩ := ClassicLogic.not_forall.mp nk
+    have ⟨hm,prf⟩  := ClassicLogic.not_imp.mp prf
+    exists m
+    exists hm
+    apply lt_of_not_le
+    assumption
+
+  have ⟨i,hi⟩ := f.seq_is_cauchy _ (Rat.half_pos ε_pos)
+  rcases nk _ (Rat.half_pos ε_pos) i with ⟨j, ij, hj⟩
+  refine ⟨j, fun k _ jk _ => ?_⟩
+  erw [Rat.sub_zero]
+  have := lt_of_le_of_lt (Rat.abs.add_le _ _) (Rat.add.lt (hi k j (le_trans ij jk) ij) hj)
+  rwa [Rat.sub_add_cancel, ←Rat.half_sum] at this
+
+def CauchySeq.IsPos_or_IsNeg_of_non_zero {a: CauchySeq} (h: ¬a ≈ 0) : a.IsPos ∨ a.IsNeg := by
+  have ⟨K, K_pos, i, hi⟩ := abv_pos_of_non_zero h
+  have ⟨k, kprf⟩ := a.seq_is_cauchy K K_pos
+  rcases le_total 0 (a (max i k)) with apos | aneg
+  · apply Or.inl
+    refine ⟨K,K_pos,max i k,?_⟩
+    intro j ij
+    replace ⟨ij,jk⟩  := max_le_iff.mp ij
+    have := hi j ij
+    have h₁ := hi (max i k) (le_max_left _ _)
+    have h₂ := kprf (max i k) j (le_max_right _ _) jk
+    rwa [Rat.abs.of_zero_le.mp] at this
+    rw [Rat.abs.of_zero_le.mp apos] at h₁
+    apply Rat.add.of_le_left_pos
+    apply le_trans h₁
+    apply (Rat.add.le_left (k := -K)).mpr
+    rw [Rat.add.right_comm _ _ (-K), Rat.add_neg_self, Rat.zero_add]
+    rw [Rat.abs.sub_comm] at h₂
+    have ⟨h₃, _⟩ := Rat.abs.lt_iff.mp h₂
+    apply (Rat.add.le_right (k := -a.seq (max i k))).mpr
+    rw [←Rat.add.assoc, Rat.neg_self_add, Rat.zero_add]
+    apply le_of_lt
+    rw [Rat.add.comm, ←Rat.sub.eq_add_neg]
+    assumption
+  · apply Or.inr
+    refine ⟨-K,Rat.neg.swap_lt.mp K_pos,max i k,?_⟩
+    intro j ij
+    replace ⟨ij,jk⟩ := max_le_iff.mp ij
+    have := hi j ij
+    have h₁ := hi (max i k) (le_max_left _ _)
+    have h₂ := kprf (max i k) j (le_max_right _ _) jk
+    apply Rat.neg.swap_le.mpr
+    rw [Rat.neg_neg]
+    rwa [Rat.abs.of_le_zero.mp] at this
+    rw [Rat.abs.of_le_zero.mp aneg] at h₁
+    apply Rat.neg.swap_le.mpr
+    apply Rat.add.of_le_left_pos
+    apply le_trans h₁
+    apply (Rat.add.le_left (k := -K)).mpr
+    rw [Rat.add.right_comm _ _ (-K), Rat.add_neg_self, Rat.zero_add]
+    have ⟨h₃, _⟩ := Rat.abs.lt_iff.mp h₂
+    apply (Rat.add.le_right (k := a.seq (max i k))).mpr
+    rw [←Rat.add.assoc, Rat.add_neg_self, Rat.zero_add]
+    apply le_of_lt
+    rw [←Rat.sub.eq_add_neg]
+    assumption

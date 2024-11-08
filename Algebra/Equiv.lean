@@ -95,6 +95,10 @@ def EquivUnchecked.rec
     apply @Eq.ndrecOn _ (mk _ q.get)
     apply mk_get
     apply f
+@[irreducible]
+def EquivUnchecked.liftWith (P: EquivUnchecked r -> Prop) (f: ∀x, P (mk r x) -> β) (_all_eq: ∀a b: α, r a b -> (ha: P (mk r a)) -> (hb: P (mk r b)) -> f a ha = f b hb) (q: EquivUnchecked r) (h: P q) : β := f q.get (by
+  rw [mk_get]
+  exact h)
 
 def Equiv (s: Setoid α) := EquivUnchecked s.r
 def Equiv.mk (s: Setoid α) : α -> Equiv s := EquivUnchecked.mk s.r
@@ -160,6 +164,48 @@ def Equiv.get_equiv { s: Setoid α } (a: α) : (mk s a).get ≈ a := by
 def Equiv.exists_rep : ∀a, ∃b, mk s b = a := EquivUnchecked.exists_rep
 def Equiv.get_sound { s: Setoid α } :
   ∀a b:  Equiv s, a.get ≈ b.get -> a = b := EquivUnchecked.get_sound
+@[irreducible]
+def Equiv.liftWith { s: Setoid α } (P: Equiv s -> Prop) (f: ∀x, P (mk s x) -> β) (_all_eq: ∀a b: α, a ≈ b -> (ha: P (mk s a)) -> (hb: P (mk s b)) -> f a ha = f b hb) (q: Equiv s) (h: P q) : β := EquivUnchecked.liftWith P f _all_eq q h
+def Equiv.liftWith_mk
+  { s: Setoid α }
+  {P: Equiv s -> Prop}
+  {f: ∀x, P (mk s x) -> β}
+  {all_eq: ∀a b: α, a ≈ b -> (ha: P (mk s a)) -> (hb: P (mk s b)) -> f a ha = f b hb}
+  {a: α}
+  {h: P (mk s a)}
+  : liftWith P f all_eq (mk s a) h = f a h := by
+  unfold liftWith EquivUnchecked.liftWith
+  apply all_eq
+  apply exact (Equiv.get (mk s a)) a ?_
+  rw [mk_get]
+@[irreducible]
+def Equiv.liftWith₂ { s₀: Setoid α₀ } { s₁: Setoid α₁ }
+  (P: Equiv s₀ -> Equiv  s₁ -> Prop)
+  (f: ∀(x: α₀) (y: α₁), P (mk s₀ x) (mk s₁ y) -> β)
+  (_all_eq: ∀a b c d, a ≈ c -> b ≈ d -> (ha: P (mk s₀ a) (mk s₁ b)) -> (hb: P (mk s₀ c) (mk s₁ d)) -> f a b ha = f c d hb)
+  (q₀: Equiv s₀) (q₁: Equiv s₁) (h: P q₀ q₁) : β := by
+    apply EquivUnchecked.liftWith (P q₀) _ _ q₁ h
+    intro y Py
+    apply f q₀.get
+    rw [mk_get]
+    exact Py
+    intro a c hac ha hb
+    apply _all_eq
+    apply s₀.iseqv.refl
+    assumption
+def Equiv.liftWith₂_mk
+  { s₀: Setoid α₀ } { s₁: Setoid α₁ }
+  (P: Equiv s₀ -> Equiv  s₁ -> Prop)
+  (f: ∀(x: α₀) (y: α₁), P (mk s₀ x) (mk s₁ y) -> β)
+  (all_eq: ∀a b c d, a ≈ c -> b ≈ d -> (ha: P (mk s₀ a) (mk s₁ b)) -> (hb: P (mk s₀ c) (mk s₁ d)) -> f a b ha = f c d hb)
+  (a₀: α₀) (a₁: α₁) (h: P (mk s₀ a₀) (mk s₁ a₁))
+  : liftWith₂ P f all_eq (mk s₀ a₀) (mk s₁ a₁) h = f a₀ a₁ h := by
+  unfold liftWith₂ EquivUnchecked.liftWith
+  apply all_eq
+  apply exact (Equiv.get (mk s₀ a₀)) a₀ ?_
+  rw [mk_get]
+  apply exact (Equiv.get (mk s₁ a₁)) a₁ ?_
+  rw [mk_get]
 
 example : ∀a b: EquivUnchecked rel, a ≠ b -> a.get ≠ b.get := by
   intro a b eq h
