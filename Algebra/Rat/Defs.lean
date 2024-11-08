@@ -1005,6 +1005,14 @@ macro_rules
 macro_rules
 | `(tactic|rw_rat_cmp) => `(tactic|apply And.intro <;> rw_rat_cmp)
 
+instance Rat.defLE (a b: ℚ) : Decidable (a ≤ b) := by
+  unfold LE.le instLERat le liftProp₂ Fract.le
+  dsimp
+  exact inferInstance
+
+instance : Min ℚ := minOfLe
+instance : Max ℚ := maxOfLe
+
 instance Rat.IsLinearOrderInst : IsLinearOrder ℚ where
   lt_iff_le_and_not_le := lt_iff_le_and_not_le (α := int)
   le_antisymm := by
@@ -1041,13 +1049,6 @@ instance Rat.IsLinearOrderInst : IsLinearOrder ℚ where
     exact int.lt.pos_nat a.den a.den_pos
     exact int.lt.pos_nat b.den b.den_pos
 
-instance Rat.defLE (a b: ℚ) : Decidable (a ≤ b) := by
-  unfold LE.le instLERat le liftProp₂ Fract.le
-  dsimp
-  exact inferInstance
-
-instance : Min ℚ := minOfLe
-instance : Max ℚ := maxOfLe
 instance : IsDecidableLinearOrder ℚ where
 
 def Fract.zero_le_num_iff_zero_le {a: Fract} : 0 ≤ a.num ↔ 0 ≤ a := by
@@ -2108,3 +2109,28 @@ def Rat.abs.inv (a: ℚ) (ha: a ≠ 0) : ‖a⁻¹‖ = ‖a‖⁻¹ := by
 def Rat.neg_sub_neg (a b: ℚ) : -a - -b = b - a := by
   rw [sub.eq_add_neg, neg_neg, add.comm]
   rfl
+
+def Rat.ofNat.zero_le (n: Nat) : 0 ≤ (OfNat.ofNat n: ℚ) := by
+  unfold LE.le instLERat le liftProp₂ Fract.le toFract Fract.num Fract.den
+  dsimp
+  erw [int.zero_mul, int.mul_one]
+  cases n
+  trivial
+  exact int.LE.zero_pos
+
+def Rat.ofNat.of_lt_one (n: Nat) : (OfNat.ofNat n: ℚ) < 1 -> n = 0 := by
+  unfold LT.lt instLTRat lt liftProp₂ Fract.lt toFract Fract.num Fract.den
+  dsimp
+  conv => {
+    lhs; lhs; lhs
+    unfold OfNat.ofNat instOfNatRat OfNat.ofNat instOfNatFract
+    dsimp
+  }
+  erw [int.mul_one, int.one_mul, ←int.OfNat_of_nat]
+  cases n
+  intro; rfl
+  intro h
+  rename_i n
+  cases h <;> rename_i h
+  have := nat.not_lt_zero h
+  contradiction

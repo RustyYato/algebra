@@ -1,7 +1,7 @@
 import Algebra.Function.Basic
 import Algebra.ClassicLogic
 
-class IsLinearOrder (α: Type _) [LT α] [LE α]: Prop where
+class IsLinearOrder (α: Type _) [LT α] [LE α] [Min α] [Max α]: Prop where
   lt_iff_le_and_not_le: ∀{a b: α}, a < b ↔ a ≤ b ∧ ¬b ≤ a
   le_antisymm: ∀{a b: α}, a ≤ b -> b ≤ a -> a = b
   le_total: ∀a b: α, a ≤ b ∨ b ≤ a
@@ -17,7 +17,7 @@ def le_complete: ∀a b: α, a ≤ b ∨ ¬(a ≤ b) := IsLinearOrder.le_complet
 def le_trans: a ≤ b -> b ≤ c -> a ≤ c := IsLinearOrder.le_trans
 
 def IsLinearOrder.transfer (α β)
-  [LT α] [LT β] [LE α] [LE β]
+  [LT α] [LT β] [LE α] [LE β] [Min α] [Max α] [Min β] [Max β]
   [IsLinearOrder α]
   (f: β -> α)
   (finj: Function.Injective f)

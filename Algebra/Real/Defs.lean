@@ -955,6 +955,20 @@ def Real.non_zero_of_cauchy {a: CauchySeq} : ¬a ≈ 0 -> mk a ≠ 0 := by
 
 macro_rules | `(tactic|invert_tactic) => `(tactic|apply Real.non_zero_of_cauchy <;> invert_tactic)
 
+def Real.non_zero_of_nat (n: Nat) : OfNat.ofNat (n + 1) ≠ (0: ℝ) := by
+  intro h
+  have ⟨i,prf⟩ := exact h 1 (by decide)
+  replace prf := prf i i (le_refl _) (le_refl _)
+  unfold CauchySeq.ofRat at prf
+  dsimp at prf
+  rw [Rat.sub_zero] at prf
+  rw [Rat.abs.of_zero_le.mp] at prf
+  have := Rat.ofNat.of_lt_one _ prf
+  contradiction
+  apply Rat.ofNat.zero_le
+
+macro_rules | `(tactic|invert_tactic) => `(tactic|apply Real.non_zero_of_nat)
+
 def Real.mk_inv (a: CauchySeq) (ha: ¬a ≈ 0) : (mk a)⁻¹ = mk (a⁻¹) := Equiv.liftWith_mk
 
 def CauchySeq.mul.spec (a b c d: CauchySeq) :
@@ -1225,3 +1239,9 @@ def Real.add_neg_self (a: ℝ) : a + -a = 0 := by
 
 def Real.sub.self (a: ℝ) : a - a = 0 := by
   rw [sub.eq_add_neg, add_neg_self]
+
+instance : Max ℝ where
+  max a b := (a + b + ‖a - b‖) /? 2
+
+instance : Min ℝ where
+  min a b := (a + b - ‖a - b‖) /? 2

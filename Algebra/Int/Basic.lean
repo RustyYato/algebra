@@ -104,3 +104,4 @@ def int.of_nat.inj { a b: nat } : int.of_nat a = int.of_nat b -> a = b := by
 
 def int.of_nat.pos (a: nat) : int.pos_succ a = int.of_nat a.succ := rfl
 def int.of_nat.zero : 0 = int.of_nat 0 := rfl
+def int.OfNat_of_nat : OfNat.ofNat n = int.of_nat (OfNat.ofNat n) := by cases n <;> rfl
