@@ -9,7 +9,41 @@ def CauchySeq.is_cauchy (f: nat -> Rat) : Prop :=
   ∀ε: Rat, 0 < ε -> ∃n: nat, ∀k ≥ n, ‖f n - f k‖ < ε
 
 def CauchySeq.is_cauchy_equiv (f g: nat -> Rat) : Prop :=
-  ∀ε: Rat, 0 < ε -> ∃n: nat, ∀x y, n ≤ x -> n ≤ y -> ‖f x - g y‖ < ε
+  ∀ε: Rat, 0 < ε -> Eventually₂ fun x y => ‖f x - g y‖ < ε
+
+def CauchySeq.Eventually.to₂ : Eventually a -> Eventually₂ fun i _ => a i := by
+  intro ⟨i,hi⟩
+  exists i
+  intro n _ hn _
+  apply hi; assumption
+
+def CauchySeq.Eventually.merge : Eventually a -> Eventually b -> Eventually fun i => a i ∧ b i := by
+  intro ⟨i,hi⟩ ⟨j,hj⟩
+  exists max i j
+  intro n hn
+  apply And.intro
+  apply hi
+  apply le_trans _ hn
+  apply le_max_left
+  apply hj
+  apply le_trans _ hn
+  apply le_max_right
+
+def CauchySeq.Eventually₂.merge : Eventually₂ a -> Eventually₂ b -> Eventually₂ fun i j => a i j ∧ b i j := by
+  intro ⟨i,hi⟩ ⟨j,hj⟩
+  exists max i j
+  intro m n hm hn
+  apply And.intro
+  apply hi
+  apply le_trans _ hm
+  apply le_max_left
+  apply le_trans _ hn
+  apply le_max_left
+  apply hj
+  apply le_trans _ hm
+  apply le_max_right
+  apply le_trans _ hn
+  apply le_max_right
 
 def CauchySeq.is_cauchy_iff_is_cauchy_equiv { f: nat -> Rat } :
   is_cauchy f ↔ is_cauchy_equiv f f := by
@@ -235,7 +269,6 @@ def CauchySeq.add.spec (a b c d: CauchySeq):
   intro x y hx hy
   have ⟨_, _⟩ := max_le_iff.mp hx
   have ⟨_, _⟩ := max_le_iff.mp hy
-  dsimp
   rw [Rat.sub.eq_add_neg, Rat.neg_add, Rat.add.assoc, Rat.add.comm_left (b x), ←Rat.add.assoc]
   apply lt_of_le_of_lt
   apply Rat.abs.add_le
@@ -640,7 +673,7 @@ instance : AbsoluteValue CauchySeq CauchySeq := ⟨CauchySeq.abs⟩
 instance : AbsoluteValue ℝ ℝ := ⟨Real.abs⟩
 
 theorem CauchySeq.abv_pos_of_non_zero {f : CauchySeq} (hf : ¬f ≈ 0) :
-    ∃ K > 0, ∃ i, ∀ j ≥ i, K ≤ ‖f j‖ := by
+    ∃ K > 0, Eventually fun j => K ≤ ‖f j‖ := by
   haveI := ClassicLogic.propDecide
   apply ClassicLogic.byContradiction
   intro nk
@@ -658,21 +691,21 @@ theorem CauchySeq.abv_pos_of_non_zero {f : CauchySeq} (hf : ¬f ≈ 0) :
   have ⟨i,hi⟩ := f.seq_is_cauchy _ (Rat.half_pos ε_pos)
   rcases nk _ (Rat.half_pos ε_pos) i with ⟨j, ij, hj⟩
   refine ⟨j, fun k _ jk _ => ?_⟩
-  erw [Rat.sub_zero]
+  have : ∀y, seq 0 y = 0 := fun _ => rfl
+  dsimp
+  rw [this, Rat.sub_zero]
   have := lt_of_le_of_lt (Rat.abs.add_le _ _) (Rat.add.lt (hi k j (le_trans ij jk) ij) hj)
   rwa [Rat.sub_add_cancel, ←Rat.half_sum] at this
 
 def CauchySeq.IsPos_or_IsNeg_of_non_zero {a: CauchySeq} (h: ¬a ≈ 0) : a.IsPos ∨ a.IsNeg := by
-  have ⟨K, K_pos, i, hi⟩ := abv_pos_of_non_zero h
-  have ⟨k, kprf⟩ := a.seq_is_cauchy K K_pos
-  rcases le_total 0 (a (max i k)) with apos | aneg
+  have ⟨K, K_pos, even⟩ := abv_pos_of_non_zero h
+  have ⟨i,hi⟩  := Eventually₂.merge even.to₂ (a.seq_is_cauchy K K_pos)
+  rcases le_total 0 (a i) with apos | aneg
   · apply Or.inl
-    refine ⟨K,K_pos,max i k,?_⟩
+    refine ⟨K,K_pos,i,?_⟩
     intro j ij
-    replace ⟨ij,jk⟩  := max_le_iff.mp ij
-    have := hi j ij
-    have h₁ := hi (max i k) (le_max_left _ _)
-    have h₂ := kprf (max i k) j (le_max_right _ _) jk
+    have ⟨this,_⟩ := hi j i ij (le_refl _)
+    have ⟨h₁,h₂⟩ := hi i j (le_refl _) ij
     rwa [Rat.abs.of_zero_le.mp] at this
     rw [Rat.abs.of_zero_le.mp apos] at h₁
     apply Rat.add.of_le_left_pos
@@ -681,20 +714,17 @@ def CauchySeq.IsPos_or_IsNeg_of_non_zero {a: CauchySeq} (h: ¬a ≈ 0) : a.IsPos
     rw [Rat.add.right_comm _ _ (-K), Rat.add_neg_self, Rat.zero_add]
     rw [Rat.abs.sub_comm] at h₂
     have ⟨h₃, _⟩ := Rat.abs.lt_iff.mp h₂
-    apply (Rat.add.le_right (k := -a.seq (max i k))).mpr
+    apply (Rat.add.le_right (k := -a.seq i)).mpr
     rw [←Rat.add.assoc, Rat.neg_self_add, Rat.zero_add]
     apply le_of_lt
     rw [Rat.add.comm, ←Rat.sub.eq_add_neg]
     assumption
   · apply Or.inr
-    refine ⟨-K,Rat.neg.swap_lt.mp K_pos,max i k,?_⟩
+    refine ⟨-K,Rat.neg.swap_lt.mp K_pos,i,?_⟩
     intro j ij
-    replace ⟨ij,jk⟩ := max_le_iff.mp ij
-    have := hi j ij
-    have h₁ := hi (max i k) (le_max_left _ _)
-    have h₂ := kprf (max i k) j (le_max_right _ _) jk
-    apply Rat.neg.swap_le.mpr
-    rw [Rat.neg_neg]
+    have ⟨this,_⟩ := hi j i ij (le_refl _)
+    have ⟨h₁,h₂⟩ := hi i j (le_refl _) ij
+    apply Rat.neg.swap_le.mpr; rw [Rat.neg_neg]
     rwa [Rat.abs.of_le_zero.mp] at this
     rw [Rat.abs.of_le_zero.mp aneg] at h₁
     apply Rat.neg.swap_le.mpr
@@ -703,7 +733,7 @@ def CauchySeq.IsPos_or_IsNeg_of_non_zero {a: CauchySeq} (h: ¬a ≈ 0) : a.IsPos
     apply (Rat.add.le_left (k := -K)).mpr
     rw [Rat.add.right_comm _ _ (-K), Rat.add_neg_self, Rat.zero_add]
     have ⟨h₃, _⟩ := Rat.abs.lt_iff.mp h₂
-    apply (Rat.add.le_right (k := a.seq (max i k))).mpr
+    apply (Rat.add.le_right (k := a.seq i)).mpr
     rw [←Rat.add.assoc, Rat.add_neg_self, Rat.zero_add]
     apply le_of_lt
     rw [←Rat.sub.eq_add_neg]
