@@ -644,6 +644,8 @@ def Rat.mk_div (a b: Fract) (h: ¬b ≈ 0) : (mk a) /? mk b = mk (a /? b) := by
   dsimp
   rw [mk_invert, mk_mul]
 
+def Rat.div.eq_mul_inv (a b: ℚ) (h: b ≠ 0) : a /? b = a * b⁻¹ := rfl
+
 def Rat.mk_zero : 0 = mk 0 := rfl
 def Rat.mk_one : 1 = mk 1 := rfl
 
@@ -1080,6 +1082,20 @@ def Rat.neg.swap_le {a b: ℚ} : a ≤ b ↔ (-b ≤ -a) := by
   repeat rw [int.neg_mul]
   exact int.neg.swap_le
 
+def Rat.neg.lt_iff_of_le_iff {a b c d: ℚ} : (-a ≤ -b ↔ -c ≤ -d) -> (a < b ↔ c < d) := by
+  intro h
+  apply _root_.lt_iff_of_le_iff
+  apply Iff.trans neg.swap_le
+  apply Iff.trans _ neg.swap_le.symm
+  assumption
+
+def Rat.neg.le_iff_of_lt_iff {a b c d: ℚ} : (-a < -b ↔ -c < -d) -> (a ≤ b ↔ c ≤ d) := by
+  intro h
+  apply _root_.le_iff_of_lt_iff
+  apply Iff.trans neg.swap_lt
+  apply Iff.trans _ neg.swap_lt.symm
+  assumption
+
 def Rat.add.le_left { a b k: ℚ } : a ≤ b ↔ a + k ≤ b + k := by
   induction a using ind with | mk a =>
   induction b using ind with | mk b =>
@@ -1213,6 +1229,18 @@ def Rat.mul.lt_mul_pos { a b k: ℚ } : 0 < k -> (a < b ↔ a * k < b * k) := by
   apply Fract.num_pos_iff_pos.mpr
   exact mk_lt.mp h
   exact int.lt.pos_nat _ k.den_pos
+
+def Rat.mul.le_mul_neg { a b k: ℚ } : k < 0 -> (a ≤ b ↔ b * k ≤ a * k) := by
+  intro hk
+  apply Iff.trans (le_mul_pos (neg.swap_lt.mp hk))
+  rw [mul_neg, mul_neg]
+  apply neg.swap_le.symm
+
+def Rat.mul.lt_mul_neg { a b k: ℚ } : k < 0 -> (a < b ↔ b * k < a * k) := by
+  intro hk
+  apply Iff.trans (lt_mul_pos (neg.swap_lt.mp hk))
+  rw [mul_neg, mul_neg]
+  apply neg.swap_lt.symm
 
 def Rat.midpoint (a b: ℚ) := (a + b) /? 2
 
@@ -1553,6 +1581,10 @@ def Rat.add_neg_self (a: ℚ) : a + -a = 0 := by
   rw [←sub.eq_add_neg, sub.self]
 def Rat.neg_self_add (a: ℚ) : -a + a = 0 := by
   rw [add.comm, add_neg_self]
+def Rat.mul_inv_self (a: ℚ) (h: a ≠ 0) : a * a⁻¹ = 1 := by
+  rw [←div.eq_mul_inv, div.self]
+def Rat.inv_self_mul (a: ℚ) (h: a ≠ 0) : a⁻¹ * a = 1 := by
+  rw [mul.comm, mul_inv_self]
 
 def Rat.add_sub_cancel (a b: ℚ) : a + b - b = a := by
   rw [sub.eq_add_neg, add.assoc, ←sub.eq_add_neg, sub.self, add_zero]
@@ -1582,7 +1614,7 @@ def Rat.sub.le_left_pos (a b: ℚ) : 0 ≤ b -> a - b ≤ a := by
 
 def Rat.sub_zero (a: ℚ) : a - 0 = a := add_zero _
 
-def Rat.abs.mul (a b: ℚ) : ‖a‖ * ‖b‖ = ‖a * b‖ := by
+def Rat.abs.mul (a b: ℚ) : ‖a * b‖ = ‖a‖ * ‖b‖ := by
   induction a using ind with | mk a =>
   induction b using ind with | mk b =>
   rw [mk_abs, mk_abs, mk_mul, mk_mul, mk_abs]
@@ -1860,3 +1892,199 @@ def Rat.abs.le_iff {a b: ℚ} : ‖a‖ ≤ b ↔ -b ≤ a ∧ a ≤ b := by
   apply neg.swap_le.mpr
   rw [neg_neg]
   exact h₀
+
+def Rat.mul.eq_zero {a b: ℚ} : a * b = 0 ↔ a = 0 ∨ b = 0 := by
+  apply Iff.intro <;> intro h
+  by_cases ha:a = 0
+  exact .inl ha
+  apply Or.inr
+  by_cases hb:b = 0
+  assumption
+  exfalso
+  cases lt_or_gt_of_ne ha <;> rename_i ha <;> cases lt_or_gt_of_ne hb <;> rename_i hb
+  have := mul.is_pos_of_neg_neg _ _ ha hb
+  rw [h] at this
+  exact lt_irrefl this
+  have := mul.is_neg_of_neg_pos _ _ ha hb
+  rw [h] at this
+  exact lt_irrefl this
+  have := mul.is_neg_of_pos_neg _ _ ha hb
+  rw [h] at this
+  exact lt_irrefl this
+  have := mul.is_pos_of_pos_pos _ _ ha hb
+  rw [h] at this
+  exact lt_irrefl this
+  cases h <;> (rename_i h; subst h)
+  rw [zero_mul]
+  rw [mul_zero]
+
+def Rat.mul.non_zero {a b: ℚ} : a ≠ 0 -> b ≠ 0 -> a * b ≠ 0 := by
+  intro ha hb h
+  cases mul.eq_zero.mp h <;> contradiction
+
+macro_rules | `(tactic|invert_tactic) => `(tactic|apply Rat.mul.non_zero <;> invert_tactic)
+
+def Rat.inv.non_zero {a: ℚ} {h: a ≠ 0} : a⁻¹ ≠ 0 := by
+  intro h
+  have : a * a⁻¹ = 1 := by rw [mul_inv_self]
+  rw [h, mul_zero] at this
+  contradiction
+
+macro_rules | `(tactic|invert_tactic) => `(tactic|apply Rat.inv.non_zero <;> invert_tactic)
+
+def Rat.abs.non_zero {a: ℚ} {h: a ≠ 0} : ‖a‖ ≠ 0 := by
+  intro g
+  rw [abs.eq_max, max_def] at g
+  split at g <;> rename_i g
+  rw [←neg_neg a, g] at h
+  contradiction
+  contradiction
+
+macro_rules | `(tactic|invert_tactic) => `(tactic|apply Rat.abs.non_zero <;> invert_tactic)
+
+def Rat.mul.cancel_right {a b k: ℚ} (h: k ≠ 0) : a * k = b * k -> a = b := by
+  intro g
+  have : a * k * k⁻¹ = b * k * k⁻¹ := by rw [g]
+  rw [mul.assoc, mul.assoc, mul_inv_self, mul_one, mul_one] at this
+  exact this
+
+def Rat.mul.cancel_left {a b k: ℚ} (h: k ≠ 0) : k * a = k * b -> a = b := by
+  intro g
+  apply cancel_right
+  assumption
+  rw [mul.comm _ k, mul.comm _ k]
+  assumption
+
+def Rat.inv_add_inv (a b: ℚ) (ha: a ≠ 0) (hb: b ≠ 0) : a⁻¹ + b⁻¹ = (a + b) /? (a * b) := by
+  dsimp
+  apply mul.cancel_right (k := a * b)
+  intro h
+  cases mul.eq_zero.mp h <;> (rename_i h; subst h; contradiction)
+  conv => { rhs; rw [mul.comm] }
+  rw [mul_div_cancel, add_mul, ←mul.assoc, mul.comm a b, ←mul.assoc,
+    inv_self_mul, inv_self_mul, one_mul, one_mul, add.comm]
+
+def Rat.neg_inv (a: ℚ) (h: a ≠ 0) :
+  have : -a ≠ 0 := by
+    intro g
+    apply h
+    rw [←neg_neg a, g]
+    rfl
+  (-a⁻¹) = (-a)⁻¹ := by
+  dsimp
+  apply Rat.mul.cancel_left (k := -a)
+  intro g
+  apply h
+  rw [←neg_neg a, g]
+  rfl
+  rw [neg_mul, mul_neg, neg_neg, mul_inv_self, mul_inv_self]
+
+def Rat.inv_sub_inv (a b: ℚ) (ha: a ≠ 0) (hb: b ≠ 0) :
+  have : a * b ≠ 0 := by
+    intro h
+    cases mul.eq_zero.mp h <;> (rename_i h; subst h; contradiction)
+  a⁻¹ - b⁻¹ = (b - a) /? (a * b) := by
+  dsimp
+  rw [sub.eq_add_neg, sub.eq_add_neg, neg_inv, inv_add_inv]
+  rw [div.eq_mul_inv, div.eq_mul_inv,
+    ←sub.eq_add_neg, ←sub.neg, neg_mul, ←mul_neg, neg_inv]
+  congr
+  rw [mul_neg, neg_neg]
+
+def Rat.inv.zero_le_iff {a: ℚ} {ha: a ≠ 0} : 0 ≤ a ↔ 0 ≤ a⁻¹ := by
+  apply Iff.intro
+  intro h
+  have ha := lt_of_le_of_ne h ha.symm
+  by_cases hi:0 ≤ a⁻¹
+  apply hi
+  have hi := lt_of_not_le hi
+  have := mul.is_neg_of_pos_neg _ _ ha hi
+  rw [mul_inv_self] at this
+  contradiction
+  intro h
+  have ha := lt_of_le_of_ne h (by
+    intro h
+    have : a * a⁻¹ = 1 := by rw [mul_inv_self]
+    rw [←h, mul_zero] at this
+    contradiction)
+  by_cases hi:0 ≤ a
+  apply hi
+  have hi := lt_of_not_le hi
+  have := mul.is_neg_of_pos_neg _ _ ha hi
+  rw [inv_self_mul] at this
+  contradiction
+
+def Rat.inv.zero_lt_iff {a: ℚ} {ha: a ≠ 0} : 0 < a ↔ 0 < a⁻¹ := by
+  apply neg.lt_iff_of_le_iff
+  rw [neg_inv]
+  apply zero_le_iff (a := -a)
+
+def Rat.inv.le_zero_iff {a: ℚ} {ha: a ≠ 0} : a ≤ 0 ↔ a⁻¹ ≤ 0 := by
+  apply Iff.trans neg.swap_le
+  apply Iff.trans _ neg.swap_le.symm
+  rw [neg_inv]
+  apply zero_le_iff (a := -a)
+
+def Rat.inv.lt_zero_iff {a: ℚ} {ha: a ≠ 0} : a < 0 ↔ a⁻¹ < 0 := by
+  apply lt_iff_of_le_iff
+  apply zero_le_iff
+
+def Rat.inv.swap_le (a b: ℚ) (ha: a ≠ 0) (hb: b ≠ 0) : (0 ≤ a ↔ 0 ≤ b) -> (a ≤ b ↔ b⁻¹ ≤ a⁻¹) := by
+  have : a⁻¹ ≠ 0 :=  by invert_tactic
+  have : b⁻¹ ≠ 0 :=  by invert_tactic
+  intro same_sign
+  apply Iff.intro
+  intro h
+  cases le_total 0 a <;> (rename_i ha; replace ha := lt_of_le_of_ne ha (by
+    try assumption
+    try symm; assumption)) <;>
+  cases le_total 0 b <;> (rename_i hb; replace hb := lt_of_le_of_ne hb (by
+    try assumption
+    try symm; assumption))
+  apply (Rat.mul.le_mul_pos ha).mpr
+  apply (Rat.mul.le_mul_pos hb).mpr
+  rw [inv_self_mul, one_mul, mul.right_comm, inv_self_mul, one_mul]
+  assumption
+  have := same_sign.mp (le_of_lt ha)
+  have := lt_irrefl <| lt_of_le_of_lt this hb
+  contradiction
+  have := same_sign.mpr (le_of_lt hb)
+  have := lt_irrefl <| lt_of_le_of_lt this ha
+  contradiction
+  apply (Rat.mul.le_mul_neg ha).mpr
+  apply (Rat.mul.le_mul_neg hb).mpr
+  rw [inv_self_mul, one_mul, mul.right_comm, inv_self_mul, one_mul]
+  assumption
+  intro h
+  cases le_total 0 (a⁻¹) <;> (rename_i ha; replace ha := lt_of_le_of_ne ha (by
+    try assumption
+    try symm; assumption)) <;>
+  cases le_total 0 (b⁻¹) <;> (rename_i hb; replace hb := lt_of_le_of_ne hb (by
+    try assumption
+    try symm; assumption))
+  apply (Rat.mul.le_mul_pos ha).mpr
+  apply (Rat.mul.le_mul_pos hb).mpr
+  rw [mul_inv_self, one_mul, mul.right_comm, mul_inv_self, one_mul]
+  assumption
+  have := (Iff.trans Rat.inv.zero_le_iff.symm same_sign).mp (le_of_lt ha)
+  have := lt_irrefl <| lt_of_le_of_lt this (lt_zero_iff.mpr hb)
+  contradiction
+  have := same_sign.mpr (le_of_lt (zero_lt_iff.mpr hb))
+  have := lt_irrefl <| lt_of_le_of_lt this (lt_zero_iff.mpr ha)
+  contradiction
+  apply (Rat.mul.le_mul_neg ha).mpr
+  apply (Rat.mul.le_mul_neg hb).mpr
+  rw [mul_inv_self, one_mul, mul.right_comm, mul_inv_self, one_mul]
+  assumption
+
+def Rat.inv.swap_lt (a b: ℚ) (ha: a ≠ 0) (hb: b ≠ 0) : (0 ≤ a ↔ 0 ≤ b) -> (a < b ↔ b⁻¹ < a⁻¹) := by
+  intro h
+  apply lt_iff_of_le_iff
+  apply inv.swap_le
+  symm
+  assumption
+
+def Rat.mul.inv (a b: ℚ) (ha: a ≠ 0) (hb: b ≠ 0) : (a * b)⁻¹ = a⁻¹ * b⁻¹ := by
+  apply mul.cancel_left (k := a * b)
+  invert_tactic
+  rw [mul_inv_self, mul.assoc, mul.comm_left b, ←mul.assoc, mul_inv_self, mul_inv_self, one_mul]

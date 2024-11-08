@@ -738,3 +738,61 @@ def CauchySeq.IsPos_or_IsNeg_of_non_zero {a: CauchySeq} (h: ¬a ≈ 0) : a.IsPos
     apply le_of_lt
     rw [←Rat.sub.eq_add_neg]
     assumption
+
+def CauchySeq.invert.spec (a b: CauchySeq) (ha: ¬a ≈ 0) (hb: ¬b ≈ 0) :
+  a ≈ b -> is_cauchy_equiv (fun n => if h:a n ≠ 0 then (a n)⁻¹ else 0) (fun n => if h:b n ≠ 0 then (b n)⁻¹ else 0) := by
+  intro ab
+  rcases a.IsPos_or_IsNeg_of_non_zero ha with apos | aneg
+  · have bpos := apos.spec b ab
+    intro ε ε_pos
+    dsimp
+    rcases apos with ⟨Ka,Ka_pos,evena⟩
+    rcases bpos with ⟨Kb,Kb_pos,evenb⟩
+    have acau := a.seq_is_cauchy ε ε_pos
+    have bcau := b.seq_is_cauchy ε ε_pos
+    have ab := ab ε ε_pos
+    have even := Eventually.merge evena evenb
+    have cau := Eventually₂.merge acau bcau
+    have ⟨i,prf⟩  := (Eventually₂.merge even.to₂ cau).merge ab
+    clear acau bcau evena evenb even cau
+    exists i
+    intro n m hn hm
+    have ⟨_,_⟩ := prf n m hn hm
+    have ⟨⟨⟨Kah,Kbh'⟩,acau,bcau⟩,ab⟩ := prf n m hn hm
+    have ⟨⟨⟨Kah,Kbh⟩,acau,bcau⟩,ab⟩ := prf m n hm hn
+    clear Kah Kbh' acau bcau ab prf
+    rw [dif_pos, dif_pos, Rat.inv_sub_inv, Rat.div.eq_mul_inv, Rat.abs.mul]
+    · have := (Rat.inv.swap_le _ _ sorry sorry sorry).mp Kah
+
+      sorry
+    intro h
+    rw [h] at Kah
+    exact lt_irrefl <| lt_of_lt_of_le Ka_pos Kah
+    intro h
+    rw [h] at Kbh
+    exact lt_irrefl <| lt_of_lt_of_le Kb_pos Kbh
+  · sorry
+
+def CauchySeq.invert (c: CauchySeq) (h: ¬c ≈ 0) : CauchySeq := by
+  apply CauchySeq.mk (fun n => if h:c n ≠ 0 then (c n)⁻¹ else 0)
+  apply CauchySeq.invert.spec
+  assumption
+  assumption
+  rfl
+
+def Real.invert (x: ℝ) (h: x ≠ 0) : ℝ := by
+  apply Equiv.liftWith (· ≠ (0: ℝ)) (fun _ _ => mk _) _ _ h
+  intro x h
+  apply x.invert
+  intro h₀
+  apply h
+  exact sound h₀
+  intro a b ab ha hb
+  apply sound
+  apply CauchySeq.invert.spec
+  intro h₀; apply ha; exact sound h₀
+  intro h₀; apply hb; exact sound h₀
+  assumption
+
+instance : Invert CauchySeq (¬· ≈ 0) := ⟨CauchySeq.invert⟩
+instance : Invert ℝ (· ≠ 0) := ⟨Real.invert⟩

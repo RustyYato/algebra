@@ -1,4 +1,5 @@
 import Algebra.Function.Basic
+import Algebra.ClassicLogic
 
 class IsLinearOrder (α: Type _) [LT α] [LE α]: Prop where
   lt_iff_le_and_not_le: ∀{a b: α}, a < b ↔ a ≤ b ∧ ¬b ≤ a
@@ -142,6 +143,23 @@ def lt_or_gt_of_ne : a ≠ b -> a < b ∨ b < a := by
   apply lt_of_le_of_ne
   assumption
   symm
+  assumption
+
+def lt_iff_not_le : a < b ↔ ¬b ≤ a := ⟨not_le_of_lt,lt_of_not_le⟩
+def le_iff_not_lt : a ≤ b ↔ ¬b < a := ⟨not_lt_of_le,le_of_not_lt⟩
+
+def lt_iff_of_le_iff : (a ≤ b ↔ c ≤ d) -> (b < a ↔ d < c) := by
+  intro h
+  apply Iff.trans lt_iff_not_le
+  apply Iff.trans _ lt_iff_not_le.symm
+  apply not_iff_not
+  assumption
+
+def le_iff_of_lt_iff : (a < b ↔ c < d) -> (b ≤ a ↔ d ≤ c) := by
+  intro h
+  apply Iff.trans le_iff_not_lt
+  apply Iff.trans _ le_iff_not_lt.symm
+  apply not_iff_not
   assumption
 
 class IsDecidableLinearOrder (α: Type _) [LE α] [LT α] [Min α] [Max α] extends IsLinearOrder α where
