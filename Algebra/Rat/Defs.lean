@@ -1208,6 +1208,15 @@ def Rat.mul.le_mul_pos { a b k: ℚ } : 0 < k -> (a ≤ b ↔ a * k ≤ b * k) :
   exact mk_lt.mp h
   exact int.lt.pos_nat _ k.den_pos
 
+def Rat.mul.le_left_pos { a b k: ℚ } : 0 ≤ k -> a ≤ b -> a * k ≤ b * k := by
+  intro h
+  cases lt_or_eq_of_le h
+  apply (mul.le_mul_pos _).mp
+  assumption
+  subst k
+  intro
+  rw [mul_zero, mul_zero]
+
 def Rat.mul.lt_mul_pos { a b k: ℚ } : 0 < k -> (a < b ↔ a * k < b * k) := by
   intro h
   induction a using ind with | mk a =>
@@ -1372,6 +1381,13 @@ def Rat.ne_zero_of_pos (a: ℚ) : 0 < a -> a ≠ 0 := by
   assumption
 
 macro_rules | `(tactic|invert_tactic) => `(tactic|apply Rat.ne_zero_of_pos; invert_tactic)
+
+def Rat.neg.nonzero (a: ℚ) : a ≠ 0 -> -a ≠ 0 := by
+  intro h g
+  rw [←neg_neg a, g] at h
+  contradiction
+
+macro_rules | `(tactic|invert_tactic) => `(tactic|apply Rat.neg.nonzero; invert_tactic)
 
 def Rat.mul.pos { a b: ℚ } : 0 < a -> 0 < b -> 0 < a * b := by
   intro a_pos b_pos
@@ -1614,7 +1630,7 @@ def Rat.sub.le_left_pos (a b: ℚ) : 0 ≤ b -> a - b ≤ a := by
 
 def Rat.sub_zero (a: ℚ) : a - 0 = a := add_zero _
 
-def Rat.abs.mul (a b: ℚ) : ‖a * b‖ = ‖a‖ * ‖b‖ := by
+def Rat.abs.mul (a b: ℚ) : ‖a‖ * ‖b‖ = ‖a * b‖ := by
   induction a using ind with | mk a =>
   induction b using ind with | mk b =>
   rw [mk_abs, mk_abs, mk_mul, mk_mul, mk_abs]
@@ -1964,13 +1980,7 @@ def Rat.inv_add_inv (a b: ℚ) (ha: a ≠ 0) (hb: b ≠ 0) : a⁻¹ + b⁻¹ = (
   rw [mul_div_cancel, add_mul, ←mul.assoc, mul.comm a b, ←mul.assoc,
     inv_self_mul, inv_self_mul, one_mul, one_mul, add.comm]
 
-def Rat.neg_inv (a: ℚ) (h: a ≠ 0) :
-  have : -a ≠ 0 := by
-    intro g
-    apply h
-    rw [←neg_neg a, g]
-    rfl
-  (-a⁻¹) = (-a)⁻¹ := by
+def Rat.neg_inv (a: ℚ) (h: a ≠ 0) : (-a⁻¹) = (-a)⁻¹ := by
   dsimp
   apply Rat.mul.cancel_left (k := -a)
   intro g
@@ -2088,3 +2098,13 @@ def Rat.mul.inv (a b: ℚ) (ha: a ≠ 0) (hb: b ≠ 0) : (a * b)⁻¹ = a⁻¹ *
   apply mul.cancel_left (k := a * b)
   invert_tactic
   rw [mul_inv_self, mul.assoc, mul.comm_left b, ←mul.assoc, mul_inv_self, mul_inv_self, one_mul]
+
+def Rat.abs.inv (a: ℚ) (ha: a ≠ 0) : ‖a⁻¹‖ = ‖a‖⁻¹ := by
+  apply mul.cancel_left (k := ‖a‖)
+  invert_tactic
+  rw [mul_inv_self, abs.mul, mul_inv_self]
+  rfl
+
+def Rat.neg_sub_neg (a b: ℚ) : -a - -b = b - a := by
+  rw [sub.eq_add_neg, neg_neg, add.comm]
+  rfl

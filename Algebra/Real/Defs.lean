@@ -741,37 +741,185 @@ def CauchySeq.IsPos_or_IsNeg_of_non_zero {a: CauchySeq} (h: ¬a ≈ 0) : a.IsPos
 
 def CauchySeq.invert.spec (a b: CauchySeq) (ha: ¬a ≈ 0) (hb: ¬b ≈ 0) :
   a ≈ b -> is_cauchy_equiv (fun n => if h:a n ≠ 0 then (a n)⁻¹ else 0) (fun n => if h:b n ≠ 0 then (b n)⁻¹ else 0) := by
-  intro ab
-  rcases a.IsPos_or_IsNeg_of_non_zero ha with apos | aneg
-  · have bpos := apos.spec b ab
-    intro ε ε_pos
-    dsimp
-    rcases apos with ⟨Ka,Ka_pos,evena⟩
-    rcases bpos with ⟨Kb,Kb_pos,evenb⟩
-    have acau := a.seq_is_cauchy ε ε_pos
-    have bcau := b.seq_is_cauchy ε ε_pos
-    have ab := ab ε ε_pos
-    have even := Eventually.merge evena evenb
-    have cau := Eventually₂.merge acau bcau
-    have ⟨i,prf⟩  := (Eventually₂.merge even.to₂ cau).merge ab
-    clear acau bcau evena evenb even cau
-    exists i
-    intro n m hn hm
-    have ⟨_,_⟩ := prf n m hn hm
-    have ⟨⟨⟨Kah,Kbh'⟩,acau,bcau⟩,ab⟩ := prf n m hn hm
-    have ⟨⟨⟨Kah,Kbh⟩,acau,bcau⟩,ab⟩ := prf m n hm hn
-    clear Kah Kbh' acau bcau ab prf
-    rw [dif_pos, dif_pos, Rat.inv_sub_inv, Rat.div.eq_mul_inv, Rat.abs.mul]
-    · have := (Rat.inv.swap_le _ _ sorry sorry sorry).mp Kah
+  revert a b
 
-      sorry
-    intro h
-    rw [h] at Kah
-    exact lt_irrefl <| lt_of_lt_of_le Ka_pos Kah
-    intro h
-    rw [h] at Kbh
-    exact lt_irrefl <| lt_of_lt_of_le Kb_pos Kbh
-  · sorry
+  suffices ∀a b: CauchySeq, ¬a ≈ 0 -> ¬b ≈ 0 -> a ≈ b -> a.IsPos -> is_cauchy_equiv (fun n => if h:a n ≠ 0 then (a n)⁻¹ else 0) (fun n => if h:b n ≠ 0 then (b n)⁻¹ else 0) by
+    intro a b ha hb ab
+    rcases IsPos_or_IsNeg_of_non_zero ha with apos | aneg
+    apply this <;> assumption
+    intro ε ε_pos
+    have ⟨i,prf⟩ := this (-a) (-b) (by
+      intro  h₀
+      apply ha
+      apply Real.exact
+      rw [←Real.sound (neg_neg a), ←Real.mk_neg, Real.sound h₀, Real.mk_neg]
+      rfl) (by
+      intro  h₀
+      apply hb
+      apply Real.exact
+      rw [←Real.sound (neg_neg b), ←Real.mk_neg, Real.sound h₀, Real.mk_neg]
+      rfl) (neg.spec a b ab) (neg.IsNeg.mp aneg) ε ε_pos
+    dsimp at prf
+    exists i
+    intro x y hx hy
+    dsimp
+    replace prf := prf x y hx hy
+    split at prf <;> split at prf <;> rename_i h g
+    · rw [dif_pos, dif_pos]
+      unfold Neg.neg instNegCauchySeq neg at prf
+      dsimp at prf
+      rw [←Rat.neg_inv _ (by
+        intro h₀
+        apply h
+        suffices -a x = 0 from this
+        rw [h₀]
+        rfl), ←Rat.neg_inv _ (by
+        intro h₀
+        apply g
+        suffices -b y = 0 from this
+        rw [h₀]
+        rfl), Rat.neg_sub_neg, Rat.abs.sub_comm] at prf
+      exact prf
+    · rw [dif_pos, dif_neg]
+      unfold Neg.neg instNegCauchySeq neg at prf
+      dsimp at prf
+      rw [←Rat.neg_inv _ (by
+        intro h₀
+        apply h
+        suffices -a x = 0 from this
+        rw [h₀]
+        rfl), Rat.sub_zero, Rat.abs.neg] at prf
+      rw [Rat.sub_zero]
+      exact prf
+      intro g₀
+      apply g
+      intro g
+      apply g₀
+      have g : -b y = 0 := g
+      rw [←Rat.neg_neg (b y), g]
+      rfl
+    · rw [dif_neg, dif_pos]
+      rw [Rat.zero_sub, Rat.abs.neg]
+      rw [Rat.zero_sub] at prf
+      have prf : ‖-(-b y)⁻¹‖ < ε := prf
+      rw [←Rat.neg_inv _ (by
+        intro g₀
+        apply g
+        suffices -b y = 0 from this
+        rw [g₀]
+        rfl), Rat.neg_neg] at prf
+      exact prf
+      intro h₀
+      apply h
+      intro h
+      apply h₀
+      have h : -a x = 0 := h
+      rw [←Rat.neg_neg (a x), h]
+      rfl
+    · rw [dif_neg, dif_neg]
+      exact ε_pos
+
+      intro g₀
+      apply g
+      intro g
+      apply g₀
+      have g : -b y = 0 := g
+      rw [←Rat.neg_neg (b y), g]
+      rfl
+
+      intro h₀
+      apply h
+      intro h
+      apply h₀
+      have h : -a x = 0 := h
+      rw [←Rat.neg_neg (a x), h]
+      rfl
+  intro a b ha hb
+  intro ab apos
+  have bpos := apos.spec b ab
+  intro ε ε_pos
+  dsimp
+  rcases apos with ⟨Ka,Ka_pos,evena⟩
+  rcases bpos with ⟨Kb,Kb_pos,evenb⟩
+  have acau := a.seq_is_cauchy ε ε_pos
+  have bcau := b.seq_is_cauchy ε ε_pos
+  have ab := ab (Ka * Kb * ε) (by
+    apply Rat.mul.pos
+    apply Rat.mul.pos
+    repeat assumption)
+  have even := Eventually.merge evena evenb
+  have cau := Eventually₂.merge acau bcau
+  have ⟨i,prf⟩  := (Eventually₂.merge even.to₂ cau).merge ab
+  clear acau bcau evena evenb even cau
+  exists i
+  intro n m hn hm
+  have ⟨_,_⟩ := prf n m hn hm
+  have ⟨⟨⟨Kah,Kbh'⟩,acau,bcau⟩,ab⟩ := prf n m hn hm
+  have ⟨⟨⟨Kah,Kbh⟩,acau,bcau⟩,ab⟩ := prf m n hm hn
+  clear Kah Kbh' acau bcau ab prf
+  rw [dif_pos, dif_pos, Rat.inv_sub_inv, Rat.div.eq_mul_inv, ←Rat.abs.mul]
+  rw [Rat.mul.inv, ←Rat.abs.mul]
+  rw [Rat.mul.comm]
+  apply lt_of_le_of_lt
+  apply Rat.mul.le_left_pos _
+  apply Rat.mul.le_left_pos (b := Ka⁻¹) _
+  rw [Rat.abs.of_zero_le.mp]
+  · apply (Rat.inv.swap_le _ _ _ _ _).mp Kah
+    symm
+    apply ne_of_lt
+    apply lt_of_lt_of_le Ka_pos
+    assumption
+    apply Iff.intro <;> intro g
+    apply le_trans
+    apply le_of_lt Ka_pos
+    assumption
+    exact le_of_lt Ka_pos
+  apply (Rat.mul.le_mul_pos _).mpr
+  rw [Rat.inv_self_mul, Rat.zero_mul]
+  trivial
+  apply lt_of_lt_of_le Ka_pos
+  assumption
+  intro h
+  rw [h] at Kbh
+  exact lt_irrefl <| lt_of_lt_of_le Kb_pos Kbh
+  apply Rat.abs.zero_le
+  apply Rat.abs.zero_le
+  rw [Rat.mul.comm (Ka⁻¹)]
+  apply lt_of_le_of_lt
+  apply Rat.mul.le_left_pos _
+  apply Rat.mul.le_left_pos (b := Kb⁻¹) _
+  rw [Rat.abs.of_zero_le.mp]
+  · apply (Rat.inv.swap_le _ _ _ _ _).mp Kbh
+    apply Iff.intro <;> intro g
+    apply le_trans
+    apply le_of_lt Kb_pos
+    assumption
+    apply le_of_lt Kb_pos
+  apply Rat.inv.zero_le_iff.mp
+  apply le_trans
+  apply le_of_lt Kb_pos
+  assumption
+  apply Rat.inv.zero_le_iff.mp
+  apply le_of_lt Ka_pos
+  apply Rat.abs.zero_le
+  rw [Rat.mul.comm]
+  apply lt_of_lt_of_le
+  apply (Rat.mul.lt_mul_pos _).mp
+  rw [Rat.abs.sub_comm]
+  apply ab
+  apply Rat.mul.pos
+  apply Rat.inv.zero_lt_iff.mp
+  assumption
+  apply Rat.inv.zero_lt_iff.mp
+  assumption
+  rw [Rat.mul.assoc, Rat.mul.comm, Rat.mul.assoc ε, Rat.mul.comm Ka,
+    ←Rat.mul.inv, Rat.inv_self_mul, Rat.mul_one]
+  intro h
+  rw [h] at Kah
+  exact lt_irrefl <| lt_of_lt_of_le Ka_pos Kah
+  intro h
+  rw [h] at Kbh
+  exact lt_irrefl <| lt_of_lt_of_le Kb_pos Kbh
 
 def CauchySeq.invert (c: CauchySeq) (h: ¬c ≈ 0) : CauchySeq := by
   apply CauchySeq.mk (fun n => if h:c n ≠ 0 then (c n)⁻¹ else 0)
