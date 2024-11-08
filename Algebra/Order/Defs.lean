@@ -282,201 +282,160 @@ def IsLinearOrder.transfer (α β)
     rw [←max_def]
     congr
 
-class IsDecidableLinearOrder (α: Type _) [LE α] [LT α] [Min α] [Max α] extends IsLinearOrder α where
-  decLE (a b: α): Decidable (a ≤ b) := by intros; exact inferInstance
-  decLT (a b: α): Decidable (a < b) := decidable_of_iff _ (lt_iff_le_and_not_le (a := a) (b := b)).symm
-  decEQ (a b: α): Decidable (a = b) := decidable_of_iff (a ≤ b ∧ b ≤ a) (by
-  apply Iff.intro
-  · rintro ⟨ab,ba⟩
-    apply le_antisymm ab ba
-  · intro h
-    subst h
-    apply And.intro <;> rfl)
-  min_def (a b: α): min a b = if a ≤ b then a else b := by intros; rfl
-  max_def (a b: α): max a b = if a ≤ b then b else a := by intros; rfl
-
-instance : Subsingleton (IsDecidableLinearOrder α) where
-  allEq a b := by
-    cases a <;> cases b
-    congr <;> apply Subsingleton.allEq
-
-instance (priority := 100) [IsDecidableLinearOrder α] : Decidable (a ≤ b) := IsDecidableLinearOrder.decLE _ _
-instance (priority := 100) [IsDecidableLinearOrder α] : Decidable (a < b) := IsDecidableLinearOrder.decLT _ _
-instance (priority := 100) [IsDecidableLinearOrder α] : Decidable (a = b) := IsDecidableLinearOrder.decEQ _ _
-
-variable [IsDecidableLinearOrder α] [@DecidableRel α (· ≤ ·)]
-
-instance : IsDecidableLinearOrder Bool where
-  decLE := by intros; exact inferInstance
-  lt_iff_le_and_not_le := by decide
-  le_antisymm := by decide
-  le_total := by decide
-  le_complete := by decide
-  le_trans := by decide
-  min_def := by decide
-  max_def := by decide
-  min_iff_le_left := by decide
-  min_iff_le_right := by decide
-  max_iff_le_left := by decide
-  max_iff_le_right := by decide
-
-def min_def [IsDecidableLinearOrder α] : ∀a b: α, min a b = if a ≤ b then a else b := by
-  intro a b
-  rw [IsDecidableLinearOrder.min_def]
-  congr
-def max_def [IsDecidableLinearOrder α] : ∀a b: α, max a b = if a ≤ b then b else a := by
-  intro a b
-  rw [IsDecidableLinearOrder.max_def]
-  congr
-
 def min_le_iff : min a b ≤ k ↔ a ≤ k ∨ b ≤ k := by
-  rw [min_def]
   apply Iff.intro
   intro h
-  split at h <;> rename_i h g
-  exact Or.inl h
-  exact Or.inr h
-  intro g
-  split <;> rename_i h <;> cases g <;> rename_i g
+  rcases le_total a b with ab | ba
+  rw [min_iff_le_left.mp ab] at h
+  apply Or.inl
+  assumption
+  rw [min_iff_le_right.mp ba] at h
+  apply Or.inr
+  assumption
+  intro h
+  rcases h with ak | bk <;> rcases le_total a b with ab | ba
+  any_goals try rw [min_iff_le_left.mp ab]
+  any_goals try rw [min_iff_le_right.mp ba]
   any_goals assumption
   apply le_trans <;> assumption
-  apply le_of_lt
-  apply lt_of_lt_of_le
-  apply lt_of_not_le
-  assumption
-  assumption
+  apply le_trans <;> assumption
 
 def le_min_iff : k ≤ min a b ↔ k ≤ a ∧ k ≤ b := by
-  rw [min_def]
   apply Iff.intro
   intro h
-  split at h <;> rename_i h g
+  rcases le_total a b with ab | ba
+  rw [min_iff_le_left.mp ab] at h
   apply And.intro
   assumption
   apply le_trans <;> assumption
+  rw [min_iff_le_right.mp ba] at h
   apply And.intro
-  apply le_trans
+  apply le_trans <;> assumption
   assumption
-  apply le_of_not_le
+  intro ⟨h₀,h₁⟩
+  rcases le_total a b with ab | ba
+  rw [min_iff_le_left.mp ab]
   assumption
-  assumption
-  intro ⟨g₀,g₁⟩
-  split <;> rename_i h
-  assumption
+  rw [min_iff_le_right.mp ba]
   assumption
 
 def max_le_iff : max a b ≤ k ↔ a ≤ k ∧ b ≤ k := by
-  rw [max_def]
   apply Iff.intro
   intro h
-  split at h <;> rename_i h g
+  rcases le_total a b with ab | ba
+  rw [max_iff_le_left.mp ab] at h
   apply And.intro
   apply le_trans <;> assumption
   assumption
+  rw [max_iff_le_right.mp ba] at h
   apply And.intro
   assumption
-  apply le_trans
-  apply le_of_not_le
+  apply le_trans <;> assumption
+  intro ⟨h₀,h₁⟩
+  rcases le_total a b with ab | ba
+  rw [max_iff_le_left.mp ab]
   assumption
-  assumption
-  intro ⟨g₀,g₁⟩
-  split <;> rename_i h
-  assumption
+  rw [max_iff_le_right.mp ba]
   assumption
 
 def le_max_iff : k ≤ max a b ↔ k ≤ a ∨ k ≤ b := by
-  rw [max_def]
   apply Iff.intro
   intro h
-  split at h <;> rename_i h g
-  exact Or.inr h
-  exact Or.inl h
-  intro g
-  split <;> rename_i h <;> cases g <;> rename_i g
+  rcases le_total a b with ab | ba
+  rw [max_iff_le_left.mp ab] at h
+  apply Or.inr
+  assumption
+  rw [max_iff_le_right.mp ba] at h
+  apply Or.inl
+  assumption
+  intro h
+  rcases h with ak | bk <;> rcases le_total a b with ab | ba
+  any_goals try rw [max_iff_le_left.mp ab]
+  any_goals try rw [max_iff_le_right.mp ba]
   any_goals assumption
   apply le_trans <;> assumption
-  apply le_of_lt
-  apply lt_of_le_of_lt
-  assumption
-  apply lt_of_not_le
-  assumption
+  apply le_trans <;> assumption
 
 def min_lt_iff : min a b < k ↔ a < k ∨ b < k := by
-  rw [min_def]
   apply Iff.intro
   intro h
-  split at h <;> rename_i h g
-  exact Or.inl h
-  exact Or.inr h
-  intro g
-  split <;> rename_i h <;> cases g <;> rename_i g
+  rcases le_total a b with ab | ba
+  rw [min_iff_le_left.mp ab] at h
+  apply Or.inl
+  assumption
+  rw [min_iff_le_right.mp ba] at h
+  apply Or.inr
+  assumption
+  intro h
+  rcases h with ak | bk <;> rcases le_total a b with ab | ba
+  any_goals try rw [min_iff_le_left.mp ab]
+  any_goals try rw [min_iff_le_right.mp ba]
   any_goals assumption
   apply lt_of_le_of_lt <;> assumption
-  apply lt_of_lt_of_le
-  apply lt_of_not_le
-  assumption
-  apply le_of_lt
-  assumption
+  apply lt_of_le_of_lt <;> assumption
 
 def lt_min_iff : k < min a b ↔ k < a ∧ k < b := by
-  rw [min_def]
   apply Iff.intro
   intro h
-  split at h <;> rename_i h g
+  rcases le_total a b with ab | ba
+  rw [min_iff_le_left.mp ab] at h
   apply And.intro
   assumption
   apply lt_of_lt_of_le <;> assumption
+  rw [min_iff_le_right.mp ba] at h
   apply And.intro
-  apply lt_trans
-  assumption
-  apply lt_of_not_le
-  assumption
+  apply lt_of_lt_of_le <;> assumption
   assumption
   intro ⟨h₀,h₁⟩
-  split <;> rename_i h
+  rcases le_total a b with ab | ba
+  rw [min_iff_le_left.mp ab]
   assumption
+  rw [min_iff_le_right.mp ba]
   assumption
 
 def max_lt_iff : max a b < k ↔ a < k ∧ b < k := by
-  rw [max_def]
   apply Iff.intro
   intro h
-  split at h <;> rename_i h g
+  rcases le_total a b with ab | ba
+  rw [max_iff_le_left.mp ab] at h
   apply And.intro
   apply lt_of_le_of_lt <;> assumption
   assumption
+  rw [max_iff_le_right.mp ba] at h
   apply And.intro
   assumption
-  apply lt_trans
-  apply lt_of_not_le
-  assumption
-  assumption
+  apply lt_of_le_of_lt <;> assumption
   intro ⟨h₀,h₁⟩
-  split <;> rename_i h
+  rcases le_total a b with ab | ba
+  rw [max_iff_le_left.mp ab]
   assumption
+  rw [max_iff_le_right.mp ba]
   assumption
 
 def lt_max_iff : k < max a b ↔ k < a ∨ k < b := by
-  rw [max_def]
   apply Iff.intro
   intro h
-  split at h <;> rename_i h g
-  exact Or.inr h
-  exact Or.inl h
-  intro g
-  split <;> rename_i h <;> cases g <;> rename_i g
+  rcases le_total a b with ab | ba
+  rw [max_iff_le_left.mp ab] at h
+  apply Or.inr
+  assumption
+  rw [max_iff_le_right.mp ba] at h
+  apply Or.inl
+  assumption
+  intro h
+  rcases h with ak | bk <;> rcases le_total a b with ab | ba
+  any_goals try rw [max_iff_le_left.mp ab]
+  any_goals try rw [max_iff_le_right.mp ba]
   any_goals assumption
   apply lt_of_lt_of_le <;> assumption
-  apply lt_trans
-  assumption
-  apply lt_of_not_le
-  assumption
+  apply lt_of_lt_of_le <;> assumption
 
 def min_le_max (a b: α) : min a b ≤ max a b := by
-  rw [max_def]
-  split <;> apply min_le_iff.mpr
-  apply Or.inr; rfl
-  apply Or.inl; rfl
+  rcases le_total a b with ab | ba
+  rw [min_iff_le_left.mp ab, max_iff_le_left.mp ab]
+  assumption
+  rw [min_iff_le_right.mp ba, max_iff_le_right.mp ba]
+  assumption
 
 def min_le_left (a b: α) : min a b ≤ a := by
   apply min_le_iff.mpr
@@ -498,13 +457,8 @@ def le_max_right (a b: α) : b ≤ max a b := by
   apply Or.inr
   rfl
 
-def min_of_le (a b: α) : a ≤ b -> min a b = a := by
-  intro h
-  rw [min_def, if_pos h]
-
-def max_of_le (a b: α) : a ≤ b -> max a b = b := by
-  intro h
-  rw [max_def, if_pos h]
+def min_of_le (a b: α) : a ≤ b -> min a b = a := min_iff_le_left.mp
+def max_of_le (a b: α) : a ≤ b -> max a b = b := max_iff_le_left.mp
 
 def min_le_comm (a b: α) : min a b ≤ min b a := by
   apply le_min_iff.mpr
@@ -565,3 +519,50 @@ def max_assoc (a b c: α) : max a (max b c) = max (max a b) c := by
     apply le_max_iff.mpr
     apply Or.inr
     apply le_max_right
+
+class IsDecidableLinearOrder (α: Type _) [LE α] [LT α] [Min α] [Max α] extends IsLinearOrder α where
+  decLE (a b: α): Decidable (a ≤ b) := by intros; exact inferInstance
+  decLT (a b: α): Decidable (a < b) := decidable_of_iff _ (lt_iff_le_and_not_le (a := a) (b := b)).symm
+  decEQ (a b: α): Decidable (a = b) := decidable_of_iff (a ≤ b ∧ b ≤ a) (by
+  apply Iff.intro
+  · rintro ⟨ab,ba⟩
+    apply le_antisymm ab ba
+  · intro h
+    subst h
+    apply And.intro <;> rfl)
+  min_def (a b: α): min a b = if a ≤ b then a else b := by intros; rfl
+  max_def (a b: α): max a b = if a ≤ b then b else a := by intros; rfl
+
+instance : Subsingleton (IsDecidableLinearOrder α) where
+  allEq a b := by
+    cases a <;> cases b
+    congr <;> apply Subsingleton.allEq
+
+instance (priority := 100) [IsDecidableLinearOrder α] : Decidable (a ≤ b) := IsDecidableLinearOrder.decLE _ _
+instance (priority := 100) [IsDecidableLinearOrder α] : Decidable (a < b) := IsDecidableLinearOrder.decLT _ _
+instance (priority := 100) [IsDecidableLinearOrder α] : Decidable (a = b) := IsDecidableLinearOrder.decEQ _ _
+
+variable [IsDecidableLinearOrder α] [@DecidableRel α (· ≤ ·)]
+
+def min_def [IsDecidableLinearOrder α] : ∀a b: α, min a b = if a ≤ b then a else b := by
+  intro a b
+  rw [IsDecidableLinearOrder.min_def]
+  congr
+def max_def [IsDecidableLinearOrder α] : ∀a b: α, max a b = if a ≤ b then b else a := by
+  intro a b
+  rw [IsDecidableLinearOrder.max_def]
+  congr
+
+instance : IsDecidableLinearOrder Bool where
+  decLE := by intros; exact inferInstance
+  lt_iff_le_and_not_le := by decide
+  le_antisymm := by decide
+  le_total := by decide
+  le_complete := by decide
+  le_trans := by decide
+  min_def := by decide
+  max_def := by decide
+  min_iff_le_left := by decide
+  min_iff_le_right := by decide
+  max_iff_le_left := by decide
+  max_iff_le_right := by decide
