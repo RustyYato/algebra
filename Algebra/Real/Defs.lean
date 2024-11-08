@@ -944,3 +944,13 @@ def Real.invert (x: ℝ) (h: x ≠ 0) : ℝ := by
 
 instance : Invert CauchySeq (¬· ≈ 0) := ⟨CauchySeq.invert⟩
 instance : Invert ℝ (· ≠ 0) := ⟨Real.invert⟩
+
+def Real.non_zero_of_cauchy {a: CauchySeq} : ¬a ≈ 0 -> mk a ≠ 0 := by
+  intro g
+  intro h
+  apply g
+  exact exact h
+
+macro_rules | `(tactic|invert_tactic) => `(tactic|apply Real.non_zero_of_cauchy <;> invert_tactic)
+
+def Real.mk_invert (a: CauchySeq) (ha: ¬a ≈ 0) : (mk a)⁻¹ = mk (a⁻¹) := Equiv.liftWith_mk
