@@ -815,9 +815,9 @@ def Rat.sub.neg (a b: ℚ) : -(a - b) = b - a := by
 def Rat.sub_mul (a b k: ℚ) : (a - b) * k = a * k - b * k := by
   rw [sub.eq_add_neg, add_mul, neg_mul, sub.eq_add_neg]
 
-def Rat.mul_sub (a b k: ℚ) : k * (a + b) = k * a + k * b := by
+def Rat.mul_sub (a b k: ℚ) : k * (a - b) = k * a - k * b := by
   repeat rw [mul.comm k]
-  rw [add_mul]
+  rw [sub_mul]
 
 def Rat.sub.self (a: ℚ) : a - a = 0 := by
   rw [←one_mul a, ←sub_mul]

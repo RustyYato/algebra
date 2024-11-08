@@ -953,4 +953,109 @@ def Real.non_zero_of_cauchy {a: CauchySeq} : ¬a ≈ 0 -> mk a ≠ 0 := by
 
 macro_rules | `(tactic|invert_tactic) => `(tactic|apply Real.non_zero_of_cauchy <;> invert_tactic)
 
-def Real.mk_invert (a: CauchySeq) (ha: ¬a ≈ 0) : (mk a)⁻¹ = mk (a⁻¹) := Equiv.liftWith_mk
+def Real.mk_inv (a: CauchySeq) (ha: ¬a ≈ 0) : (mk a)⁻¹ = mk (a⁻¹) := Equiv.liftWith_mk
+
+def CauchySeq.mul.spec (a b c d: CauchySeq) :
+  a ≈ c -> b ≈ d -> is_cauchy_equiv (fun n => a n * b n) (fun n => c n * d n) := by
+  intro ac bd ε ε_pos
+  have ⟨amax,one_lt_amax,amax_spec⟩ := ‖a‖.upper_bound_with 1
+  have ⟨dmax,one_lt_dmax,dmax_spec⟩ := ‖d‖.upper_bound_with 1
+
+  have amax_pos : 0 < amax := lt_of_le_of_lt (by decide) one_lt_amax
+  have dmax_pos : 0 < dmax := lt_of_le_of_lt (by decide) one_lt_dmax
+
+  let ε₀ := (ε /? 2) /? dmax
+  let ε₁ := (ε /? 2) /? amax
+
+  have ε₀_pos : 0 < ε₀ := by
+    apply Rat.div.pos
+    apply Rat.div.pos
+    assumption
+    decide
+    assumption
+  have ε₁_pos : 0 < ε₁ := by
+    apply Rat.div.pos
+    apply Rat.div.pos
+    assumption
+    decide
+    assumption
+
+  have ⟨an,an_prf⟩ := ac _ ε₀_pos
+  have ⟨bn,bn_prf⟩ := bd _ ε₁_pos
+
+  exists max an bn
+  intro x y hx hy
+  have ⟨_,_⟩ := max_le_iff.mp hx
+  have ⟨_,_⟩ := max_le_iff.mp hy
+
+  dsimp
+
+  -- = |a b - c d + a d - a d|
+  -- = |a b - a d - c d + a d|
+  -- = |a b - a d + a d - c d|
+  -- = |a (b - d) + (a - c) d|
+  -- ≤ |a (b - d)| + |(a - c) d|
+  -- = |a| |(b - d)| + |(a - c)| |d|
+  -- < amax ε/(2 amax) + (ε/(2 dmax)) dmax
+  -- = ε/2 + ε/2
+  -- = ε
+
+  rw [←Rat.add_zero (_ - _), ←Rat.neg_self_add (a x * d y),
+    Rat.sub.eq_add_neg, Rat.add.assoc, Rat.add.comm_left (-_),
+    ←Rat.add.assoc, Rat.add.comm (-_), ←Rat.sub.eq_add_neg,
+    ←Rat.sub.eq_add_neg, ←Rat.mul_sub, ←Rat.sub_mul]
+  apply lt_of_le_of_lt
+  apply Rat.abs.add_le
+  rw [←Rat.abs.mul, ←Rat.abs.mul]
+  rw [Rat.half_sum ε]
+  apply Rat.add.lt
+  apply lt_of_le_of_lt
+  apply Rat.mul.le_left_pos
+  apply Rat.abs.zero_le
+  apply le_of_lt
+  apply amax_spec
+  rw [Rat.mul.comm]
+  apply lt_of_lt_of_le
+  apply (Rat.mul.lt_mul_pos _).mp
+  apply bn_prf <;> assumption
+  assumption
+  rw [Rat.mul.comm, Rat.mul_div_cancel]
+  rw [Rat.mul.comm]
+  apply lt_of_le_of_lt
+  apply Rat.mul.le_left_pos
+  apply Rat.abs.zero_le
+  apply le_of_lt
+  apply dmax_spec
+  rw [Rat.mul.comm]
+  apply lt_of_lt_of_le
+  apply (Rat.mul.lt_mul_pos _).mp
+  apply an_prf <;> assumption
+  assumption
+  rw [Rat.mul.comm, Rat.mul_div_cancel]
+
+def CauchySeq.mul (a b: CauchySeq) : CauchySeq := by
+  apply CauchySeq.mk (fun n => a n * b n)
+  apply mul.spec <;> rfl
+
+def Real.mul : ℝ -> ℝ -> ℝ := by
+  apply lift₂ (fun _ _ => mk _) _
+  exact CauchySeq.mul
+  intro a b c d ac bd
+  apply sound
+  apply CauchySeq.mul.spec <;> assumption
+
+instance : Mul CauchySeq := ⟨.mul⟩
+instance : Mul ℝ := ⟨.mul⟩
+
+def Real.mk_mul (a b: CauchySeq) : mk a * mk b = mk (a * b) := lift₂_mk
+
+instance : CheckedDiv CauchySeq (¬· ≈ 0) where
+  checked_div a b h := a * b⁻¹
+instance : CheckedDiv ℝ (· ≠ 0) where
+  checked_div a b h := a * b⁻¹
+
+def CauchySeq.div.eq_mul_inv (a b: CauchySeq) (h: ¬b ≈ 0) : a /? b = a * b⁻¹ := rfl
+def Real.div.eq_mul_inv (a b: ℝ) (h: b ≠ 0) : a /? b = a * b⁻¹ := rfl
+
+def Real.mk_div (a b: CauchySeq) (h: ¬b ≈ 0) : mk a /? mk b = mk (a /? b) := by
+  rw [CauchySeq.div.eq_mul_inv, div.eq_mul_inv, mk_inv, mk_mul]
