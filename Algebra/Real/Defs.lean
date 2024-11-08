@@ -945,6 +945,8 @@ def Real.invert (x: ℝ) (h: x ≠ 0) : ℝ := by
 instance : Invert CauchySeq (¬· ≈ 0) := ⟨CauchySeq.invert⟩
 instance : Invert ℝ (· ≠ 0) := ⟨Real.invert⟩
 
+def CauchySeq.invert.def  (a: CauchySeq) (h: ¬a ≈ 0) : a⁻¹ = a.invert h := rfl
+
 def Real.non_zero_of_cauchy {a: CauchySeq} : ¬a ≈ 0 -> mk a ≠ 0 := by
   intro g
   intro h
@@ -1049,6 +1051,8 @@ instance : Mul ℝ := ⟨.mul⟩
 
 def Real.mk_mul (a b: CauchySeq) : mk a * mk b = mk (a * b) := lift₂_mk
 
+def CauchySeq.mul.def (a b: CauchySeq) : a * b = a.mul b := rfl
+
 instance : CheckedDiv CauchySeq (¬· ≈ 0) where
   checked_div a b h := a * b⁻¹
 instance : CheckedDiv ℝ (· ≠ 0) where
@@ -1059,3 +1063,165 @@ def Real.div.eq_mul_inv (a b: ℝ) (h: b ≠ 0) : a /? b = a * b⁻¹ := rfl
 
 def Real.mk_div (a b: CauchySeq) (h: ¬b ≈ 0) : mk a /? mk b = mk (a /? b) := by
   rw [CauchySeq.div.eq_mul_inv, div.eq_mul_inv, mk_inv, mk_mul]
+
+def CauchySeq.equiv_of_pointwise (a b: CauchySeq) : (∀n, a n = b n) -> a ≈ b := by
+  intro h ε ε_pos
+  have ⟨i, prf⟩  := a.seq_is_cauchy ε ε_pos
+  exists i
+  intro n m _ _
+  rw [←h]
+  apply prf <;> assumption
+
+def CauchySeq.mul.comm (a b: CauchySeq) : a * b ≈ b * a := by
+  rw [mul.def, mul.def]
+  unfold mul
+  apply CauchySeq.equiv_of_pointwise
+  intro n
+  dsimp
+  rw [Rat.mul.comm]
+
+def Real.mul.comm (a b: ℝ) : a * b = b * a := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  rw [mk_mul, mk_mul]
+  apply sound
+  apply CauchySeq.mul.comm
+
+def CauchySeq.mul.assoc (a b c: CauchySeq) : a * b * c ≈ a * (b * c) := by
+  repeat rw [mul.def]
+  unfold mul
+  apply CauchySeq.equiv_of_pointwise
+  intro n
+  dsimp
+  rw [Rat.mul.assoc]
+
+def Real.mul.assoc (a b c: ℝ) : a * b * c = a * (b * c) := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  induction c using ind with | mk c =>
+  repeat rw [mk_mul]
+  apply sound
+  apply CauchySeq.mul.assoc
+
+def CauchySeq.add.comm (a b: CauchySeq) : a + b ≈ b + a := by
+  rw [add.def, add.def]
+  unfold add
+  apply CauchySeq.equiv_of_pointwise
+  intro n
+  dsimp
+  rw [Rat.add.comm]
+
+def Real.add.comm (a b: ℝ) : a + b = b + a := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  rw [mk_add, mk_add]
+  apply sound
+  apply CauchySeq.add.comm
+
+def CauchySeq.add.assoc (a b c: CauchySeq) : a + b + c ≈ a + (b + c) := by
+  repeat rw [add.def]
+  unfold add
+  apply CauchySeq.equiv_of_pointwise
+  intro n
+  dsimp
+  rw [Rat.add.assoc]
+
+def Real.add.assoc (a b c: ℝ) : a + b + c = a + (b + c) := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  induction c using ind with | mk c =>
+  repeat rw [mk_add]
+  apply sound
+  apply CauchySeq.add.assoc
+
+def Real.mul.right_comm (a b c: ℝ) :
+  a * b * c = a * c * b := by rw [Real.mul.assoc, Real.mul.comm b, Real.mul.assoc]
+
+def Real.mul.left_comm (a b c: ℝ) :
+  a * b * c = c * b * a := by rw [Real.mul.comm _ c, Real.mul.comm a, Real.mul.assoc]
+
+def Real.mul.comm_left (a b c: ℝ) :
+  a * (b * c) = b * (a * c) := by
+  rw [←Real.mul.assoc, ←Real.mul.assoc, Real.mul.comm a]
+
+def Real.mul.comm_right (a b c: ℝ) :
+  a * (b * c) = c * (b * a) := by
+  rw [Real.mul.comm _ c, Real.mul.comm a, Real.mul.assoc]
+
+def Real.add.right_comm (a b c: ℝ) :
+  a + b + c = a + c + b := by rw [Real.add.assoc, Real.add.comm b, Real.add.assoc]
+
+def Real.add.left_comm (a b c: ℝ) :
+  a + b + c = c + b + a := by rw [Real.add.comm _ c, Real.add.comm a, Real.add.assoc]
+
+def Real.add.comm_left (a b c: ℝ) :
+  a + (b + c) = b + (a + c) := by
+  rw [←Real.add.assoc, ←Real.add.assoc, Real.add.comm a]
+
+def Real.add.comm_right (a b c: ℝ) :
+  a + (b + c) = c + (b + a) := by
+  rw [Real.add.comm _ c, Real.add.comm a, Real.add.assoc]
+
+def CauchySeq.inv_self_mul (a: CauchySeq) (h: ¬a ≈ 0) : a⁻¹ * a ≈ 1 := by
+  rw [invert.def, mul.def]
+  unfold invert mul
+  dsimp
+  intro ε ε_pos
+  have ⟨K,K_pos,even⟩ := abv_pos_of_non_zero h
+  have ⟨i,prf⟩ := even.to₂.merge (a.seq_is_cauchy ε ε_pos)
+  exists i
+  intro n m hn hm
+  replace ⟨K_le_absseq, prf⟩ := prf n m hn hm
+  dsimp
+  rw [dif_pos]
+  rw [Rat.inv_self_mul]
+  have : seq 1 m = 1 := rfl
+  rw [this, Rat.sub.self]
+  exact ε_pos
+  intro h
+  rw [Rat.abs.eq_max] at K_le_absseq
+  rw [h] at K_le_absseq
+  have K_nonpos : K ≤ 0 := K_le_absseq
+  have := lt_of_lt_of_le K_pos K_nonpos
+  contradiction
+
+def Real.inv_self_mul (a: ℝ) (h: a ≠ 0) : a⁻¹ * a = 1 := by
+  induction a using ind with | mk a =>
+  rw [mk_inv, mk_mul]
+  apply sound
+  apply CauchySeq.inv_self_mul
+  intro g
+  apply h
+  apply sound
+  assumption
+
+def Real.mul_inv_self (a: ℝ) (h: a ≠ 0) : a * a⁻¹ = 1 := by
+  rw [mul.comm]
+  apply inv_self_mul
+
+def Real.div.self (a: ℝ) (h: a ≠ 0) : a /? a = 1 := by
+  rw [div.eq_mul_inv, mul_inv_self]
+
+def Real.mul_div.assoc (a b c: ℝ) (h: c ≠ 0) : a * (b /? c) = (a * b) /? c := by
+  rw [div.eq_mul_inv, div.eq_mul_inv, mul.assoc]
+
+def Real.mul_div.comm (a b c: ℝ) (h: c ≠ 0) : a * (b /? c) = b * (a /? c) := by
+  rw [div.eq_mul_inv, div.eq_mul_inv, mul.comm_left]
+
+def CauchySeq.neg_self_add (a: CauchySeq) : -a + a ≈ 0 := by
+  apply equiv_of_pointwise
+  intro n
+  suffices -a n + a n = 0 from this
+  rw [Rat.neg_self_add]
+
+def Real.neg_self_add (a: ℝ) : -a + a = 0 := by
+  induction a using ind with | mk a =>
+  rw [mk_neg, mk_add]
+  apply sound
+  apply CauchySeq.neg_self_add
+
+def Real.add_neg_self (a: ℝ) : a + -a = 0 := by
+  rw [add.comm, neg_self_add]
+
+def Real.sub.self (a: ℝ) : a - a = 0 := by
+  rw [sub.eq_add_neg, add_neg_self]
