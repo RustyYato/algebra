@@ -1903,3 +1903,8 @@ def Real.square.of_eq_zero (a: ℝ) : a * a = 0 -> a = 0 := by
   have := zero_not_pos
   contradiction
   rw [aeq]
+
+def Real.sub_mul (a b k: ℝ) : (a - b) * k = a * k - b * k := by
+  rw [sub.eq_add_neg, sub.eq_add_neg, add_mul, neg_mul]
+def Real.mul_sub (a b k: ℝ) : k * (a - b)  = k * a - k * b := by
+  rw [mul.comm k, mul.comm k, mul.comm k, sub_mul]
