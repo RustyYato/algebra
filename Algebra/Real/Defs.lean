@@ -338,6 +338,12 @@ def CauchySeq.neg_neg (a: CauchySeq) : - -a ≈ a := by
   rw [Rat.neg_neg]
   apply prf <;> assumption
 
+def Real.neg_neg (a: ℝ) : - -a = a := by
+  induction a using ind with | mk a =>
+  rw [mk_neg, mk_neg]
+  apply sound
+  apply CauchySeq.neg_neg
+
 instance : Sub CauchySeq where
   sub a b := a + -b
 instance : Sub ℝ where
@@ -374,9 +380,6 @@ def CauchySeq.lower_bound_with (s: CauchySeq) (x: Rat) : ∃r < x, ∀k, r < s k
 
 def CauchySeq.IsPos (a: CauchySeq) := ∃B > 0, Eventually fun n => B ≤ a n
 def CauchySeq.IsNeg (a: CauchySeq) := ∃B < 0, Eventually fun n => a n ≤ B
-
-instance : LT CauchySeq where
-  lt a b := (a - b).IsPos
 
 def CauchySeq.shifted (a: CauchySeq) (x: nat) : CauchySeq := by
   apply CauchySeq.mk' (fun n => a (n + x))
@@ -469,13 +472,6 @@ def CauchySeq.sub.eq_zero_of_equiv {a b: CauchySeq} : a ≈ b ↔ a - b ≈ 0 :=
   apply n₁prf
   assumption
   assumption
-
-def Real.sub_zero (a: ℝ) : a - a = 0 := by
-  induction a using ind with | mk a =>
-  rw [mk_sub]
-  apply sound
-  apply CauchySeq.sub.eq_zero_of_equiv.mp
-  rfl
 
 def Real.of_sub_zero (a b: ℝ) : a - b = 0 -> a = b := by
   induction a using ind with | mk a =>
@@ -671,6 +667,8 @@ def Real.abs : ℝ -> ℝ := by
 
 instance : AbsoluteValue CauchySeq CauchySeq := ⟨CauchySeq.abs⟩
 instance : AbsoluteValue ℝ ℝ := ⟨Real.abs⟩
+
+def Real.mk_abs (a: CauchySeq) : ‖mk a‖ = mk ‖a‖ := lift_mk
 
 theorem CauchySeq.abv_pos_of_non_zero {f : CauchySeq} (hf : ¬f ≈ 0) :
     ∃ K > 0, Eventually fun j => K ≤ ‖f j‖ := by
@@ -1086,6 +1084,17 @@ def CauchySeq.equiv_of_pointwise (a b: CauchySeq) : (∀n, a n = b n) -> a ≈ b
   rw [←h]
   apply prf <;> assumption
 
+def CauchySeq.equiv_of_pointwise_after (a b: CauchySeq) (k: nat) : (∀n, k ≤ n -> a n = b n) -> a ≈ b := by
+  intro h ε ε_pos
+  have ⟨i, prf⟩  := a.seq_is_cauchy ε ε_pos
+  exists max i k
+  intro n m hn hm
+  have ⟨_,_⟩ := max_le_iff.mp hn
+  have ⟨_,_⟩ := max_le_iff.mp hm
+  rw [←h]
+  apply prf <;> assumption
+  assumption
+
 def CauchySeq.mul.comm (a b: CauchySeq) : a * b ≈ b * a := by
   rw [mul.def, mul.def]
   unfold mul
@@ -1245,3 +1254,533 @@ instance : Max ℝ where
 
 instance : Min ℝ where
   min a b := (a + b - ‖a - b‖) /? 2
+
+def Real.sub.neg (a b: ℝ) : -(a - b) = b - a := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  rw [mk_sub, mk_sub, mk_neg]
+  apply sound
+  apply CauchySeq.equiv_of_pointwise
+  intro n
+  suffices -(a n - b n) = b n - a n from this
+  rw [Rat.sub.neg]
+
+def Real.add.neg (a b: ℝ) : -(a + b) = -a + -b := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  rw [mk_neg, mk_neg, mk_add, mk_add, mk_neg]
+  apply sound
+  apply CauchySeq.equiv_of_pointwise
+  intro n
+  show -(a n + b n) = -a n + -b n
+  rw [Rat.add.neg, Rat.sub.eq_add_neg]
+
+def Real.add.eq_iff_left {a b k: ℝ} : a = b ↔ a + k = b + k := by
+  apply Iff.intro
+  intro h
+  rw [h]
+  intro h
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  induction k using ind with | mk k =>
+  apply sound
+  rw [mk_add, mk_add] at h
+  replace h := exact h
+  intro ε ε_pos
+  have ⟨i, prf⟩ := (k.seq_is_cauchy _ (Rat.half_pos ε_pos)).merge (h _ (Rat.half_pos ε_pos))
+  exists i
+  intro n m hn hm
+  replace prf := prf n m hn hm
+  dsimp at prf
+  have : ∀a b: CauchySeq, ∀n: nat, (a + b) n = a n + b n := fun _ _ _ => rfl
+  rw [this, this] at prf
+  clear this
+  replace ⟨kprf,prf⟩ := prf
+  rw [Rat.sub.eq_add_neg, Rat.add.neg,
+    Rat.sub.eq_add_neg, Rat.add.assoc,
+    Rat.add.comm_left (k _),
+    ←Rat.add.assoc, ←Rat.sub.eq_add_neg,
+    ←Rat.sub.eq_add_neg] at prf
+  rw [←Rat.add_zero (_ - _), ←Rat.sub.self (k n - k m),
+    Rat.sub.eq_add_neg (k _ - k _),
+    ←Rat.add.assoc, Rat.half_sum ε]
+  apply lt_of_le_of_lt
+  apply Rat.abs.add_le
+  apply Rat.add.lt
+  assumption
+  rw [Rat.abs.neg]
+  assumption
+
+def Real.sub_add.comm (a b c: ℝ) : a - b + c = c - b + a := by
+  rw [sub.eq_add_neg, sub.eq_add_neg, add.left_comm]
+def Real.add_sub.comm (a b c: ℝ) : a + (b - c) = b + (a - c) := by
+  rw [sub.eq_add_neg, sub.eq_add_neg, add.comm_left]
+
+def Real.neg.zero : -0 = (0: ℝ) := by
+  erw [mk_neg]
+  apply sound
+  apply CauchySeq.equiv_of_pointwise
+  intro n
+  rfl
+
+def Real.zero_add (a: ℝ) : 0 + a = a := by
+  induction a using ind with | mk a =>
+  erw [mk_add]
+  apply sound
+  apply CauchySeq.equiv_of_pointwise
+  intro n
+  suffices 0 + a n = a n from this
+  rw [Rat.zero_add]
+
+def Real.add_zero (a: ℝ) : a + 0 = a := by
+  rw [add.comm, zero_add]
+
+def Real.one_mul (a: ℝ) : 1 * a = a := by
+  induction a using ind with | mk a =>
+  erw [mk_mul]
+  apply sound
+  apply CauchySeq.equiv_of_pointwise
+  intro n
+  suffices 1 * a n = a n from this
+  rw [Rat.one_mul]
+
+def Real.mul_one (a: ℝ) : a * 1 = a := by
+  rw [mul.comm, one_mul]
+
+def Real.zero_mul (a: ℝ) : 0 * a = 0 := by
+  induction a using ind with | mk a =>
+  erw [mk_mul]
+  apply sound
+  apply CauchySeq.equiv_of_pointwise
+  intro n
+  suffices 0 * a n = 0 from this
+  rw [Rat.zero_mul]
+
+def Real.mul_zero (a: ℝ) : a * 0 = 0 := by
+  rw [mul.comm, zero_mul]
+
+def Real.sub_zero (a: ℝ) : a - 0 = a := by
+  rw [sub.eq_add_neg, neg.zero, add_zero]
+
+def Real.zero_sub (a: ℝ) : 0 - a = -a := by
+  rw [sub.eq_add_neg, zero_add]
+
+def Real.not_pos_and_neg (a: ℝ) : a.IsPos -> a.IsNeg -> False := by
+  intro h g
+  induction a using ind with | mk a =>
+  apply CauchySeq.not_IsPos_and_IsNeg a
+  apply (mk_IsPos _).mp
+  assumption
+  apply (mk_IsNeg _).mp
+  assumption
+
+def Real.neg.IsPos {a: ℝ} : a.IsPos ↔ (-a).IsNeg := by
+  induction a using ind with | mk a =>
+  rw [mk_neg]
+  apply Iff.trans (mk_IsPos _)
+  apply Iff.trans _ (mk_IsNeg _).symm
+  apply CauchySeq.neg.IsPos
+
+def Real.neg.IsNeg {a: ℝ} : a.IsNeg ↔ (-a).IsPos := by
+  induction a using ind with | mk a =>
+  rw [mk_neg]
+  apply Iff.trans (mk_IsNeg _)
+  apply Iff.trans _ (mk_IsPos _).symm
+  apply CauchySeq.neg.IsNeg
+
+def Real.zero_not_pos : ¬(0: ℝ).IsPos := by
+  intro h
+  replace ⟨K,K_pos,i,h⟩ : CauchySeq.IsPos 0 := (mk_IsPos _).mp h
+  have : K ≤ 0 := h i (le_refl _)
+  exact lt_irrefl <| lt_of_le_of_lt this K_pos
+
+def Real.zero_not_neg : ¬(0: ℝ).IsNeg := by
+  intro h
+  replace ⟨K,K_pos,i,h⟩ : CauchySeq.IsNeg 0 := (mk_IsNeg _).mp h
+  have : 0 ≤ K := h i (le_refl _)
+  exact lt_irrefl <| lt_of_le_of_lt this K_pos
+
+def Real.pos_or_neg_of_non_zero (a: ℝ) (h: a ≠ 0) : a.IsPos ∨ a.IsNeg := by
+  induction a using ind with | mk a =>
+  have : ¬a ≈ 0 := by
+    intro g
+    apply h
+    apply sound
+    assumption
+  rcases CauchySeq.IsPos_or_IsNeg_of_non_zero this with pos | neg
+  apply Or.inl
+  apply (mk_IsPos _).mpr
+  assumption
+  apply Or.inr
+  apply (mk_IsNeg _).mpr
+  assumption
+
+def Real.add.pos (a b: ℝ) : a.IsPos -> b.IsPos -> (a + b).IsPos := by
+  intro apos bpos
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  replace apos := (mk_IsPos _).mp apos
+  replace bpos := (mk_IsPos _).mp bpos
+  rw [mk_add]
+  apply (mk_IsPos _).mpr
+  rcases apos with ⟨Ka,Ka_pos,Kaeven⟩
+  rcases bpos with ⟨Kb,Kb_pos,Kbeven⟩
+  have ⟨i,prf⟩ := Kaeven.merge Kbeven
+  exists Ka + Kb
+  apply And.intro
+  apply Rat.add.is_pos <;> assumption
+  exists i
+  intro n hn
+  replace prf := prf n hn
+  obtain ⟨Kah,Kbh⟩ := prf
+  apply Rat.add.le <;> assumption
+
+instance : LT CauchySeq where
+  lt a b := (b - a).IsPos
+
+instance : LT ℝ where
+  lt a b := (b - a).IsPos
+
+instance : LE CauchySeq where
+  le a b := a < b ∨ a ≈ b
+
+instance : LE ℝ where
+  le a b := a < b ∨ a = b
+
+def Real.mk_lt {a b: CauchySeq} : mk a < mk b ↔ a < b := by
+  unfold LT.lt instLTReal instLTCauchySeq
+  dsimp
+  rw [mk_sub]
+  apply mk_IsPos
+
+def Real.two_eq : (2: ℝ) = 1 + 1 := by
+  erw [mk_add]
+  apply sound
+  apply CauchySeq.equiv_of_pointwise
+  intro
+  rfl
+
+def Real.mul_add (a b k: ℝ) : k * (a + b) = k * a + k * b := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  induction k using ind with | mk k =>
+  repeat first|rw [mk_add]|rw [mk_mul]
+  apply sound
+  apply CauchySeq.equiv_of_pointwise
+  intro n
+  show (k n * (a n + b n) = k n * a n + k n * b n)
+  rw [Rat.mul_add]
+
+def Real.add_mul (a b k: ℝ) : (a + b) * k = a * k + b * k := by
+  repeat rw [mul.comm _ k]
+  rw [mul_add]
+
+def Real.sub_neg (a b: ℝ) : a - -b = a + b := by
+  rw [sub.eq_add_neg, neg_neg]
+
+def Real.two_mul (a: ℝ) : 2 * a = a + a := by
+  rw [two_eq, add_mul, one_mul]
+
+instance Real.IsLinearOrder'Inst : IsLinearOrder' ℝ where
+  lt_iff_le_and_not_le := by
+    intro a b
+    apply Iff.intro
+    · intro h
+      apply And.intro
+      apply Or.inl
+      assumption
+      intro g
+      rcases g with b_lt_a | b_eq_a
+      replace h : (b - a).IsPos := h
+      replace b_lt_a : (a - b).IsPos := b_lt_a
+      apply not_pos_and_neg _ h
+      apply neg.IsNeg.mpr
+      rw [sub.neg]
+      assumption
+      subst b
+      replace h : (a - a).IsPos := h
+      rw [sub.self] at h
+      have := zero_not_pos
+      contradiction
+    · rintro ⟨h₀,h₁⟩
+      rcases h₀ with a_lt_b | a_eq_b
+      assumption
+      subst b
+      have := h₁ (.inr rfl)
+      contradiction
+  le_total := by
+    intro a b
+    apply ClassicLogic.byCases (a = b)
+    intro h
+    apply Or.inl
+    subst b
+    exact .inr rfl
+    intro h
+    replace h : b - a ≠ 0 := by
+      intro g
+      apply h
+      have := (add.eq_iff_left (k := a)).mp g
+      rw [sub_add.comm, sub.self, zero_add, zero_add] at this
+      symm
+      assumption
+    rcases pos_or_neg_of_non_zero _ h with pos | neg
+    exact .inl (.inl pos)
+    have := Real.neg.IsNeg.mp neg
+    rw [sub.neg] at this
+    exact .inr (.inl this)
+  le_complete := by
+    intro a b
+    apply ClassicLogic.byCases (a = b)
+    intro h
+    apply Or.inl
+    subst b
+    exact .inr rfl
+    intro h
+    replace h : b - a ≠ 0 := by
+      intro g
+      apply h
+      have := (add.eq_iff_left (k := a)).mp g
+      rw [sub_add.comm, sub.self, zero_add, zero_add] at this
+      symm
+      assumption
+    rcases pos_or_neg_of_non_zero _ h with pos | neg
+    exact .inl (.inl pos)
+    have := Real.neg.IsNeg.mp neg
+    rw [sub.neg] at this
+    apply Or.inr
+    intro g
+    rcases g with a_lt_b | a_eq_b
+    exact not_pos_and_neg _ a_lt_b neg
+    subst b
+    rw [sub.self] at h
+    contradiction
+  le_trans := by
+    intro a b c ab bc
+    rcases ab with a_lt_b | a_eq_b
+    rcases bc with b_lt_c | b_eq_c
+    · apply Or.inl
+      suffices (c - a).IsPos from this
+      rw [←add_zero (c - a), ←sub.self b, sub.eq_add_neg, sub.eq_add_neg,
+        add.assoc, add.comm_right (-a), ←add.assoc, ←sub.eq_add_neg, ←sub.eq_add_neg]
+      apply add.pos
+      exact b_lt_c
+      exact a_lt_b
+    · subst b
+      apply Or.inl
+      assumption
+    · subst b
+      assumption
+  le_antisymm := by
+    intro a b ab ba
+    rcases ab with ab | _
+    rcases ba with ba | _
+    exfalso
+    apply not_pos_and_neg
+    exact ab
+    apply neg.IsNeg.mpr
+    rw [sub.neg]
+    assumption
+    symm
+    assumption
+    assumption
+
+def Real.abs.of_zero_le (a: ℝ) : 0 ≤ a -> ‖a‖ = a := by
+  intro h
+  cases h
+  · rename_i h
+    induction a using ind with | mk a =>
+    have ⟨K,K_pos,i,prf⟩ := mk_lt.mp h
+    rw [mk_abs]
+    apply sound
+    apply CauchySeq.equiv_of_pointwise_after _ _ i
+    intro n hn
+    dsimp at prf
+    have := prf n hn
+    show ‖a n‖ = a n
+    rw [Rat.abs.of_zero_le.mp]
+    apply le_trans
+    exact le_of_lt K_pos
+    have : K ≤ (a n - 0) := this
+    erw [Rat.sub_zero] at this
+    exact this
+  · subst a
+    erw [Real.mk_abs]
+    apply sound
+    apply CauchySeq.equiv_of_pointwise
+    intro n
+    rfl
+
+def Real.abs.neg (a: ℝ) : ‖-a‖ = ‖a‖ := by
+  induction a using ind with | mk a =>
+  rw [mk_neg, mk_abs, mk_abs]
+  apply sound
+  apply CauchySeq.equiv_of_pointwise
+  intro n
+  show ‖-a n‖ = ‖a n‖
+  rw [Rat.abs.neg]
+
+def Real.add.lt {a b k: ℝ} : a < b ↔ a + k < b + k := by
+  apply Iff.intro
+  intro h
+  show (b + k - (a + k)).IsPos
+  rw [sub.eq_add_neg, add.neg, add.assoc, add.comm_left k,
+    add_neg_self, add_zero, ←sub.eq_add_neg]
+  exact h
+  intro h
+  show (b - a).IsPos
+  rw [←add_zero (_ - _), ←add_neg_self k, sub.eq_add_neg, add.assoc, add.comm_left (-a),
+    ←add.assoc, ←add.neg, ←sub.eq_add_neg]
+  exact h
+
+def Real.add.le {a b k: ℝ} : a ≤ b ↔ a + k ≤ b + k := by
+  apply Iff.intro
+  intro h
+  rcases h with a_lt_b | a_eq_b
+  apply le_of_lt
+  apply add.lt.mp
+  assumption
+  rw [a_eq_b]
+  intro h
+  rcases h with a_lt_b | a_eq_b
+  apply Or.inl
+  apply add.lt.mpr
+  assumption
+  rw [add.eq_iff_left.mpr a_eq_b]
+
+def Real.abs.of_le_zero (a: ℝ) : a ≤ 0 -> ‖a‖ = -a := by
+  intro h
+  rw [←abs.neg]
+  apply abs.of_zero_le
+  apply add.le.mpr
+  rw [neg_self_add, zero_add]
+  assumption
+
+def Real.abs.def (a: ℝ) : ‖a‖ = a ∨ ‖a‖ = -a := by
+  cases le_total a 0
+  rw [abs.of_le_zero]
+  apply Or.inr rfl
+  assumption
+  rw [abs.of_zero_le]
+  apply Or.inl rfl
+  assumption
+
+instance Real.IsLinearOrderInst : IsLinearOrder ℝ where
+  min_iff_le_left := by
+    intro a b
+    apply Iff.intro
+    intro ab
+    unfold min instMinReal
+    dsimp
+    rw [Real.abs.of_le_zero, sub_neg, add.assoc, add_sub.comm b,
+      ←add.assoc, sub.self, add_zero, ←two_mul, mul.comm, ←mul_div.assoc, div.self, mul_one]
+    rcases ab with ab | ab
+    apply Or.inl
+    suffices (0 - (a - b)).IsPos from this
+    rw [zero_sub, sub.neg]
+    exact ab
+    subst b
+    rw [sub.self]
+    intro min_eq_a
+    unfold min instMinReal at min_eq_a
+    dsimp at min_eq_a
+    rcases lt_or_le b a with ab | ba
+    rw [abs.of_zero_le, sub.eq_add_neg, sub.neg, sub.eq_add_neg,
+      add.assoc, add.comm_right b, ←add.assoc, add_neg_self, zero_add,
+      ←two_mul, mul.comm, ←mul_div.assoc, div.self, mul_one] at min_eq_a
+    subst a
+    rfl
+    apply Or.inl
+    suffices ((a - b) - 0).IsPos from this
+    rw [sub_zero]
+    exact ab
+    assumption
+  min_iff_le_right := by
+    intro a b
+    apply Iff.intro
+    intro ba
+    unfold min instMinReal
+    dsimp
+    rw [Real.abs.of_zero_le, sub.eq_add_neg, sub.neg, sub.eq_add_neg,
+      add.assoc, add.comm_right b, ←add.assoc, add_neg_self, zero_add,
+      ←two_mul, mul.comm, ←mul_div.assoc, div.self, mul_one]
+    rcases ba with ba | ab
+    apply Or.inl
+    suffices ((a - b) - 0).IsPos from this
+    rw [sub_zero]
+    exact ba
+    subst b
+    rw [sub.self]
+    intro min_eq_a
+    unfold min instMinReal at min_eq_a
+    dsimp at min_eq_a
+    rcases lt_or_le a b with ab | ba
+    rw [Real.abs.of_le_zero, sub_neg, sub.eq_add_neg, add.assoc,
+      add.comm_left b, ←add.assoc, add_neg_self, add_zero,
+      ←two_mul, mul.comm, ←mul_div.assoc, div.self, mul_one] at min_eq_a
+    subst a
+    rfl
+    apply Or.inl
+    suffices (0 - (a - b)).IsPos from this
+    rw [zero_sub, sub.neg]
+    exact ab
+    assumption
+  max_iff_le_left := by
+    intro a b
+    apply Iff.intro
+    intro ba
+    unfold max instMaxReal
+    dsimp
+    rw [Real.abs.of_le_zero, sub.neg, add.assoc, sub.eq_add_neg,
+      add.comm_right b, ←add.assoc, add_neg_self, zero_add,
+      ←two_mul, mul.comm, ←mul_div.assoc, div.self, mul_one]
+    rcases ba with ba | ab
+    apply Or.inl
+    suffices (0 - (a - b)).IsPos from this
+    rw [zero_sub, sub.neg]
+    exact ba
+    subst b
+    rw [sub.self]
+    intro min_eq_a
+    unfold max instMaxReal at min_eq_a
+    dsimp at min_eq_a
+    rcases lt_or_le b a with ab | ba
+    rw [Real.abs.of_zero_le, sub.eq_add_neg,
+      add.assoc, add.comm_left b, ←add.assoc, add_neg_self, add_zero,
+      ←two_mul, mul.comm, ←mul_div.assoc, div.self, mul_one] at min_eq_a
+    subst a
+    rfl
+    apply Or.inl
+    suffices ((a - b) - 0).IsPos from this
+    rw [sub_zero]
+    exact ab
+    assumption
+  max_iff_le_right := by
+    intro a b
+    apply Iff.intro
+    intro ab
+    unfold max instMaxReal
+    dsimp
+    rw [Real.abs.of_zero_le, sub.eq_add_neg,
+      add.assoc, add.comm_left b, ←add.assoc, add_neg_self, add_zero,
+      ←two_mul, mul.comm, ←mul_div.assoc, div.self, mul_one]
+    rcases ab with ab | ab
+    apply Or.inl
+    suffices ((a - b) - 0).IsPos from this
+    rw [sub_zero]
+    exact ab
+    subst b
+    rw [sub.self]
+    intro min_eq_a
+    unfold max instMaxReal at min_eq_a
+    dsimp at min_eq_a
+    rcases lt_or_le a b with ab | ba
+    rw [Real.abs.of_le_zero, sub.neg, add.assoc, sub.eq_add_neg,
+      add.comm_right b, ←add.assoc, add_neg_self, zero_add,
+      ←two_mul, mul.comm, ←mul_div.assoc, div.self, mul_one] at min_eq_a
+    subst a
+    rfl
+    apply Or.inl
+    suffices (0 - (a - b)).IsPos from this
+    rw [zero_sub, sub.neg]
+    exact ab
+    assumption

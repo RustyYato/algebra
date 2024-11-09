@@ -106,6 +106,13 @@ def le_iff_of_lt_iff : (a < b ↔ c < d) -> (b ≤ a ↔ d ≤ c) := by
   apply not_iff_not
   assumption
 
+def lt_or_le (a b: α) : a < b ∨ b ≤ a := by
+  rcases le_total b a with ba | ab
+  exact .inr ba
+  rcases lt_or_eq_of_le ab with ab | ab
+  exact .inl ab
+  exact .inr (le_of_eq ab.symm)
+
 class IsLinearOrder (α: Type _) [LT α] [LE α] [Min α] [Max α] extends IsLinearOrder' α: Prop where
   min_iff_le_left: ∀{a b: α}, a ≤ b ↔ min a b = a := by
     intro a b
