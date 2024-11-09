@@ -1,6 +1,6 @@
 import Algebra.Nat.Add
 import Algebra.MyOption
-import Algebra.Order.Basic
+import Algebra.Order.Defs
 
 variable [LE α] [LT α] [IsLinearOrder α] [@DecidableRel α (· ≤ ·)] [@DecidableRel α (· < ·)] [DecidableEq α]
 

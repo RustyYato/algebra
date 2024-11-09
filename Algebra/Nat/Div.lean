@@ -2,7 +2,7 @@ import Algebra.Nat.Mul
 import Algebra.Nat.Sub
 import Algebra.Nat.WellFounded
 import Algebra.MyOption
-import Algebra.Order.Basic
+import Algebra.Order.Defs
 
 structure div_mod.IndCtx where
   motive: nat -> (b: nat) -> 0 < b -> Sort α

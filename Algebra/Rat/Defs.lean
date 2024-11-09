@@ -1,6 +1,6 @@
 import Algebra.Nat.Gcd
 import Algebra.Int.Mul
-import Algebra.Order.Basic
+import Algebra.Order.Defs
 import Algebra.Operators.CheckedDiv
 import Algebra.Operators.AbsVal
 import Algebra.AxiomBlame
