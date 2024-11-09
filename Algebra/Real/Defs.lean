@@ -737,102 +737,9 @@ def CauchySeq.IsPos_or_IsNeg_of_non_zero {a: CauchySeq} (h: ¬a ≈ 0) : a.IsPos
     rw [←Rat.sub.eq_add_neg]
     assumption
 
-def CauchySeq.invert.spec (a b: CauchySeq) (ha: ¬a ≈ 0) (hb: ¬b ≈ 0) :
-  a ≈ b -> is_cauchy_equiv (fun n => if h:a n ≠ 0 then (a n)⁻¹ else 0) (fun n => if h:b n ≠ 0 then (b n)⁻¹ else 0) := by
-  revert a b
-
-  suffices ∀a b: CauchySeq, ¬a ≈ 0 -> ¬b ≈ 0 -> a ≈ b -> a.IsPos -> is_cauchy_equiv (fun n => if h:a n ≠ 0 then (a n)⁻¹ else 0) (fun n => if h:b n ≠ 0 then (b n)⁻¹ else 0) by
-    intro a b ha hb ab
-    rcases IsPos_or_IsNeg_of_non_zero ha with apos | aneg
-    apply this <;> assumption
-    intro ε ε_pos
-    have ⟨i,prf⟩ := this (-a) (-b) (by
-      intro  h₀
-      apply ha
-      apply Real.exact
-      rw [←Real.sound (neg_neg a), ←Real.mk_neg, Real.sound h₀, Real.mk_neg]
-      rfl) (by
-      intro  h₀
-      apply hb
-      apply Real.exact
-      rw [←Real.sound (neg_neg b), ←Real.mk_neg, Real.sound h₀, Real.mk_neg]
-      rfl) (neg.spec a b ab) (neg.IsNeg.mp aneg) ε ε_pos
-    dsimp at prf
-    exists i
-    intro x y hx hy
-    dsimp
-    replace prf := prf x y hx hy
-    split at prf <;> split at prf <;> rename_i h g
-    · rw [dif_pos, dif_pos]
-      unfold Neg.neg instNegCauchySeq neg at prf
-      dsimp at prf
-      rw [←Rat.neg_inv _ (by
-        intro h₀
-        apply h
-        suffices -a x = 0 from this
-        rw [h₀]
-        rfl), ←Rat.neg_inv _ (by
-        intro h₀
-        apply g
-        suffices -b y = 0 from this
-        rw [h₀]
-        rfl), Rat.neg_sub_neg, Rat.abs.sub_comm] at prf
-      exact prf
-    · rw [dif_pos, dif_neg]
-      unfold Neg.neg instNegCauchySeq neg at prf
-      dsimp at prf
-      rw [←Rat.neg_inv _ (by
-        intro h₀
-        apply h
-        suffices -a x = 0 from this
-        rw [h₀]
-        rfl), Rat.sub_zero, Rat.abs.neg] at prf
-      rw [Rat.sub_zero]
-      exact prf
-      intro g₀
-      apply g
-      intro g
-      apply g₀
-      have g : -b y = 0 := g
-      rw [←Rat.neg_neg (b y), g]
-      rfl
-    · rw [dif_neg, dif_pos]
-      rw [Rat.zero_sub, Rat.abs.neg]
-      rw [Rat.zero_sub] at prf
-      have prf : ‖-(-b y)⁻¹‖ < ε := prf
-      rw [←Rat.neg_inv _ (by
-        intro g₀
-        apply g
-        suffices -b y = 0 from this
-        rw [g₀]
-        rfl), Rat.neg_neg] at prf
-      exact prf
-      intro h₀
-      apply h
-      intro h
-      apply h₀
-      have h : -a x = 0 := h
-      rw [←Rat.neg_neg (a x), h]
-      rfl
-    · rw [dif_neg, dif_neg]
-      exact ε_pos
-
-      intro g₀
-      apply g
-      intro g
-      apply g₀
-      have g : -b y = 0 := g
-      rw [←Rat.neg_neg (b y), g]
-      rfl
-
-      intro h₀
-      apply h
-      intro h
-      apply h₀
-      have h : -a x = 0 := h
-      rw [←Rat.neg_neg (a x), h]
-      rfl
-  intro a b ha hb
+def CauchySeq.invert.spec_of_pos : ∀a b: CauchySeq, a ≈ b -> a.IsPos ->
+  is_cauchy_equiv (fun n => if h:a n ≠ 0 then (a n)⁻¹ else 0) (fun n => if h:b n ≠ 0 then (b n)⁻¹ else 0) := by
+  intro a b
   intro ab apos
   have bpos := apos.spec b ab
   intro ε ε_pos
@@ -867,7 +774,7 @@ def CauchySeq.invert.spec (a b: CauchySeq) (ha: ¬a ≈ 0) (hb: ¬b ≈ 0) :
     apply ne_of_lt
     apply lt_of_lt_of_le Ka_pos
     assumption
-    apply Iff.intro <;> intro g
+    apply Iff.intro <;> intro
     apply le_trans
     apply le_of_lt Ka_pos
     assumption
@@ -888,7 +795,7 @@ def CauchySeq.invert.spec (a b: CauchySeq) (ha: ¬a ≈ 0) (hb: ¬b ≈ 0) :
   apply Rat.mul.le_left_pos (b := Kb⁻¹) _
   rw [Rat.abs.of_zero_le.mp]
   · apply (Rat.inv.swap_le _ _ _ _ _).mp Kbh
-    apply Iff.intro <;> intro g
+    apply Iff.intro <;> intro
     apply le_trans
     apply le_of_lt Kb_pos
     assumption
@@ -919,10 +826,92 @@ def CauchySeq.invert.spec (a b: CauchySeq) (ha: ¬a ≈ 0) (hb: ¬b ≈ 0) :
   rw [h] at Kbh
   exact lt_irrefl <| lt_of_lt_of_le Kb_pos Kbh
 
+def CauchySeq.invert.spec (a b: CauchySeq) (ha: ¬a ≈ 0) :
+  a ≈ b -> is_cauchy_equiv (fun n => if h:a n ≠ 0 then (a n)⁻¹ else 0) (fun n => if h:b n ≠ 0 then (b n)⁻¹ else 0) := by
+  intro ab
+  rcases IsPos_or_IsNeg_of_non_zero ha with apos | aneg
+  apply invert.spec_of_pos <;> assumption
+  intro ε ε_pos
+  have ⟨i,prf⟩ := invert.spec_of_pos (-a) (-b) (neg.spec a b ab) (neg.IsNeg.mp aneg) ε ε_pos
+  refine ⟨i,?_⟩
+  intro x y hx hy
+  dsimp at prf
+  dsimp
+  replace prf := prf x y hx hy
+  split at prf <;> split at prf <;> rename_i h g
+  · rw [dif_pos, dif_pos]
+    unfold Neg.neg instNegCauchySeq neg at prf
+    dsimp at prf
+    rw [←Rat.neg_inv _ (by
+      intro h₀
+      apply h
+      suffices -a x = 0 from this
+      rw [h₀]
+      rfl), ←Rat.neg_inv _ (by
+      intro h₀
+      apply g
+      suffices -b y = 0 from this
+      rw [h₀]
+      rfl), Rat.neg_sub_neg, Rat.abs.sub_comm] at prf
+    exact prf
+  · rw [dif_pos, dif_neg]
+    unfold Neg.neg instNegCauchySeq neg at prf
+    dsimp at prf
+    rw [←Rat.neg_inv _ (by
+      intro h₀
+      apply h
+      suffices -a x = 0 from this
+      rw [h₀]
+      rfl), Rat.sub_zero, Rat.abs.neg] at prf
+    rw [Rat.sub_zero]
+    exact prf
+    intro g₀
+    apply g
+    intro g
+    apply g₀
+    have g : -b y = 0 := g
+    rw [←Rat.neg_neg (b y), g]
+    rfl
+  · rw [dif_neg, dif_pos]
+    rw [Rat.zero_sub, Rat.abs.neg]
+    rw [Rat.zero_sub] at prf
+    have prf : ‖-(-b y)⁻¹‖ < ε := prf
+    rw [←Rat.neg_inv _ (by
+      intro g₀
+      apply g
+      suffices -b y = 0 from this
+      rw [g₀]
+      rfl), Rat.neg_neg] at prf
+    exact prf
+    intro h₀
+    apply h
+    intro h
+    apply h₀
+    have h : -a x = 0 := h
+    rw [←Rat.neg_neg (a x), h]
+    rfl
+  · rw [dif_neg, dif_neg]
+    exact ε_pos
+
+    intro g₀
+    apply g
+    intro g
+    apply g₀
+    have g : -b y = 0 := g
+    rw [←Rat.neg_neg (b y), g]
+    rfl
+
+    intro h₀
+    apply h
+    intro h
+    apply h₀
+    have h : -a x = 0 := h
+    rw [←Rat.neg_neg (a x), h]
+    rfl
+
 def CauchySeq.invert (c: CauchySeq) (h: ¬c ≈ 0) : CauchySeq := by
   apply CauchySeq.mk (fun n => if h:c n ≠ 0 then (c n)⁻¹ else 0)
   apply CauchySeq.invert.spec
-  assumption
   assumption
   rfl
 
@@ -937,7 +926,6 @@ def Real.invert (x: ℝ) (h: x ≠ 0) : ℝ := by
   apply sound
   apply CauchySeq.invert.spec
   intro h₀; apply ha; exact sound h₀
-  intro h₀; apply hb; exact sound h₀
   assumption
 
 instance : Invert CauchySeq (¬· ≈ 0) := ⟨CauchySeq.invert⟩
