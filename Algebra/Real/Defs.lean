@@ -1620,7 +1620,7 @@ def Real.add.lt {a b k: ℝ} : a < b ↔ a + k < b + k := by
     ←add.assoc, ←add.neg, ←sub.eq_add_neg]
   exact h
 
-def Real.add.le {a b k: ℝ} : a ≤ b ↔ a + k ≤ b + k := by
+def Real.add.le_left {a b k: ℝ} : a ≤ b ↔ a + k ≤ b + k := by
   apply Iff.intro
   intro h
   rcases h with a_lt_b | a_eq_b
@@ -1635,11 +1635,20 @@ def Real.add.le {a b k: ℝ} : a ≤ b ↔ a + k ≤ b + k := by
   assumption
   rw [add.eq_iff_left.mpr a_eq_b]
 
+def Real.add.le {a b c d: ℝ} : a ≤ c -> b ≤ d -> a + b ≤ c + d := by
+  intro ac bd
+  apply le_trans
+  apply add.le_left.mp
+  assumption
+  rw [add.comm c, add.comm c]
+  apply add.le_left.mp
+  assumption
+
 def Real.abs.of_le_zero (a: ℝ) : a ≤ 0 -> ‖a‖ = -a := by
   intro h
   rw [←abs.neg]
   apply abs.of_zero_le
-  apply add.le.mpr
+  apply add.le_left.mpr
   rw [neg_self_add, zero_add]
   assumption
 
@@ -1851,3 +1860,46 @@ def Real.mul.pos_of_neg_neg (a b: ℝ) : a.IsNeg -> b.IsNeg -> (a * b).IsPos := 
   assumption
   apply neg.IsNeg.mp
   assumption
+
+def Real.IsNeg.of_lt_zero (a: ℝ) : a < 0 -> a.IsNeg := by
+  show (0 - a).IsPos -> a.IsNeg
+  rw [zero_sub]
+  exact neg.IsNeg.mpr
+def Real.IsPos.of_zero_lt (a: ℝ) : 0 < a -> a.IsPos := by
+  show (a - 0).IsPos -> a.IsPos
+  rw [sub_zero]
+  exact id
+
+def Real.square.nonneg (a: ℝ) : 0 ≤ a * a := by
+  rcases lt_or_le a 0 with aneg | apos
+  apply le_of_lt
+  replace aneg : (0 - a).IsPos := aneg
+  rw [zero_sub] at aneg
+  replace aneg := neg.IsNeg.mpr aneg
+  show (a * a - 0).IsPos
+  rw [sub_zero]
+  apply mul.pos_of_neg_neg <;> assumption
+  rcases lt_or_eq_of_le apos with apos | azero
+  apply le_of_lt
+  show (a * a - 0).IsPos
+  replace aneg : (a - 0).IsPos := apos
+  rw [sub_zero] at *
+  apply mul.pos_of_pos_pos <;> assumption
+  subst a
+  rw [mul_zero]
+
+def Real.square.of_eq_zero (a: ℝ) : a * a = 0 -> a = 0 := by
+  intro h
+  rcases lt_or_le a 0 with aneg | anonneg
+  replace aneg := IsNeg.of_lt_zero _ aneg
+  have := mul.pos_of_neg_neg a a aneg aneg
+  rw [h] at this
+  have := zero_not_pos
+  contradiction
+  rcases lt_or_eq_of_le anonneg with apos | aeq
+  replace apos := IsPos.of_zero_lt _ apos
+  have := mul.pos_of_pos_pos a a apos apos
+  rw [h] at this
+  have := zero_not_pos
+  contradiction
+  rw [aeq]
