@@ -1784,3 +1784,82 @@ instance Real.IsLinearOrderInst : IsLinearOrder ℝ where
     rw [zero_sub, sub.neg]
     exact ab
     assumption
+
+def Real.mul_neg (a b: ℝ) : a * -b = -(a * b) := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  rw [mk_neg, mk_mul, mk_mul, mk_neg]
+  apply sound
+  apply CauchySeq.equiv_of_pointwise
+  intro n
+  show (a n * -b n = -(a n * b n))
+  rw [Rat.mul_neg]
+
+def Real.neg_mul (a b: ℝ) : -a * b = -(a * b) := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  rw [mk_neg, mk_mul, mk_mul, mk_neg]
+  apply sound
+  apply CauchySeq.equiv_of_pointwise
+  intro n
+  show (-a n * b n = -(a n * b n))
+  rw [Rat.neg_mul]
+
+def Real.mul.pos_of_pos_pos (a b: ℝ) : a.IsPos -> b.IsPos -> (a * b).IsPos := by
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  intro apos bpos
+  rw [mk_mul]
+  apply (mk_IsPos _).mpr
+  replace apos := (mk_IsPos _).mp apos
+  replace bpos := (mk_IsPos _).mp bpos
+  obtain ⟨Ka,Ka_pos,Ka_even⟩ := apos
+  obtain ⟨Kb,Kb_pos,Kb_even⟩ := bpos
+  have ⟨i,prf⟩ := Ka_even.merge Kb_even
+  exists Ka * Kb
+  apply And.intro
+  apply Rat.mul.is_pos_of_pos_pos <;> assumption
+  exists i
+  intro n hn
+  replace prf := prf n hn
+  obtain ⟨Kah, Kbh⟩ := prf
+  show Ka * Kb ≤ a n * b n
+  apply le_trans
+  apply Rat.mul.le_left_pos
+  apply le_of_lt
+  assumption
+  assumption
+  rw [Rat.mul.comm (a n), Rat.mul.comm (a n)]
+  apply Rat.mul.le_left_pos
+  apply le_trans
+  apply le_of_lt
+  exact Ka_pos
+  assumption
+  assumption
+
+def Real.mul.neg_of_pos_neg (a b: ℝ) : a.IsPos -> b.IsNeg -> (a * b).IsNeg := by
+  intro apos bneg
+  apply neg.IsNeg.mpr
+  rw [←mul_neg]
+  apply pos_of_pos_pos
+  assumption
+  apply neg.IsNeg.mp
+  assumption
+
+def Real.mul.neg_of_neg_pos (a b: ℝ) : a.IsNeg -> b.IsPos -> (a * b).IsNeg := by
+  intro apos bneg
+  apply neg.IsNeg.mpr
+  rw [←neg_mul]
+  apply pos_of_pos_pos
+  apply neg.IsNeg.mp
+  assumption
+  assumption
+
+def Real.mul.pos_of_neg_neg (a b: ℝ) : a.IsNeg -> b.IsNeg -> (a * b).IsPos := by
+  intro apos bneg
+  rw [←neg_neg ( a* _), ←neg_mul, ←mul_neg]
+  apply pos_of_pos_pos
+  apply neg.IsNeg.mp
+  assumption
+  apply neg.IsNeg.mp
+  assumption
