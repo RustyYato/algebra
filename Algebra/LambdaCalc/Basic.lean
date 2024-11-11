@@ -281,8 +281,6 @@ inductive Term.Chain : List LamType -> LamType -> Term -> Term -> Prop where
 | nil : IsWellTyped ctx a ty -> Chain ctx ty a a
 | cons : Reduce ctx ty a b -> Chain ctx ty b c -> Chain ctx ty a c
 
-variable {ctx: List LamType} {ty: LamType}
-
 def Term.Reduce.IsNotValue : Reduce ctx ty a b -> ¬a.IsValue := by
   intro h v
   induction h <;> cases v
@@ -545,3 +543,52 @@ def Term.HeredHalts.iff_chain (e e': Term) : Chain ctx ty e e' -> (e.HeredHalts 
     apply Iff.trans _ ih
     apply iff_red
     assumption
+
+inductive IsValidBindingList : List LamType -> List Term -> Prop where
+| nil : IsValidBindingList ctx []
+| cons :
+  t.IsValue ->
+  t.HeredHalts ctx ty ->
+  IsValidBindingList ctx ts ->
+  IsValidBindingList (ty::ctx) (t::ts)
+
+def Term.substAll (term: Term) : List Term -> Term
+| [] => term
+| t::ts => (term.subst t).substAll ts
+
+def Term.substAll.spec (ctx ctx': List LamType) (term: Term) (ty: LamType) :
+  term.IsWellTyped (ctx ++ ctx') ty ->
+  ∀bindings,
+  ctx.length = bindings.length ->
+  IsValidBindingList (ctx ++ ctx') bindings ->
+  (term.substAll bindings).IsWellTyped ctx' ty := by
+  generalize ctx''_spec:ctx ++ ctx' = ctx''
+  intro term_wt bindings len_eq bind_spec
+  induction bind_spec generalizing ctx ctx' term ty with
+  | nil =>
+    match ctx with
+    | [] =>
+    rw [List.nil_append] at ctx''_spec
+    subst ctx''_spec
+    assumption
+  | cons _ halts _ ih =>
+    unfold Term.substAll
+    match ctx with
+    | c::ctx =>
+    replace ⟨h,ctx''_spec⟩ := List.cons.inj ctx''_spec
+    subst h
+    apply ih
+    exact ctx''_spec
+    apply subst.spec
+    assumption
+    apply halts.IsWellTyped
+    apply Nat.succ.inj
+    assumption
+
+def Term.substAll.spec' (ctx: List LamType) (term: Term) (ty: LamType) :
+  term.IsWellTyped ctx ty ->
+  ∀bindings, ctx.length = bindings.length -> IsValidBindingList ctx bindings -> (term.substAll bindings).IsWellTyped [] ty := by
+  intro wt bindings spec h
+  have := substAll.spec ctx [] term ty
+  rw [List.append_nil] at this
+  exact this wt bindings spec h
