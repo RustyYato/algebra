@@ -220,3 +220,206 @@ def Term.substAt.spec (term repl: Term) (varid: Nat) (h: varid < ctx.length) : I
     assumption
 
 def Term.subst.spec (term repl: Term) : IsWellTyped (ty'::ctx) term ty -> IsWellTyped ctx repl ty' -> IsWellTyped ctx (Term.subst term repl) ty :=  Term.substAt.spec (ctx := ty'::ctx) term repl 0 (Nat.zero_lt_succ _)
+
+inductive Term.IsLam : Term -> Prop where
+| Lam body : IsLam (.Lam body)
+
+inductive Term.IsValue : Term -> Prop where
+| ConstUnit : IsValue .ConstUnit
+| Var id : IsValue (.Var id)
+| Lam body : IsValue body -> IsValue (.Lam body)
+| App f arg : IsValue f -> IsValue arg -> ¬f.IsLam -> IsValue (.App f arg)
+| Panic body : IsValue body -> IsValue (.Panic body)
+
+inductive Term.Reduce : Term -> Term -> Type where
+| Apply next :
+  body.IsValue -> arg.IsValue ->
+  next = body.subst arg ->
+  Reduce (.App (.Lam body) arg) next
+| LamBody :
+  Reduce body body' ->
+  Reduce (.Lam body) (.Lam body')
+| AppFunc :
+  Reduce f f' ->
+  Reduce (.App f arg) (.App f' arg)
+| AppArg :
+  f.IsValue ->
+  Reduce arg arg' ->
+  Reduce (.App f arg) (.App f arg')
+| Panic :
+  Reduce body body' ->
+  Reduce (.Panic body) (.Panic body')
+
+inductive Term.Chain : Term -> Term -> Type where
+| nil : Chain a a
+| cons : Reduce a b -> Chain b c -> Chain a c
+
+infix:150 " ~> " => Term.Reduce
+infix:150 " ~*> " => Term.Chain
+
+def Term.Reduce.IsNotValue : a ~> b -> ¬a.IsValue := by
+  intro h v
+  induction h <;> cases v
+  rename_i h _
+  exact h (.Lam _)
+  any_goals contradiction
+
+def Term.Reduce.decide : a ~> b -> a ~> c -> b = c := by
+  intro ab ac
+  induction ab generalizing c with
+  | Apply _ body_val arg_val=>
+    cases ac with
+    | Apply => subst c; assumption
+    | AppFunc red =>
+      have := red.IsNotValue (.Lam _ body_val)
+      contradiction
+    | AppArg _ red =>
+      have := red.IsNotValue arg_val
+      contradiction
+  | AppFunc fred ih =>
+    cases ac with
+    | Apply _ body_val =>
+      have := fred.IsNotValue (.Lam _ body_val)
+      contradiction
+    | AppFunc red =>
+      rw [ih]
+      assumption
+    | AppArg f_val =>
+      have := fred.IsNotValue f_val
+      contradiction
+  | AppArg f_val arg_red ih =>
+    cases ac with
+    | Apply _ _ arg_val =>
+      have := arg_red.IsNotValue arg_val
+      contradiction
+    | AppFunc red =>
+      have := red.IsNotValue f_val
+      contradiction
+    | AppArg f_val =>
+      rw [ih]
+      assumption
+  | LamBody _ ih =>
+    cases ac
+    rw [ih]
+    assumption
+  | Panic _ ih =>
+    cases ac
+    rw [ih]
+    assumption
+
+instance : Subsingleton (Term.Reduce a b) where
+  allEq := by
+    intro x y
+    induction x with
+    | Apply _ body_val arg_val=>
+      cases y with
+      | Apply => rfl
+      | AppFunc red =>
+        have := red.IsNotValue (.Lam _ body_val)
+        contradiction
+      | AppArg _ red =>
+        have := red.IsNotValue arg_val
+        contradiction
+    | AppFunc fred ih =>
+      cases y with
+      | Apply _ body_val =>
+        have := fred.IsNotValue (.Lam _ body_val)
+        contradiction
+      | AppFunc red =>
+        rw [ih]
+      | AppArg f_val =>
+        have := fred.IsNotValue f_val
+        contradiction
+    | AppArg f_val arg_red ih =>
+      cases y with
+      | Apply _ _ arg_val =>
+        have := arg_red.IsNotValue arg_val
+        contradiction
+      | AppFunc red =>
+        have := red.IsNotValue f_val
+        contradiction
+      | AppArg f_val =>
+        rw [ih]
+    | LamBody _ ih =>
+      cases y
+      rw [ih]
+    | Panic _ ih =>
+      cases y
+      rw [ih]
+
+def Term.Reduce.allHEq (r₀: Term.Reduce a b) (r₁: Term.Reduce a c): HEq r₀ r₁ := by
+  cases r₀.decide r₁
+  rw [Subsingleton.allEq r₀ r₁]
+
+instance Term.decIsLam : ∀a, Decidable (Term.IsLam a)
+| .Lam body => .isTrue (.Lam body)
+| .ConstUnit | .Var _ | .App _ _ | .Panic _ => .isFalse (nomatch ·)
+
+instance Term.decIsValue : ∀a, Decidable (Term.IsValue a)
+| .ConstUnit => .isTrue .ConstUnit
+| .Var _ => .isTrue (.Var _)
+| .Lam body =>
+  match decIsValue body with
+  | .isTrue h => .isTrue (.Lam _ h)
+  | .isFalse h => .isFalse fun h => by cases h <;> contradiction
+| .Panic body =>
+  match decIsValue body with
+  | .isTrue h => .isTrue (.Panic _ h)
+  | .isFalse h => .isFalse fun h => by cases h <;> contradiction
+| .App a b =>
+  have := decIsValue a
+  have := decIsValue b
+  match inferInstanceAs (Decidable (¬a.IsLam ∧ a.IsValue ∧ b.IsValue)) with
+  | .isTrue h => .isTrue (.App _ _ h.2.1 h.2.2 h.1)
+  | .isFalse h => .isFalse (by intro h₀; apply h; cases h₀ <;> trivial)
+
+def Term.Reduce.ofNotValue : ∀a: Term, ¬a.IsValue -> (b: Term) × a ~> b
+| .ConstUnit, h => (h .ConstUnit).elim
+| .Var id, h => (h (.Var id)).elim
+| Term.Lam body, h =>
+  have ⟨body',red⟩ := Term.Reduce.ofNotValue body (fun g => h g.Lam)
+  ⟨_,red.LamBody⟩
+| Term.Panic body, h =>
+  have ⟨body',red⟩ := Term.Reduce.ofNotValue body (fun g => h g.Panic)
+  ⟨_,red.Panic⟩
+| Term.App f arg, h =>
+if h₁:f.IsValue then
+  if h₂:arg.IsValue then
+    match f.decIsLam with
+    | .isTrue _ =>
+      match f with
+      | .Lam body =>
+        ⟨_,Term.Reduce.Apply _ (by cases h₁; assumption) h₂ rfl⟩
+    | .isFalse h₀ => (h (.App _ _ h₁ h₂ h₀)).elim
+  else
+    have ⟨arg',red⟩ := Term.Reduce.ofNotValue arg h₂
+    ⟨_,red.AppArg h₁⟩
+else
+  have ⟨f',red⟩ := Term.Reduce.ofNotValue f h₁
+  ⟨_,red.AppFunc⟩
+
+instance : Decidable (∃b, Nonempty (a ~> b)) := decidable_of_iff (¬a.IsValue) (by
+  apply Iff.intro
+  intro h
+  have ⟨b',red⟩ := Term.Reduce.ofNotValue _ h
+  exists b'
+  apply Nonempty.intro
+  assumption
+  intro ⟨h,⟨red⟩⟩
+  exact red.IsNotValue)
+
+def Term.Reduce.extract : Nonempty (a ~> b) -> a ~> b := by
+  intro h
+  have ⟨b',red⟩ := Term.Reduce.ofNotValue a (by
+    obtain ⟨h⟩ := h
+    exact h.IsNotValue)
+  have : b' = b := by
+    obtain ⟨h⟩ := h
+    exact red.decide h
+  exact this ▸ red
+
+def Term.Reduce.choose : (∃b, Nonempty (a ~> b)) -> (b: Term) × a ~> b := by
+  intro h
+  apply Term.Reduce.ofNotValue
+  obtain ⟨b,⟨red⟩⟩ := h
+  exact red.IsNotValue
