@@ -463,6 +463,10 @@ inductive Term.Halts (ctx: List LamType) (t: Term) (ty: LamType) : Prop where
   -- reduce to a value
   Chain ctx ty t val -> Halts ctx t ty
 
+def Term.Halts.IsWellTyped : Term.Halts ctx t ty -> t.IsWellTyped ctx ty := by
+  intro ⟨val,_,chain⟩
+  exact chain.well_typed_left
+
 def Term.Halts.push : Reduce ctx ty t t' -> Term.Halts ctx t' ty -> Term.Halts ctx t ty := by
   intro red ⟨val,val_spec,chain⟩
   refine ⟨val,val_spec,?_⟩
@@ -480,3 +484,18 @@ def Term.Halts.pop : Reduce ctx ty t t' -> Term.Halts ctx t ty -> Term.Halts ctx
   | cons r c =>
     cases r.decide red
     assumption
+
+def Term.HeredHalts (ctx: List LamType) (t: Term) (ty: LamType) : Prop :=
+  match ty with
+  | .Void => False
+  | .Unit => t.Halts ctx ty
+  | .Fn arg_ty ret_ty =>
+    t.Halts ctx ty ∧
+    ∀(arg: Term), arg.HeredHalts ctx arg_ty -> (t.App arg).HeredHalts ctx ret_ty
+
+def Term.HeredHalts.IsWellTyped : Term.HeredHalts ctx t ty -> t.IsWellTyped ctx ty := by
+  intro halts
+  cases ty with
+  | Void => contradiction
+  | Unit => exact Term.Halts.IsWellTyped halts
+  | Fn arg_ty ret_ty => exact Term.Halts.IsWellTyped halts.left
