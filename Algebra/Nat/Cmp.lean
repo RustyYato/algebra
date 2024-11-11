@@ -202,3 +202,6 @@ def nat.ofNat_le { a b: Nat } : a ≤ b -> nat.ofNat a ≤ nat.ofNat b := by
     exact a_le_b
 
 instance : IsDecidableLinearOrder nat where
+
+macro_rules
+| `(tactic|get_elem_tactic_trivial) => `(tactic|apply nat.succ_lt_succ; get_elem_tactic_trivial)

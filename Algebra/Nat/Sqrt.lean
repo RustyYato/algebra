@@ -10,7 +10,8 @@ def nat.sqrt (n: nat) : nat :=
   if n < large² then small else large
 termination_by n
 decreasing_by
-  apply div.lt n 4 rfl
+  apply div.lt n 4
+  decide
   apply lt_of_le_of_ne
   apply nat.zero_le
   intro h
@@ -40,7 +41,7 @@ def nat.sqrt.sq_le_self (n: nat): n.sqrt² ≤ n := by
   revert n
   apply nat.induction
   intro n ih
-  cases lt_or_ge 1 n
+  cases lt_or_le 1 n
   · rw [nat.sqrt.gt_one]
     any_goals assumption
     rename_i one_lt_n
@@ -55,7 +56,7 @@ def nat.sqrt.sq_le_self (n: nat): n.sqrt² ≤ n := by
     apply div.lt
     trivial
     · match n with
-      | nat.succ n => trivial
+      | nat.succ n => exact .zero _
     apply nat.div.mul_le
     replace h := le_of_not_lt h
     exact h
@@ -129,7 +130,7 @@ def nat.div.mul (a b c d: nat) : (a / b) * (c / d) ≤ (a * c) / (b * d) := by
   rw [add.assoc]
   rw [nat.div.add_left]
   apply add.le_left
-  trivial
+  exact .zero _
 
 def nat.sqrt.spec (n x: nat): x * x ≤ n ↔ x ≤ n.sqrt := by
   apply Iff.intro
@@ -137,7 +138,7 @@ def nat.sqrt.spec (n x: nat): x * x ≤ n ↔ x ≤ n.sqrt := by
     induction n using nat.induction generalizing x with
     | ih n ih =>
     replace ih := fun m => ih m
-    cases lt_or_ge 1 n
+    cases lt_or_le 1 n
     · rename_i one_lt_n
       unfold sqrt
       rw [dif_neg]
@@ -157,7 +158,7 @@ def nat.sqrt.spec (n x: nat): x * x ≤ n ↔ x ≤ n.sqrt := by
           apply div.lt
           trivial
           match n with
-          | nat.succ n => trivial
+          | nat.succ n => exact .zero _
           ) (x / 2) (by
           apply le_trans
           apply nat.div.mul
@@ -172,7 +173,7 @@ def nat.sqrt.spec (n x: nat): x * x ≤ n ↔ x ≤ n.sqrt := by
           assumption
           trivial
           )
-        have := add.le _ _ _ _ this this
+        have := add.le this this
         rw [mul_two, mul_two] at this
         match mod_def:x%2 with
         | 0 =>
@@ -211,3 +212,17 @@ def nat.sqrt.spec (n x: nat): x * x ≤ n ↔ x ≤ n.sqrt := by
     apply le_trans
     apply nat.mul.le <;> assumption
     apply nat.sqrt.sq_le_self
+
+def nat.sqrt.pos {n: nat} : 0 < n ↔ 0 < n.sqrt := by
+  apply Iff.intro
+  · intro h
+    cases h <;> rename_i n
+    apply lt_of_succ_le
+    apply (nat.sqrt.spec _ _).mp
+    erw [mul_one]
+    exact .succ _ _ (.zero _)
+  · intro h
+    cases n
+    erw [sqrt.zero] at h
+    contradiction
+    exact .zero _

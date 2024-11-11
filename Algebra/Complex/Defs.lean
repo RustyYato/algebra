@@ -20,6 +20,7 @@ instance : Sub ℂ := ⟨.sub⟩
 instance : Neg ℂ := ⟨.neg⟩
 instance : Mul ℂ := ⟨.mul⟩
 instance : AbsoluteValue ℂ ℝ := ⟨Complex.norm⟩
+instance : Coe ℝ ℂ := ⟨(.mk · 0)⟩
 
 def Complex.norm.eq_zero (a: ℂ) : a.norm = 0 -> a = 0 := by
   intro h

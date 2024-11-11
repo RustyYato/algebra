@@ -1441,6 +1441,25 @@ def Real.mk_lt {a b: CauchySeq} : mk a < mk b ↔ a < b := by
   rw [mk_sub]
   apply mk_IsPos
 
+def Real.mk_le {a b: CauchySeq} : mk a ≤ mk b ↔ a ≤ b := by
+  apply Iff.intro
+  intro h
+  cases h
+  apply Or.inl
+  apply mk_lt.mp
+  assumption
+  apply Or.inr
+  apply exact
+  assumption
+  intro h
+  cases h
+  apply Or.inl
+  apply mk_lt.mpr
+  assumption
+  apply Or.inr
+  apply sound
+  assumption
+
 def Real.two_eq : (2: ℝ) = 1 + 1 := by
   erw [mk_add]
   apply sound
@@ -1908,3 +1927,23 @@ def Real.sub_mul (a b k: ℝ) : (a - b) * k = a * k - b * k := by
   rw [sub.eq_add_neg, sub.eq_add_neg, add_mul, neg_mul]
 def Real.mul_sub (a b k: ℝ) : k * (a - b)  = k * a - k * b := by
   rw [mul.comm k, mul.comm k, mul.comm k, sub_mul]
+
+def CauchySeq.sqrt.spec (a b: CauchySeq) (h: 0 ≤ a) (h: 0 ≤ b) :
+ a ≈ b -> is_cauchy_equiv (fun n => (a n).sqrt n) (fun n => (b n).sqrt n) := by
+ intro ab
+ sorry
+
+def CauchySeq.sqrt (a: CauchySeq) (h: 0 ≤ a) : CauchySeq := by
+  apply CauchySeq.mk (fun n => (a n).sqrt n)
+  apply sqrt.spec <;> trivial
+
+def Real.sqrt (a: ℝ) (h: 0 ≤ a) : ℝ := by
+  apply Equiv.liftWith (fun x: ℝ => 0 ≤ x) _ _ _
+  exact h
+  intro x h
+  exact mk (x.sqrt (Real.mk_le.mp h))
+  intro a b ab ha hb
+  apply sound
+  replace ha := Real.mk_le.mp ha
+  replace hb := Real.mk_le.mp hb
+  exact CauchySeq.sqrt.spec a b ha hb ab

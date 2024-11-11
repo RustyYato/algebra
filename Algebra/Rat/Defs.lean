@@ -1,4 +1,5 @@
 import Algebra.Nat.Gcd
+import Algebra.Nat.Sqrt
 import Algebra.Int.Mul
 import Algebra.Order.Defs
 import Algebra.Operators.CheckedDiv
@@ -2135,3 +2136,85 @@ def Rat.ofNat.of_lt_one (n: Nat) : (OfNat.ofNat n: ℚ) < 1 -> n = 0 := by
   cases h <;> rename_i h
   have := nat.not_lt_zero h
   contradiction
+
+-- uses the Newton-Raphson with n iterations to compute a rational appoximation
+-- for the square root
+def Rat.sqrt' (r x: ℚ) : nat -> ℚ
+| .zero => r
+| .succ n =>
+  have r' := Rat.sqrt' r x n
+  ((r' + x / r') /? 2)
+
+def Rat.sqrt (q: ℚ) : nat -> ℚ := sqrt' q q
+
+def Rat.sqrt'.zero (r x: ℚ) : sqrt' r x 0 = r := rfl
+def Rat.sqrt'.succ (r x: ℚ) (n: nat) : sqrt' r x n.succ = ((Rat.sqrt' r x n + x / Rat.sqrt' r x n) /? 2) := rfl
+
+def Rat.sqrt'.nonneg (r x: ℚ) (n: nat) (hx: 0 ≤ x) (hr: 0 ≤ r) :
+  0 ≤ sqrt' r x n := by
+  induction n with
+  | zero => exact hr
+  | succ n ih =>
+    rw [sqrt'.succ, div.eq_mul_inv]
+    conv => { lhs; rw [←zero_mul (2⁻¹)] }
+    apply Rat.mul.le_left_pos
+    decide
+    rw [←zero_add 0]
+    apply Rat.add.le
+    assumption
+    cases lt_or_eq_of_le ih <;> rename_i ih'
+    rw [div.of_pos ih', div.eq_mul_inv]
+    conv => { lhs; rw [←mul_zero x] }
+    rw [mul.comm x, mul.comm x]
+    apply Rat.mul.le_left_pos
+    assumption
+    apply Rat.inv.zero_le_iff.mp
+    assumption
+    rw [←ih']
+    rfl
+
+def Rat.sqrt'.nonzero (r x: ℚ) (n: nat) (hx: 0 ≤ x) (hr: 0 ≤ r) :
+  r = 0 ↔ sqrt' r x n = 0 := by
+  induction n with
+  | zero => rw [nat.zero_eq, sqrt'.zero]
+  | succ n ih =>
+    rw [sqrt'.succ]
+    apply Iff.intro
+    · intro h
+      rw [ih.mp]
+      rfl
+      assumption
+    · intro h
+      conv at h => {
+        rhs
+        rw [←zero_mul (2⁻¹)]
+      }
+      replace h := mul.cancel_right (k := 2⁻¹) (by decide) h
+      apply ih.mpr
+      apply flip le_antisymm
+      apply sqrt'.nonneg <;> assumption
+
+      sorry
+
+def Rat.sqrt'.spec (r x: ℚ) (n m: nat) :
+  n ≤ m -> ‖sqrt' r x m * sqrt' r x m - x‖ ≤ ‖sqrt' r x n * sqrt' r x n - x‖ := by
+  intro h
+  induction m generalizing n with
+  | zero =>
+    cases nat.le_zero h
+    rfl
+  | succ m ih =>
+    cases h with
+    | zero m =>
+      rw [sqrt'.zero, sqrt'.succ]
+      rw [div.eq_mul_inv, add_mul, add_mul, mul_add, mul_add]
+      conv => {
+        lhs; arg 1; lhs; lhs; rhs
+        rw [mul.comm (sqrt' _ _ _), mul.assoc, ]
+      }
+      sorry
+    | succ n m le =>
+      sorry
+
+def Rat.sqrt.spec (q: ℚ) (n m: nat) :
+  n ≤ m -> ‖sqrt q m * sqrt q m - q‖ ≤ ‖sqrt q n * sqrt q n - q‖ := sqrt'.spec q q n m
