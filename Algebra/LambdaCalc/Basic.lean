@@ -493,9 +493,55 @@ def Term.HeredHalts (ctx: List LamType) (t: Term) (ty: LamType) : Prop :=
     t.Halts ctx ty ∧
     ∀(arg: Term), arg.HeredHalts ctx arg_ty -> (t.App arg).HeredHalts ctx ret_ty
 
-def Term.HeredHalts.IsWellTyped : Term.HeredHalts ctx t ty -> t.IsWellTyped ctx ty := by
+def Term.HeredHalts.Halts : Term.HeredHalts ctx t ty -> t.Halts ctx ty := by
   intro halts
   cases ty with
   | Void => contradiction
-  | Unit => exact Term.Halts.IsWellTyped halts
-  | Fn arg_ty ret_ty => exact Term.Halts.IsWellTyped halts.left
+  | Unit => exact halts
+  | Fn arg_ty ret_ty => exact halts.left
+
+def Term.HeredHalts.IsWellTyped : Term.HeredHalts ctx t ty -> t.IsWellTyped ctx ty := fun h => h.Halts.IsWellTyped
+
+def Term.HeredHalts.iff_red (e e': Term) : Reduce ctx ty e e' -> (e.HeredHalts ctx ty ↔ e'.HeredHalts ctx ty) := by
+  intro red
+  induction ty generalizing e e' with
+  | Void => apply Iff.intro <;> (intro h; contradiction)
+  | Unit =>
+    apply Iff.intro
+    intro h
+    apply Term.Halts.pop <;> assumption
+    intro h
+    apply Term.Halts.push <;> assumption
+  | Fn arg_ty ret_ty _ ret_ih =>
+    apply Iff.intro
+    case mp =>
+      intro ⟨h,pres⟩
+      apply And.intro
+      exact h.pop red
+      intro arg arg_halts
+      apply (ret_ih _ _ _).mp
+      apply pres
+      assumption
+      apply Reduce.AppFunc
+      assumption
+      exact arg_halts.IsWellTyped
+    case mpr =>
+      intro ⟨h,pres⟩
+      apply And.intro
+      exact h.push red
+      intro arg arg_halts
+      apply (ret_ih _ _ _).mpr
+      apply pres
+      assumption
+      apply Reduce.AppFunc
+      assumption
+      exact arg_halts.IsWellTyped
+
+def Term.HeredHalts.iff_chain (e e': Term) : Chain ctx ty e e' -> (e.HeredHalts ctx ty ↔ e'.HeredHalts ctx ty) := by
+  intro chain
+  induction chain with
+  | nil => exact Iff.refl _
+  | cons red _ ih =>
+    apply Iff.trans _ ih
+    apply iff_red
+    assumption
