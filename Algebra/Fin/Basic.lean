@@ -81,5 +81,26 @@ instance : LT (fin n) where
 instance : LE (fin n) where
   le a b := a.val ≤ b.val
 
+instance (a b: fin n) : Decidable (a ≤ b) := decidable_of_iff (a.val ≤ b.val) (Iff.refl _)
+
+instance : Min (fin n) := minOfLe
+instance : Max (fin n) := maxOfLe
+
 instance : IsLinearOrder (fin n) :=
-  IsLinearOrder.transfer nat (fin n) fin.val (fin.val.inj _ _) (Iff.refl _) (Iff.refl _)
+  IsLinearOrder.transfer nat (fin n) fin.val (fin.val.inj _ _) (Iff.refl _) (Iff.refl _) (by
+    intro x y
+    unfold min instMinFin instMinNat_1 minOfLe
+    dsimp
+    split
+    rw [if_pos]
+    assumption
+    rw [if_neg]
+    assumption) (by
+    intro x y
+    unfold max instMaxFin instMaxNat maxOfLe
+    dsimp
+    split
+    rw [if_pos]
+    assumption
+    rw [if_neg]
+    assumption)
