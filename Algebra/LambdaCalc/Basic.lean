@@ -51,6 +51,10 @@ def Term.weakenAt (varid: Nat) : Term -> Term
 
 def Term.weaken : Term -> Term := weakenAt 0
 
+def Term.weakenN : Nat -> Term -> Term
+| 0 => id
+| n + 1 => fun x => Term.weaken (Term.weakenN n x)
+
 def Term.substAt (repl: Term) (varid: Nat) : Term -> Term
 | .ConstUnit => .ConstUnit
 | .Panic body ty => .Panic (Term.substAt repl varid body) ty
@@ -161,7 +165,23 @@ def Term.weakenAt.spec (term: Term) (varid: Nat) (varid_bounds: varid ≤ ctx.le
     apply Nat.le_of_not_lt
     assumption
 
-def Term.weaken.spec (term: Term) : IsWellTyped ctx term ty -> IsWellTyped (ty'::ctx) term.weaken ty := weakenAt.spec term 0 (Nat.zero_le _)
+def Term.weaken.spec {ty'} (term: Term) : IsWellTyped ctx term ty -> IsWellTyped (ty'::ctx) term.weaken ty := weakenAt.spec term 0 (Nat.zero_le _)
+
+def Term.weakenN.spec (term: Term) (n: Nat) :
+  IsWellTyped (ctx.drop n) term ty ->
+  n ≤ ctx.length ->
+  IsWellTyped ctx (term.weakenN n) ty := by
+  intro wt h
+  induction n generalizing ctx term with
+  | zero => assumption
+  | succ n ih =>
+    match ctx with
+    | ty'::ctx =>
+    apply weaken.spec
+    apply ih
+    assumption
+    apply Nat.le_of_succ_le_succ
+    assumption
 
 def Term.substAt.spec (term repl: Term) (varid: Nat) (h: varid < ctx.length) : IsWellTyped ctx term ty -> IsWellTyped (ctx.eraseIdx varid) repl ctx[varid] -> IsWellTyped (ctx.eraseIdx varid) (Term.substAt repl varid term) ty := by
   intro term_prf repl_prf
@@ -245,31 +265,29 @@ def Term.substAt.spec (term repl: Term) (varid: Nat) (h: varid < ctx.length) : I
 
 def Term.subst.spec (term repl: Term) : IsWellTyped (ty'::ctx) term ty -> IsWellTyped ctx repl ty' -> IsWellTyped ctx (Term.subst term repl) ty :=  Term.substAt.spec (ctx := ty'::ctx) term repl 0 (Nat.zero_lt_succ _)
 
-inductive Term.IsLam : Term -> Prop where
-| Lam arg_ty body : IsLam (.Lam arg_ty body)
+-- inductive Term.IsIrreducible : Term -> Prop where
+-- | ConstUnit : IsIrreducible .ConstUnit
+-- | Var id : IsIrreducible (.Var id)
+-- | Lam arg_ty body : IsIrreducible body -> IsIrreducible (.Lam arg_ty body)
+-- | App f arg : IsIrreducible f -> IsIrreducible arg -> ¬f.IsLam -> IsIrreducible (.App f arg)
+-- | Panic body : IsIrreducible body -> IsIrreducible (.Panic body ty)
 
-inductive Term.IsValue : Term -> Prop where
-| ConstUnit : IsValue .ConstUnit
-| Var id : IsValue (.Var id)
-| Lam arg_ty body : IsValue body -> IsValue (.Lam arg_ty body)
-| App f arg : IsValue f -> IsValue arg -> ¬f.IsLam -> IsValue (.App f arg)
-| Panic body : IsValue body -> IsValue (.Panic body ty)
+inductive Term.IsNormalForm : Term -> Prop where
+| ConstUnit : IsNormalForm .ConstUnit
+| Lam arg_ty body : IsNormalForm (.Lam arg_ty body)
 
 inductive Term.Reduce : List LamType -> LamType -> Term -> Term -> Prop where
 | Apply next :
   IsWellTyped ctx (.App (.Lam arg_ty body) arg) ty ->
-  body.IsValue -> arg.IsValue ->
+  arg.IsNormalForm ->
   next = body.subst arg ->
   Reduce ctx ty (.App (.Lam arg_ty body) arg) next
-| LamBody :
-  Reduce (arg_ty::ctx) ret_ty body body' ->
-  Reduce ctx (.Fn arg_ty ret_ty) (.Lam arg_ty body) (.Lam arg_ty body')
 | AppFunc :
   Reduce ctx (.Fn arg_ty ret_ty) f f' ->
   IsWellTyped ctx arg arg_ty ->
   Reduce ctx ret_ty (.App f arg) (.App f' arg)
 | AppArg :
-  f.IsValue ->
+  f.IsNormalForm ->
   IsWellTyped ctx f (.Fn arg_ty ret_ty) ->
   Reduce ctx arg_ty arg arg' ->
   Reduce ctx ret_ty (.App f arg) (.App f arg')
@@ -281,12 +299,75 @@ inductive Term.Chain : List LamType -> LamType -> Term -> Term -> Prop where
 | nil : IsWellTyped ctx a ty -> Chain ctx ty a a
 | cons : Reduce ctx ty a b -> Chain ctx ty b c -> Chain ctx ty a c
 
-def Term.Reduce.IsNotValue : Reduce ctx ty a b -> ¬a.IsValue := by
-  intro h v
-  induction h <;> cases v
-  rename_i h _
-  exact h (.Lam _ _)
-  any_goals contradiction
+instance Term.decIsNormalForm : ∀a, Decidable (IsNormalForm a)
+| .Lam arg_ty body =>.isTrue (.Lam arg_ty body)
+| .ConstUnit => .isTrue .ConstUnit
+| .Panic _ _ | .App _ _ | .Var _ => .isFalse (nomatch ·)
+
+def Term.progress {ty: LamType} (wt: a.IsWellTyped [] ty) : ¬a.IsNormalForm ↔ ∃b, Reduce [] ty a b := by
+  induction a generalizing ty with
+  | ConstUnit =>
+    apply Iff.intro
+    intro h
+    have := h .ConstUnit
+    contradiction
+    intro ⟨_,red⟩
+    nomatch red
+  | Var n =>
+    cases wt
+    contradiction
+  | Lam _ =>
+    apply Iff.intro
+    intro h
+    have := h (.Lam _ _)
+    contradiction
+    intro ⟨_,red⟩
+    nomatch red
+  | Panic body ty ih =>
+    cases wt; rename_i wt
+    replace ih := ih wt
+    have body_not_norm : ¬body.IsNormalForm := by
+      intro norm
+      cases norm <;> nomatch wt
+    have ⟨body',body_red⟩ := ih.mp body_not_norm
+    apply Iff.intro
+    intro
+    refine ⟨body'.Panic ?_,?_⟩
+    assumption
+    apply Reduce.Panic
+    assumption
+    intro ⟨_,_⟩
+    intro h
+    nomatch h
+  | App f arg fih argih =>
+    apply flip Iff.intro
+    intro _ norm
+    nomatch norm
+    intro h
+    clear h
+    cases wt
+    rename_i arg_ty argwt fwt
+    if h₀:f.IsNormalForm then
+      if h₁:arg.IsNormalForm then
+        cases h₀
+        nomatch fwt
+        cases fwt
+        rename_i body bodywt
+        apply Exists.intro _ (Reduce.Apply _ _ _ _)
+        any_goals rfl
+        apply IsWellTyped.App
+        apply IsWellTyped.Lam
+        repeat assumption
+      else
+      have ⟨arg',red⟩ := (argih argwt).mp h₁
+      exists f.App arg'
+      apply Reduce.AppArg
+      repeat assumption
+    else
+      have ⟨f',red⟩ := (fih fwt).mp h₀
+      exists f'.App arg
+      apply Reduce.AppFunc
+      repeat assumption
 
 def Term.Reduce.well_typed_left : Reduce ctx ty a b -> IsWellTyped ctx a ty := by
   intro red
@@ -299,9 +380,6 @@ def Term.Reduce.well_typed_left : Reduce ctx ty a b -> IsWellTyped ctx a ty := b
   | AppArg =>
     apply IsWellTyped.App
     assumption
-    assumption
-  | LamBody =>
-    apply IsWellTyped.Lam
     assumption
   | Panic =>
     apply IsWellTyped.Panic
@@ -326,9 +404,6 @@ def Term.Reduce.well_typed_right : Reduce ctx ty a b -> IsWellTyped ctx b ty := 
     apply IsWellTyped.App
     assumption
     assumption
-  | LamBody =>
-    apply IsWellTyped.Lam
-    assumption
   | Panic =>
     apply IsWellTyped.Panic
     assumption
@@ -343,6 +418,10 @@ def Term.Chain.well_typed_right : Chain ctx ty a b -> IsWellTyped ctx b ty := by
   intro red
   induction red <;> assumption
 
+def Term.Reduce.isNotNormal : Reduce ctx ty a b -> ¬a.IsNormalForm := by
+  intro red norm
+  cases norm <;> nomatch red
+
 def Term.Reduce.decide : Reduce ctx ty a b -> Reduce ctx ty a c -> b = c := by
   intro ab ac
   induction ab generalizing c with
@@ -350,15 +429,15 @@ def Term.Reduce.decide : Reduce ctx ty a b -> Reduce ctx ty a c -> b = c := by
     cases ac with
     | Apply => subst c; assumption
     | AppFunc red =>
-      have := red.IsNotValue (.Lam _ _ body_val)
+      have := red.isNotNormal
       contradiction
     | AppArg _ _ red =>
-      have := red.IsNotValue arg_val
+      have := red.isNotNormal
       contradiction
   | AppFunc fred _ ih =>
     cases ac with
     | Apply _ _ body_val =>
-      have := fred.IsNotValue (.Lam _ _ body_val)
+      have := fred.isNotNormal
       contradiction
     | AppFunc red =>
       rw [ih]
@@ -366,25 +445,21 @@ def Term.Reduce.decide : Reduce ctx ty a b -> Reduce ctx ty a c -> b = c := by
       cases arg₀.decide arg₁
       assumption
     | AppArg f_val =>
-      have := fred.IsNotValue f_val
+      have := fred.isNotNormal f_val
       contradiction
   | AppArg f_val _ arg_red ih =>
     cases ac with
     | Apply _ _ _ arg_val =>
-      have := arg_red.IsNotValue arg_val
+      have := arg_red.isNotNormal
       contradiction
     | AppFunc red =>
-      have := red.IsNotValue f_val
+      have := red.isNotNormal f_val
       contradiction
     | AppArg f_val =>
       rw [ih]
       rename_i h₀ _ _ h₁ _
       cases h₀.decide h₁
       assumption
-  | LamBody _ ih =>
-    cases ac
-    rw [ih]
-    assumption
   | Panic _ _ ih =>
     cases ac
     rw [ih]
@@ -395,69 +470,8 @@ def Term.Reduce.allHEq (r₀: Term.Reduce ctx ty a b) (r₁: Term.Reduce ctx ty'
   cases r₀.decide r₁
   rfl
 
-instance Term.decIsLam : ∀a, Decidable (Term.IsLam a)
-| .Lam _ _ => .isTrue (.Lam _ _)
-| .ConstUnit | .Var _ | .App _ _ | .Panic _ _ => .isFalse (nomatch ·)
-
-instance Term.decIsValue : ∀a, Decidable (Term.IsValue a)
-| .ConstUnit => .isTrue .ConstUnit
-| .Var _ => .isTrue (.Var _)
-| .Lam _ body =>
-  match decIsValue body with
-  | .isTrue h => .isTrue (.Lam _ _ h)
-  | .isFalse h => .isFalse fun h => by cases h <;> contradiction
-| .Panic body _ =>
-  match decIsValue body with
-  | .isTrue h => .isTrue (.Panic _ h)
-  | .isFalse h => .isFalse fun h => by cases h <;> contradiction
-| .App a b =>
-  have := decIsValue a
-  have := decIsValue b
-  match inferInstanceAs (Decidable (¬a.IsLam ∧ a.IsValue ∧ b.IsValue)) with
-  | .isTrue h => .isTrue (.App _ _ h.2.1 h.2.2 h.1)
-  | .isFalse h => .isFalse (by intro h₀; apply h; cases h₀ <;> trivial)
-
-def Term.Reduce.ofNotValue {ctx: List LamType} {ty: LamType} : ∀a: Term,
-  a.IsWellTyped ctx ty -> ¬a.IsValue -> ∃b, Reduce ctx ty a b := by
-  intro a wt not_val
-  induction wt with
-  | ConstUnit => contradiction
-  | Var => exact (not_val (.Var _)).elim
-  | Lam body _wt ih =>
-    rename_i arg_ty ret_ty ctx
-    have ⟨body',red⟩  := ih (fun g => not_val (g.Lam _))
-    exists body'.Lam arg_ty
-    apply Reduce.LamBody
-    assumption
-  | Panic body ty _wt ih =>
-    rename_i ctx
-    have ⟨body',red⟩  := ih (fun g => not_val (g.Panic _))
-    exists body'.Panic ty
-    apply Reduce.Panic
-    assumption
-  | App f arg fwt argwt fih argih =>
-    if h₁:f.IsValue then
-      if h₂:arg.IsValue then
-        match f.decIsLam with
-        | .isTrue _ =>
-          match f with
-          | .Lam _ body =>
-            refine ⟨_,Term.Reduce.Apply _ ?_ (by cases h₁; assumption) h₂ rfl⟩
-            apply IsWellTyped.App
-            assumption
-            assumption
-        | .isFalse h₀ => exact (not_val (.App _ _ h₁ h₂ h₀)).elim
-      else
-        have ⟨arg',red⟩ := argih h₂
-        refine ⟨_,red.AppArg h₁ ?_⟩
-        assumption
-    else
-      have ⟨arg',red⟩ := fih h₁
-      refine ⟨_,red.AppFunc ?_⟩
-      assumption
-
 inductive Term.Halts (ctx: List LamType) (t: Term) (ty: LamType) : Prop where
-| intro (val: Term) (h: val.IsValue) :
+| intro (val: Term) (h: val.IsNormalForm) :
   -- reduce to a value
   Chain ctx ty t val -> Halts ctx t ty
 
@@ -477,7 +491,7 @@ def Term.Halts.pop : Reduce ctx ty t t' -> Term.Halts ctx t ty -> Term.Halts ctx
   refine ⟨val,val_spec,?_⟩
   cases chain with
   | nil =>
-    have := red.IsNotValue
+    have := red.isNotNormal
     contradiction
   | cons r c =>
     cases r.decide red
@@ -547,48 +561,100 @@ def Term.HeredHalts.iff_chain (e e': Term) : Chain ctx ty e e' -> (e.HeredHalts 
 inductive IsValidBindingList : List LamType -> List Term -> Prop where
 | nil : IsValidBindingList ctx []
 | cons :
-  t.IsValue ->
-  t.HeredHalts ctx ty ->
+  t.IsNormalForm ->
+  t.HeredHalts [] ty ->
   IsValidBindingList ctx ts ->
   IsValidBindingList (ty::ctx) (t::ts)
 
-def Term.substAll (term: Term) : List Term -> Term
+def Term.substAll (term: Term) (ctx_len: Nat) : List Term -> Term
 | [] => term
-| t::ts => (term.subst t).substAll ts
+| t::ts =>
+  match ctx_len with
+  | 0 => term
+  | ctx_len + 1 => (term.subst (t.weakenN ctx_len)).substAll ctx_len ts
 
-def Term.substAll.spec (ctx ctx': List LamType) (term: Term) (ty: LamType) :
-  term.IsWellTyped (ctx ++ ctx') ty ->
+def Term.substAll.spec (ctx: List LamType) (term: Term) (ty: LamType) :
+  term.IsWellTyped ctx ty ->
   ∀bindings,
-  ctx.length = bindings.length ->
-  IsValidBindingList (ctx ++ ctx') bindings ->
-  (term.substAll bindings).IsWellTyped ctx' ty := by
-  generalize ctx''_spec:ctx ++ ctx' = ctx''
-  intro term_wt bindings len_eq bind_spec
-  induction bind_spec generalizing ctx ctx' term ty with
+  IsValidBindingList ctx bindings ->
+  bindings.length ≤ ctx.length ->
+  (term.substAll ctx.length bindings).IsWellTyped (ctx.drop bindings.length) ty := by
+  intro term_wt bindings bind_spec bindings_le_ctx
+  induction bind_spec generalizing term ty with
   | nil =>
-    match ctx with
-    | [] =>
-    rw [List.nil_append] at ctx''_spec
-    subst ctx''_spec
+    unfold substAll
     assumption
   | cons _ halts _ ih =>
     unfold Term.substAll
-    match ctx with
-    | c::ctx =>
-    replace ⟨h,ctx''_spec⟩ := List.cons.inj ctx''_spec
-    subst h
+    dsimp
     apply ih
-    exact ctx''_spec
     apply subst.spec
     assumption
-    apply halts.IsWellTyped
-    apply Nat.succ.inj
+    apply weakenN.spec
+    rw [List.drop_length]
+    exact halts.IsWellTyped
+    apply Nat.le_refl
+    apply Nat.le_of_succ_le_succ
     assumption
 
 def Term.substAll.spec' (ctx: List LamType) (term: Term) (ty: LamType) :
   term.IsWellTyped ctx ty ->
-  ∀bindings, ctx.length = bindings.length -> IsValidBindingList ctx bindings -> (term.substAll bindings).IsWellTyped [] ty := by
+  ∀bindings, ctx.length = bindings.length -> IsValidBindingList ctx bindings -> (term.substAll ctx.length bindings).IsWellTyped [] ty := by
   intro wt bindings spec h
-  have := substAll.spec ctx [] term ty
-  rw [List.append_nil] at this
-  exact this wt bindings spec h
+  have := substAll.spec ctx term ty wt bindings h (Nat.le_of_eq spec.symm)
+  rw [←spec, List.drop_length] at this
+  assumption
+
+def Term.substAll.ConstUnit:
+  Term.ConstUnit.substAll n bindings = Term.ConstUnit := by
+  induction bindings generalizing n <;> cases n <;> try trivial
+  unfold substAll
+  dsimp
+  unfold subst substAt
+  rename_i ih _
+  apply ih
+
+def Term.weakenAt_substAt (t: Term) (binding: Term) (n: Nat) :
+  Term.substAt binding n (t.weakenAt n) = t := by
+  induction t generalizing n binding with
+  | ConstUnit => rfl
+  | Lam arg_ty body ih =>
+    unfold weakenAt substAt
+    rw [ih]
+  | Panic body ty ih =>
+    unfold weakenAt substAt
+    rw [ih]
+  | App f arg fih argih =>
+    unfold substAt weakenAt
+    dsimp
+    rw [fih, argih]
+  | Var id =>
+    unfold substAt weakenAt
+    dsimp
+    split <;> rename_i h
+    rw [if_neg]
+    intro g
+    exact Nat.lt_irrefl _ (g ▸ h)
+    split <;> rename_i g
+    subst n
+    have := h (Nat.lt_succ_self _)
+    contradiction
+    rw [if_neg]
+    rfl
+    intro g
+    apply h
+    apply Nat.lt_trans _ g
+    apply Nat.lt_succ_self
+
+def Term.weaken_subst (t: Term) (binding: Term) :
+  (t.weaken).subst binding = t := by apply weakenAt_substAt
+
+def Term.weakenN_substAll (t: Term) (bindings: List Term) :
+  (t.weakenN bindings.length).substAll bindings.length bindings = t := by
+  induction bindings with
+  | nil => rfl
+  | cons b bindings =>
+    unfold weakenN substAll
+    dsimp
+    rw [weaken_subst]
+    assumption
