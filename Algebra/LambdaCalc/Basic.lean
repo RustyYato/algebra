@@ -1,3 +1,5 @@
+import Algebra.AxiomBlame
+
 inductive LamType where
 | Unit
 | Void
@@ -51,9 +53,9 @@ def Term.weakenAt (varid: Nat) : Term -> Term
 
 def Term.weaken : Term -> Term := weakenAt 0
 
-def Term.weakenN : Nat -> Term -> Term
-| 0 => id
-| n + 1 => fun x => Term.weaken (Term.weakenN n x)
+def Term.weakenN (term: Term) : Nat -> Term
+| 0 => term
+| n + 1 => Term.weaken (Term.weakenN term n)
 
 def Term.substAt (repl: Term) (varid: Nat) : Term -> Term
 | .ConstUnit => .ConstUnit
@@ -566,12 +568,14 @@ inductive IsValidBindingList : List LamType -> List Term -> Prop where
   IsValidBindingList ctx ts ->
   IsValidBindingList (ty::ctx) (t::ts)
 
-def Term.substAll (term: Term) (ctx_len: Nat) : List Term -> Term
+def Term.substAllAt (term: Term) (n: Nat) (ctx_len: Nat) : List Term -> Term
 | [] => term
 | t::ts =>
   match ctx_len with
   | 0 => term
-  | ctx_len + 1 => (term.subst (t.weakenN ctx_len)).substAll ctx_len ts
+  | ctx_len + 1 => (Term.substAt (t.weakenN ctx_len) n term).substAllAt n ctx_len ts
+
+def Term.substAll (term: Term) (ctx_len: Nat) : List Term -> Term := Term.substAllAt term 0 ctx_len
 
 def Term.substAll.spec (ctx: List LamType) (term: Term) (ty: LamType) :
   term.IsWellTyped ctx ty ->
@@ -582,7 +586,7 @@ def Term.substAll.spec (ctx: List LamType) (term: Term) (ty: LamType) :
   intro term_wt bindings bind_spec bindings_le_ctx
   induction bind_spec generalizing term ty with
   | nil =>
-    unfold substAll
+    unfold substAll substAllAt
     assumption
   | cons _ halts _ ih =>
     unfold Term.substAll
@@ -608,9 +612,8 @@ def Term.substAll.spec' (ctx: List LamType) (term: Term) (ty: LamType) :
 def Term.substAll.ConstUnit:
   Term.ConstUnit.substAll n bindings = Term.ConstUnit := by
   induction bindings generalizing n <;> cases n <;> try trivial
-  unfold substAll
+  unfold substAll substAllAt
   dsimp
-  unfold subst substAt
   rename_i ih _
   apply ih
 
@@ -654,7 +657,262 @@ def Term.weakenN_substAll (t: Term) (bindings: List Term) :
   induction bindings with
   | nil => rfl
   | cons b bindings =>
-    unfold weakenN substAll
+    unfold weakenN substAll substAllAt
     dsimp
-    rw [weaken_subst]
+    rw [←subst, weaken_subst]
     assumption
+
+def Term.weaken_weakenN :
+  weaken (weakenN term n) = weakenN (weaken term) n := by
+  induction n generalizing term with
+  | zero => rfl
+  | succ n ih =>
+    unfold weakenN
+    rw [ih]
+
+def Term.substAll.Lam (body : Term) (bindings: List Term) :
+  (body.Lam arg_ty).substAll ctx_len bindings = (body.substAllAt 1 ctx_len (bindings.map Term.weaken)).Lam arg_ty := by
+  induction bindings generalizing body ctx_len with
+  | nil =>
+    unfold substAll substAllAt
+    rfl
+  | cons b bindings ih =>
+    cases ctx_len <;> unfold substAll substAllAt
+    rfl
+    rename_i ctx_len
+    dsimp
+    conv => {
+      lhs
+      unfold substAt
+    }
+    rw [←ih]
+    congr
+    rw [weaken_weakenN]
+
+def Term.substAll.App (f arg : Term) (bindings: List Term) :
+  (f.App arg).substAll ctx_len bindings = (f.substAll ctx_len bindings).App (arg.substAll ctx_len bindings) := by
+  induction bindings generalizing f arg ctx_len with
+  | nil =>
+    unfold substAll substAllAt
+    rfl
+  | cons b bindings ih =>
+    cases ctx_len
+    rfl
+    rename_i ctx_len
+    unfold substAll substAllAt
+    dsimp
+    repeat rw [←subst]
+    repeat rw [←substAll]
+    rw [←ih]
+    congr
+
+def Term.Chain.append : Term.Chain ctx ty a b -> Term.Chain ctx ty b c -> Term.Chain ctx ty a c := by
+  intro ab bc
+  induction ab with
+  | nil => assumption
+  | cons a _ ih =>
+    apply Chain.cons
+    assumption
+    apply ih
+    assumption
+
+def Term.Chain.AppArg  :
+  IsWellTyped ctx f (LamType.Fn arg_ty ret_ty) ->
+  f.IsNormalForm ->
+  Chain ctx arg_ty arg arg' ->
+  Chain ctx ret_ty (Term.App f arg) (Term.App f arg') := by
+  intro wt fnorm chain
+  induction chain with
+  | nil =>
+    apply Chain.nil
+    apply IsWellTyped.App
+    assumption
+    assumption
+  | cons c _ ih =>
+    replace ih := ih wt
+    apply Chain.cons
+    apply Reduce.AppArg
+    repeat assumption
+
+def Term.substAt_subst' (n: Nat) (v body: Term) {arg_val: Term} :
+  Term.substAt (arg_val.weakenN n) n (Term.substAt (v.weakenN n.succ) n.succ body) =
+  Term.substAt (v.weakenN n) n (Term.substAt (arg_val.weakenN n.succ) n body) := by
+  induction body generalizing v arg_val n with
+  | ConstUnit => rfl
+  | Panic body ty ih =>
+    repeat rw [substAt]
+    rw [ih]
+  | App f arg fih argih =>
+    repeat rw [substAt]
+    rw [fih, argih]
+  | Lam arg_ty body ih =>
+    repeat rw [substAt]
+    repeat rw [←weakenN]
+    rw [ih]
+  | Var id =>
+    repeat rw [substAt]
+    split <;> rename_i h
+    subst id
+    rw [if_neg (Nat.succ_ne_self _), if_neg (Nat.not_lt_of_le (Nat.le_succ _))]
+    dsimp
+    sorry
+    split
+    split; subst id
+    sorry
+    rw [if_pos]
+    sorry
+    apply Nat.lt_of_le_of_ne
+    apply Nat.le_of_lt_succ
+    assumption
+    assumption
+    rw [if_neg, if_neg]
+    sorry
+    intro h
+    have := Nat.lt_trans h (Nat.lt_succ_self _)
+    contradiction
+    intro h
+    subst h
+    have := Nat.lt_succ_self id
+    contradiction
+
+def Term.substAt_subst (v body: Term) :
+  Term.substAt arg_val 0 (Term.substAt v.weaken 1 body) =
+  Term.substAt v 0 (Term.substAt arg_val.weaken 0 body) := substAt_subst' 0 v body
+
+def Term.substAllAt_subst {ctx: List LamType} (body: Term) :
+  ctx.length = bindings.length ->
+  (body.substAllAt 1 ctx.length (List.map weaken bindings)).subst arg_val =
+   body.substAll (ty' :: ctx).length (arg_val :: bindings) := by
+  intro h
+  rw [List.length_cons, h]
+  clear ty'
+  clear h ctx
+  induction bindings generalizing body arg_val with
+  | nil =>
+  unfold substAll substAllAt
+  dsimp
+  rfl
+  | cons b bindings ih =>
+  unfold substAll substAllAt
+  dsimp
+  rw [←weaken_weakenN, ←weakenN, ←substAll]
+  rw [←subst, ih]
+  unfold substAll substAllAt
+  dsimp
+  rw [weakenN, substAt_subst]
+  rfl
+
+def Term.allHeredHalts
+  (ctx: List LamType)
+  (term: Term)
+  (ty: LamType)
+  (bindings: List Term):
+  term.IsWellTyped ctx ty ->
+  IsValidBindingList ctx bindings ->
+  ctx.length = bindings.length ->
+  (term.substAll ctx.length bindings).HeredHalts [] ty := by
+  intro wt valid_bindings complete_bindings
+
+  induction wt generalizing bindings with
+  | Panic _ _ _ ih  =>
+    have : False := ih bindings valid_bindings complete_bindings
+    contradiction
+  | ConstUnit =>
+    apply Halts.intro
+    exact .ConstUnit
+    rw [Term.substAll.ConstUnit]
+    apply Chain.nil
+    exact .ConstUnit
+  | App f arg _ _ fih argih =>
+    rw [substAll.App]
+    apply (fih _ valid_bindings complete_bindings).right
+    apply argih
+    repeat assumption
+  | Var id ty id_in_bounds ty_spec =>
+    subst ty_spec
+    clear ctx
+    rename_i ctx
+    clear term ty
+    induction id generalizing ctx bindings with
+    | zero =>
+      match ctx with
+      | ty'::ctx =>
+      match bindings with
+      | v::bindings =>
+      cases valid_bindings with
+      | cons v_val v_halts bindings =>
+      unfold substAll substAllAt substAt
+      dsimp
+      rw [Nat.succ.inj complete_bindings, ←substAll, weakenN_substAll]
+      assumption
+    | succ id ih =>
+      match ctx with
+      | ty'::ctx =>
+      match bindings with
+      | v::bindings =>
+      unfold substAll
+      apply ih
+      cases valid_bindings
+      assumption
+      apply Nat.succ.inj
+      assumption
+  | Lam body body_wt ih =>
+    apply And.intro
+    · rename_i arg_ty _ _
+      apply Halts.intro (Term.Lam _ _)
+      rename_i ctx _
+      apply IsNormalForm.Lam arg_ty (body.substAllAt 1 ctx.length (bindings.map .weaken))
+      rw [substAll.Lam]
+      apply Chain.nil
+      rw [←substAll.Lam]
+      apply substAll.spec'
+      apply IsWellTyped.Lam
+      assumption
+      assumption
+      assumption
+    · intro arg arg_halts
+      have ⟨arg_val, arg_val_is_norm,arg_red⟩  := arg_halts.Halts
+      apply (HeredHalts.iff_chain _ _ _).mpr
+      apply ih
+      apply IsValidBindingList.cons
+      exact arg_val_is_norm
+      apply (HeredHalts.iff_chain _ _ _).mp
+      exact arg_halts
+      assumption
+      assumption
+      unfold List.length
+      congr
+      apply Chain.append
+      apply Chain.AppArg
+      apply substAll.spec'
+      apply IsWellTyped.Lam
+      repeat assumption
+      rw [substAll.Lam]
+      apply IsNormalForm.Lam
+      assumption
+      apply Chain.cons
+      rw [substAll.Lam]
+      apply Reduce.Apply
+      rw [←substAll.Lam]
+      apply IsWellTyped.App
+      apply substAll.spec'
+      apply IsWellTyped.Lam
+      repeat assumption
+      exact arg_red.well_typed_right
+      assumption
+      rfl
+      rw [substAllAt_subst]
+      apply Chain.nil
+      apply substAll.spec'
+      assumption
+      unfold List.length
+      congr
+      apply IsValidBindingList.cons
+      assumption
+      apply (HeredHalts.iff_chain _ _ _).mp
+      assumption
+      assumption
+      assumption
+      assumption
+
+#axiom_blame Term.allHeredHalts
