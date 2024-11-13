@@ -323,7 +323,7 @@ def BitInt.Bits.of_nat.rec_lemma (n: nat) : (n + 1) / 2 < n.succ := by
         assumption
         trivial
       · replace h := le_of_not_lt h
-        have := ih (n - 2) (nat.sub.lt_nz _ _ rfl h)
+        have := ih (n - 2) (nat.sub.lt_nz _ _ (by trivial) h)
         rw [nat.div.if_ge]
         rw [nat.add_one]
         apply nat.succ_lt_succ
@@ -492,7 +492,8 @@ def BitInt.Bits.of_nat.is_minimal (n: nat) : (of_nat n).IsMinimal := by
       trivial
       rw [nat.div.eq_if, if_neg, nat.add_one] at this
       contradiction
-      exact Ordering.noConfusion
+      intro h
+      repeat cases h <;> rename_i h
       trivial
     rw [nat.add_one] at this
     match n with
@@ -1059,9 +1060,440 @@ def BitInt.Bits.succ_eq_neg_pred_neg (a: BitInt.Bits) : a.succ ≈ a.neg.pred.ne
   symm
   apply neg_neg
 
-def BitInt.Bits.nil_cmp (a: Bool) : Bits -> Ordering
-| .nil b => compare b a
-| .bit b bs => (nil_cmp a bs).then (compare a b)
+inductive BitInt.Bits.LT : Bits -> Bits -> Prop where
+| nil_nil : LT (-1) 0
+| nil_bit_msb a b bs : LT (nil a) bs -> LT (nil a) (bit b bs)
+| nil_bit_lsb bs : bs ≈ 0 -> LT 0 (bit true bs)
+| bit_nil_msb a as b : LT as (nil b) -> LT (bit a as) (nil b)
+| bit_nil_lsb as : as ≈ -1 -> LT (bit false as) (-1)
+| bit_bit_msb a as b bs : LT as bs -> LT (bit a as) (bit b bs)
+| bit_bit_lsb as bs : as ≈ bs -> LT (bit false as) (bit true bs)
+
+instance : LT BitInt.Bits := ⟨BitInt.Bits.LT⟩
+instance : LE BitInt.Bits where
+  le a b := a < b ∨ a ≈ b
+
+inductive BitInt.Bits.DecidableOrder (a b: Bits) : Type where
+| lt : a < b -> DecidableOrder a b
+| eq : a ≈ b -> DecidableOrder a b
+| gt : a > b -> DecidableOrder a b
+
+def BitInt.Bits.LT.spec  (a b c d: Bits) : a ≈ c -> b ≈ d -> a < b -> c < d := by
+  intro ac bd ab
+  induction ac generalizing b d with
+  | nil_nil a =>
+    induction bd with
+    | nil_nil b => assumption
+    | nil_bit b ds _ ih =>
+      apply nil_bit_msb
+      apply ih; assumption
+    | bit_nil d bs bd ih =>
+      cases ab
+      apply ih; assumption
+      rename_i h
+      nomatch trans (symm bd) h
+    | bit_bit b bs ds bd ih =>
+      cases ab <;> rename_i ab
+      apply nil_bit_msb
+      apply ih; assumption
+      apply nil_bit_lsb
+      apply trans _ ab
+      symm
+      assumption
+  | nil_bit a cs ac ih =>
+    cases bd with
+    | nil_nil b =>
+      cases ab
+      apply bit_nil_msb
+      apply ih; rfl; exact .nil_nil
+    | nil_bit b ds bd =>
+      apply bit_bit_msb
+      apply ih <;> assumption
+    | bit_nil d bs bd =>
+      cases ab <;> rename_i ab
+      apply bit_nil_msb
+      apply ih <;> assumption
+      nomatch trans (symm bd) ab
+    | bit_bit b bs ds bd =>
+      cases ab
+      apply bit_bit_msb
+      apply ih <;> assumption
+      apply bit_bit_lsb
+      apply trans (symm ac)
+      apply trans _ bd
+      symm; assumption
+  | bit_nil c as ac ih =>
+    cases bd with
+    | nil_nil b =>
+      cases ab <;> rename_i ab
+      apply ih
+      exact .nil_nil _
+      assumption
+      nomatch trans (symm ac) ab
+    | nil_bit b ds bd =>
+      cases ab <;> rename_i ab
+      apply nil_bit_msb
+      apply ih <;> assumption
+      nomatch trans (symm ab) ac
+    | bit_nil d bs bd =>
+      cases ab <;> rename_i ab
+      apply ih <;> assumption
+      nomatch trans (symm bd) (trans (symm ab) ac)
+    | bit_bit b bs ds bd =>
+      cases ab <;> rename_i ab
+      apply nil_bit_msb
+      apply ih <;> assumption
+      apply nil_bit_lsb
+      apply trans (symm bd)
+      apply trans (symm ab)
+      assumption
+  | bit_bit a  as cs ac ih =>
+    cases bd with
+    | nil_nil b =>
+      cases ab <;> rename_i ab
+      apply bit_nil_msb
+      apply ih <;> trivial
+      apply bit_nil_lsb
+      exact trans (symm ac) ab
+    | nil_bit b ds bd =>
+      cases ab <;> rename_i ab
+      apply bit_bit_msb
+      apply ih <;> assumption
+      apply bit_bit_lsb
+      apply trans (symm ac)
+      apply trans ab
+      assumption
+    | bit_nil d bs bd =>
+      cases ab <;> rename_i ab
+      apply bit_nil_msb
+      apply ih <;> assumption
+      apply bit_nil_lsb
+      apply trans (symm ac)
+      apply trans ab
+      assumption
+    | bit_bit b bs ds bd =>
+      cases ab <;> rename_i ab
+      apply bit_bit_msb
+      apply ih <;> assumption
+      apply bit_bit_lsb
+      apply trans (symm ac)
+      apply trans ab
+      assumption
+
+def BitInt.Bits.LE.spec  (a b c d: Bits) : a ≈ c -> b ≈ d -> a ≤ b -> c ≤ d := by
+  intro ac bd ab
+  cases ab <;> rename_i ab
+  left; apply LT.spec <;> assumption
+  right
+  apply trans (symm ac)
+  apply trans ab
+  assumption
+
+def BitInt.LT : BitInt -> BitInt -> Prop := by
+  apply liftProp₂ (· < ·)
+  intro a b c d ac bd
+  apply Iff.intro
+  apply Bits.LT.spec <;> assumption
+  apply Bits.LT.spec <;> (symm; assumption)
+
+def BitInt.LE : BitInt -> BitInt -> Prop := by
+  apply liftProp₂ (· ≤ ·)
+  intro a b c d ac bd
+  apply Iff.intro
+  apply Bits.LE.spec <;> assumption
+  apply Bits.LE.spec <;> (symm; assumption)
+
+instance : LT BitInt := ⟨BitInt.LT⟩
+instance : LE BitInt := ⟨BitInt.LE⟩
+
+def BitInt.mk_lt {a b: Bits} : mk a < mk b ↔ a < b := by
+  conv => { lhs; unfold instLTBitInt LT }
+  exact liftProp₂_mk
+
+def BitInt.mk_le {a b: Bits} : mk a ≤ mk b ↔ a ≤ b := by
+  conv => { lhs; unfold instLEBitInt LE }
+  exact liftProp₂_mk
+
+def BitInt.Bits.ne_of_lt' (a b: Bits) : a < b -> ¬a ≈ b := by
+  intro h
+  induction h
+  any_goals intro; contradiction
+  all_goals
+    rename_i ab ih
+    intro h
+    apply ih; clear ih
+    cases h; assumption
+
+def BitInt.Bits.not_le_of_lt' (a b: Bits) : a < b -> ¬b ≤ a := by
+  intro h
+  induction h with
+  | nil_nil =>
+    intro h;
+    cases h <;> contradiction
+  | nil_bit_msb a b bs lt ih =>
+    intro h
+    apply ih; clear ih
+    cases h <;> rename_i h
+    cases h
+    left; assumption
+    apply LE.spec; symm; assumption; rfl
+    right; rfl
+    cases h
+    right; assumption
+  | nil_bit_lsb a h =>
+    intro g
+    cases g <;> rename_i g
+    cases g <;> rename_i g
+    nomatch ((LT.spec _ _ _ _ h (by rfl) g): (0: Bits) < 0)
+    nomatch g
+  | bit_nil_msb a as b ab ih =>
+    intro h
+    apply ih; clear ih
+    cases h <;> rename_i h
+    cases h <;> rename_i h
+    left; assumption
+    right; symm; assumption
+    cases h <;> rename_i h
+    have := LT.spec _ _ _ _ (symm h) (by rfl) ab
+    nomatch this
+  | bit_nil_lsb as g =>
+    intro h
+    cases h <;> rename_i h
+    cases h <;> rename_i h
+    nomatch LT.spec _ _ _ _ (by rfl) g h
+    nomatch h
+  | bit_bit_msb a as b bs _ ih =>
+    intro h
+    apply ih; clear ih
+    cases h <;> rename_i h
+    cases h <;> rename_i h
+    left; assumption
+    right; assumption
+    cases h
+    right; assumption
+  | bit_bit_lsb as bs ab =>
+    intro h
+    cases h <;> rename_i h
+    cases h <;> rename_i h
+    exact ne_of_lt' _ _ h (symm ab)
+    nomatch h
+
+def BitInt.Bits.DecidableOrder.swap : DecidableOrder a b -> DecidableOrder b a
+| .lt h => .gt h
+| .gt h => .lt h
+| .eq h => .eq (symm h)
+
+instance BitInt.Bits.DecidableOrder.SubsingletonInst : Subsingleton (BitInt.Bits.DecidableOrder a b) where
+  allEq x y := by
+    cases x <;> cases y <;> rename_i x y
+    any_goals rfl
+    have := ne_of_lt' _ _ x
+    contradiction
+    have := not_le_of_lt' _ _ x (.inl y)
+    contradiction
+    have := ne_of_lt' _ _ y
+    contradiction
+    have := ne_of_lt' _ _ y
+    have := symm x
+    contradiction
+    have := not_le_of_lt' _ _ x (.inl y)
+    contradiction
+    have := ne_of_lt' _ _ x
+    have := symm y
+    contradiction
+
+def BitInt.Bits.decNilNilOrd : ∀a b, Bits.DecidableOrder (nil a) (nil b)
+| false, false | true, true => .eq (.nil_nil _)
+| false, true => .gt .nil_nil
+| true, false => .lt .nil_nil
+
+def BitInt.Bits.decNilBitOrd' {a b bs} : Bits.DecidableOrder (nil a) bs -> Bits.DecidableOrder (nil a) (bit b bs)
+| .lt h => .lt (.nil_bit_msb _ _ _ h)
+| .gt h => .gt (.bit_nil_msb _ _ _ h)
+| .eq h =>
+  match a, b with
+  | false, false | true, true => .eq (.nil_bit _ _ h)
+  | false, true => .lt (.nil_bit_lsb _ (symm h))
+  | true, false => .gt (.bit_nil_lsb _ (symm h))
+
+def BitInt.Bits.decNilBitOrd : ∀a b bs, Bits.DecidableOrder (nil a) (bit b bs)
+| a, _, nil b' => decNilBitOrd' (decNilNilOrd a b')
+| a, _, bit b' bs => decNilBitOrd' (decNilBitOrd a b' bs)
+
+def BitInt.Bits.decBitBitOrd {a as b bs} : Bits.DecidableOrder as bs -> Bits.DecidableOrder (bit a as) (bit b bs)
+| .lt h => .lt (.bit_bit_msb _ _ _ _ h)
+| .gt h => .gt (.bit_bit_msb _ _ _ _ h)
+| .eq h =>
+  match a, b with
+  | false, false | true, true => .eq (.bit_bit _ _ _ h)
+  | false, true => .lt (.bit_bit_lsb _ _ h)
+  | true, false => .gt (.bit_bit_lsb _ _ (symm h))
+
+def BitInt.Bits.decOrd : ∀a b, Bits.DecidableOrder a b
+| .nil a, .nil b => decNilNilOrd a b
+| .nil a, .bit b bs => decNilBitOrd a b bs
+| .bit a as, .nil b => (decNilBitOrd b a as).swap
+| .bit _ as, .bit _ bs => decBitBitOrd (decOrd as bs)
+
+instance BitInt.Bits.decLT (a b: BitInt.Bits) : Decidable (a < b) :=
+  match decOrd a b with
+  | .lt h => .isTrue h
+  | .eq h => .isFalse fun g => not_le_of_lt' _ _ g (.inr (symm h))
+  | .gt h => .isFalse fun g => not_le_of_lt' _ _ g (.inl h)
+
+instance BitInt.Bits.decLE (a b: BitInt.Bits) : Decidable (a ≤ b) :=
+  match decOrd a b with
+  | .lt h => .isTrue (.inl h)
+  | .eq h => .isTrue (.inr h)
+  | .gt h => .isFalse (not_le_of_lt' _ _ h)
+
+instance BitInt.decLT (a b: BitInt) : Decidable (a < b) := BitInt.Bits.decLT _ _
+instance BitInt.decLE (a b: BitInt) : Decidable (a ≤ b) := BitInt.Bits.decLE _ _
+
+def BitInt.Bits.length : Bits -> nat
+| .nil _ => 0
+| .bit _ bs => bs.length.succ
+
+def BitInt.Bits.LT.trans {a b c: Bits} : a < b -> b < c -> a < c := by
+  intro ab bc
+  cases ab with
+  | nil_nil =>
+    cases bc with
+    | nil_bit_msb =>
+      apply LT.nil_bit_msb
+      apply LT.trans .nil_nil
+      assumption
+    | nil_bit_lsb =>
+      apply LT.spec
+      rfl
+      apply bit_bit
+      symm; assumption
+      apply LT.nil_bit_msb
+      apply LT.nil_nil
+  | nil_bit_lsb =>
+    cases bc with
+    | bit_nil_msb =>
+      apply LT.spec
+      assumption
+      rfl
+      assumption
+    | bit_bit_msb =>
+      apply nil_bit_msb
+      apply LT.spec
+      assumption
+      rfl
+      assumption
+  | nil_bit_msb _ _ _ ab  =>
+    cases bc with
+    | bit_nil_msb _ _ _ bc => exact LT.trans ab bc
+    | bit_nil_lsb =>
+      apply LT.spec
+      rfl; repeat assumption
+    | bit_bit_msb _ _ _ _ bc =>
+      apply nil_bit_msb
+      exact LT.trans ab bc
+    | bit_bit_lsb =>
+      apply nil_bit_msb
+      apply LT.spec
+      rfl; repeat assumption
+  | bit_nil_lsb =>
+    cases bc with
+    | nil_nil =>
+      apply bit_nil_msb
+      apply LT.spec
+      symm; assumption
+      rfl
+      exact .nil_nil
+    | nil_bit_msb =>
+      apply bit_bit_msb
+      apply LT.spec
+      symm; assumption
+      rfl; assumption
+  | bit_nil_msb a as b ab =>
+    cases bc with
+    | nil_nil =>
+      apply bit_nil_msb
+      apply LT.trans ab (by decide)
+    | nil_bit_msb _ _ _ bc =>
+      apply bit_bit_msb
+      apply LT.trans ab bc
+    | nil_bit_lsb =>
+      apply bit_bit_msb
+      apply LT.spec
+      rfl; symm; assumption
+      assumption
+  | bit_bit_lsb =>
+    cases bc with
+    | bit_nil_msb =>
+      apply bit_nil_msb
+      apply LT.spec
+      symm; assumption
+      rfl
+      assumption
+    | bit_bit_msb =>
+      apply bit_bit_msb
+      apply LT.spec
+      symm; assumption
+      rfl
+      assumption
+  | bit_bit_msb _ _ _ _ ab  =>
+    cases bc with
+    | bit_nil_msb _ _ _ bc =>
+      apply bit_nil_msb
+      exact LT.trans ab bc
+    | bit_nil_lsb =>
+      apply bit_nil_msb
+      apply LT.spec
+      rfl
+      assumption
+      assumption
+    | bit_bit_msb _ _ _ _ bc =>
+      apply bit_bit_msb
+      apply LT.trans ab bc
+    | bit_bit_lsb _ _ bc =>
+      apply bit_bit_msb
+      apply LT.spec
+      rfl; assumption
+      assumption
+termination_by a.length + b.length + c.length
+decreasing_by
+  any_goals
+    rename a = _ => h₀
+    rw [h₀]
+  any_goals
+    rename b = _ => h₁
+    rw [h₁]
+  any_goals
+    rename c = _ => h₂
+    rw [h₂]
+  any_goals
+    apply nat.lt_succ_self
+  · show 0 + _ + _ < 0 + (nat.succ _) + (nat.succ _)
+    rw [nat.zero_add, nat.zero_add, nat.succ_add, nat.add_succ]
+    apply lt_trans
+    apply nat.lt_succ_self
+    apply nat.lt_succ_self
+  · rename _ = bit _ _ => h₀
+    rename _ = nil b => h₁
+    rw [h₀, h₁]
+    repeat erw [nat.add_zero]
+    apply nat.lt_succ_self
+  · rename _ = bit a _ => h₀
+    rename _ = nil b => h₃
+    rw [h₀, h₃]
+    repeat erw [nat.add_zero]
+    erw [nat.add_succ, nat.succ_add]
+    apply lt_trans
+    apply nat.lt_succ_self
+    apply nat.lt_succ_self
+  · repeat erw [nat.add_zero]
+    erw [nat.add_succ, nat.succ_add]
+    apply lt_trans
+    apply nat.lt_succ_self
+    apply nat.lt_succ_self
+  · apply nat.add.lt
+    apply nat.add.lt
+    all_goals apply nat.lt_succ_self
 
 def BitInt.neg : BitInt -> BitInt := by
   apply lift (mk ∘ Bits.neg)
@@ -2081,15 +2513,15 @@ def BitInt.Bits.pos_eqv_of_nat (a: Bits) :
     apply bit_bit
     rw [nat.div.mul_add, nat.div.self, nat.add_one]
     exact prf
-    rfl
-    rfl
+    trivial
+    trivial
     rw [nat.add_one]
     dsimp
     rw [nat.mod.add, nat.mod.mul, nat.mod.self, nat.zero_mul, nat.zero_mod, nat.zero_add]
     apply bit_bit
     rw [nat.div.mul_add, nat.div.if_lt, nat.add_zero]
     assumption
-    repeat rfl
+    repeat trivial
 
 def BitInt.Bits.neg_eqv_of_nat (a: Bits) :
   a.IsNegative ->
@@ -2113,21 +2545,6 @@ def BitInt.Bits.eqv_ofNat_or_negOfNat (a: Bits) :
   exists a'
   exact .inl h
 
-instance : Repr Ordering where
-  reprPrec o := match o with
-    | .lt => reprPrec "lt"
-    | .eq => reprPrec "eq"
-    | .gt => reprPrec "gt"
-
-def BitInt.Bits.cmp : Bits -> Bits -> Ordering
-| .nil a, .nil b => compare b a
-| .nil a, bs => bs.nil_cmp a
-| as, .nil b => (as.nil_cmp b).swap
-| .bit a as, .bit b bs => (cmp as bs).then (compare a b)
-
-instance : Ord BitInt.Bits where
-  compare := BitInt.Bits.cmp
-
 def BitInt.Bits.of_nat.succ (a: nat):
   of_nat a.succ ≈ (of_nat a).succ := by
   induction a using nat.wf.induction with
@@ -2139,7 +2556,7 @@ def BitInt.Bits.of_nat.succ (a: nat):
     have : (1: nat) + 1 = 2 * 1 := rfl
     have : (a.succ + 1) / 2 = a / 2 + 1 := by
       rw [←nat.add_one a, nat.add.assoc, this, nat.add.comm, nat.div.mul_add, nat.add.comm]
-      rfl
+      trivial
     -- rw [this, nat.add_one (a /2), of_nat, ←this, nat.div_div]
     have : ∀n: nat, n % 2 = 0 ∨ n % 2 = 1 := by
       intro n
@@ -2148,16 +2565,16 @@ def BitInt.Bits.of_nat.succ (a: nat):
       rename_i n'
       cases n'
       exact .inr rfl
-      have := nat.mod.lt n 2 rfl
+      have := nat.mod.lt n 2 (by trivial)
       rw [h] at this
-      have := not_le_of_lt this (nat.zero_le _)
+      have := not_le_of_lt this (nat.succ_le_succ (nat.succ_le_succ (nat.zero_le _)))
       contradiction
     cases this a <;> rename_i h <;> clear this
     rw [←nat.add_one, nat.add.assoc, nat.mod.add, h, nat.mod.add a, h]
     apply bit_bit
     have : (a + 1) / 2 = a / 2 := by
       rw [nat.div_def a 2, h, nat.add_zero, nat.mul.comm, nat.div.mul_add, nat.mul_div, nat.div.if_lt 1, nat.add_zero]
-      repeat rfl
+      repeat trivial
     rw [this]
     have : (1: nat) + 1 = 2 * 1 := rfl
     rw [this, nat.add.comm, nat.div.mul_add, nat.one_add]
@@ -2165,7 +2582,7 @@ def BitInt.Bits.of_nat.succ (a: nat):
     rfl
     apply nat.lt_succ_of_le
     exact nat.div.le
-    rfl
+    trivial
     have : (1: nat) + 1 = 2 := rfl
     rw [←nat.add_one, nat.add.assoc, this, nat.mod.add, nat.mod.self, nat.add_zero, nat.mod.mod, h, nat.mod.add, h, nat.mod.if_lt 1, this, nat.mod.self]
     apply bit_bit
@@ -2174,14 +2591,14 @@ def BitInt.Bits.of_nat.succ (a: nat):
       rw [nat.add.comm, this, nat.div.mul_add]
       conv => {
         rhs
-        rw [nat.div_def a 2 rfl]
+        rw [nat.div_def a 2 (by trivial)]
       }
       clear this
       rw [nat.add.assoc, nat.mul.comm, nat.div.mul_add, h, this, nat.div.self, nat.add.comm]
-      repeat rfl
+      repeat trivial
     rw [this]
-    rfl
-    rfl
+    trivial
+    trivial
 
 def BitInt.Bits.of_nat.neg_succ (a: nat):
   -of_nat a.succ ≈ (-of_nat a).pred := by
@@ -2256,6 +2673,61 @@ def BitInt.strongInduction
     rw [←mk_pred]
     apply pred
     assumption
+
+instance : Min BitInt.Bits := minOfLe
+instance : Max BitInt.Bits := maxOfLe
+instance : Min BitInt := minOfLe
+instance : Max BitInt := maxOfLe
+
+instance BitInt.IsLinearOrder'Inst : IsLinearOrder' BitInt where
+  lt_iff_le_and_not_le := by
+    intro a b
+    apply Iff.intro
+    intro h
+    apply And.intro
+    left; assumption
+    apply Bits.not_le_of_lt'
+    assumption
+    intro ⟨h,g⟩
+    cases h <;> rename_i h
+    assumption
+    have := g (.inr (Bits.symm h))
+    contradiction
+  le_antisymm := by
+    intro a b ab ba
+    cases ab <;> rename_i ab
+    have := Bits.not_le_of_lt' _ _ ab
+    contradiction
+    apply sound'
+    assumption
+  le_total := by
+    intro a b
+    cases Bits.decOrd a.bits b.bits
+    left; left; assumption
+    left; right; assumption
+    right; left; assumption
+  le_complete := by
+    intro a b
+    cases Bits.decOrd a.bits b.bits
+    left; left; assumption
+    left; right; assumption
+    right
+    apply Bits.not_le_of_lt'
+    assumption
+  le_trans := by
+    intro a b c ab bc
+    cases ab <;> cases bc <;> rename_i ab bc
+    left; apply Bits.LT.trans <;> assumption
+    left; apply Bits.LT.spec; rfl; assumption; assumption
+    left; apply Bits.LT.spec; symm; assumption; rfl; assumption
+    right
+    apply Bits.trans <;> assumption
+
+instance : IsLinearOrder BitInt where
+instance : IsDecidableLinearOrder BitInt where
+  decLE := BitInt.decLE
+  decLT := BitInt.decLT
+  decEQ a b := decidable_of_iff (a.bits ≈ b.bits) ⟨BitInt.sound' _ _,by intro (Eq.refl _); rfl ⟩
 
 def BitInt.add.comm (a b: BitInt) : a + b = b + a := by
   induction a using strongInduction with
@@ -3244,10 +3716,6 @@ def BitInt.Bits.IsPositive.shr (a: Bits) (n: nat) :
         apply (ih _).mpr
         assumption
 
-def BitInt.Bits.length : Bits -> nat
-| .nil _ => 0
-| .bit _ bs => bs.length.succ
-
 def BitInt.Bits.sqrt : ∀(a: Bits), a.IsPositive -> Bits × Bits
 | .nil _, _ => (0, 0)
 | .bit x (.nil _), _ => if x then (1, 1) else (0, 0)
@@ -3261,110 +3729,3 @@ def BitInt.Bits.sqrt : ∀(a: Bits), a.IsPositive -> Bits × Bits
     (asqrt.succ,asuccsqrt_sq)
   else
     (asqrt,asqrt_sq)
-
-def Ordering.then_swap_self : ∀(o: Ordering), o.then o.swap = o := by decide
-
-def Ordering.swap_self_then : ∀(o: Ordering), o.swap.then o = o.swap := by decide
-
-def Ordering.then_swap : ∀(a b: Ordering), (a.then b).swap = a.swap.then b.swap := by decide
-
-def Ordering.swap_swap : ∀o: Ordering, o.swap.swap = o := by decide
-
-def Ordering.swap_inj : ∀a b: Ordering, a.swap = b.swap -> a = b := by decide
-
-def BitInt.Bits.cmp.nil_cmp : (nil a).cmp as = nil_cmp a as := by cases as <;> rfl
-
-def BitInt.Bits.cmp.cmp_nil : as.cmp (nil a) = (Bits.nil_cmp a as).swap := by
-  cases as with
-  | nil a' => revert a a'; decide
-  | bit a' as => rfl
-
-def BitInt.Bits.nil_cmp.spec (a b: Bits) :
-  a ≈ b ->
-  Bits.nil_cmp x a = Bits.nil_cmp x b := by
-  intro aeqb
-  induction aeqb with
-  | nil_nil a => rfl
-  | nil_bit a as ab ih =>
-    unfold nil_cmp
-    rw [←ih, nil_cmp, swap_compare' (a := x), Ordering.then_swap_self]
-  | bit_nil a as ab ih =>
-    unfold nil_cmp
-    rw [ih, nil_cmp, swap_compare' (a := x), Ordering.then_swap_self]
-  | bit_bit a as bs ab ih =>
-    unfold nil_cmp
-    rw [ih]
-
-def BitInt.Bits.cmp.bit_cmp_spec (a b: Bits) :
-  Bits.cmp (bit x a) b = (a.cmp b).then (Bits.nil_cmp x b) := by
-  cases b with
-  | nil b =>
-    rw [cmp_nil, cmp_nil]
-    apply Ordering.swap_inj
-    rw [Ordering.swap_swap, Ordering.then_swap, Ordering.swap_swap,
-      ]
-    sorry
-  | bit b bs => sorry
-
-def BitInt.Bits.cmp.spec (a b c d: Bits) :
-  a ≈ c -> b ≈ d ->
-  cmp a b = cmp c d := by
-  intro ac bd
-  induction ac generalizing b d with
-  | nil_nil a =>
-    rw [nil_cmp, nil_cmp]
-    rw [nil_cmp.spec]
-    assumption
-  | bit_nil a as ac ih =>
-    rw [nil_cmp, ←nil_cmp.spec _ _ bd]
-
-    cases bd with
-    | nil_nil b =>
-      rw [cmp_nil, Bits.nil_cmp, Bits.nil_cmp]
-      have := ih (nil b) (nil b) (by rfl)
-      rw [cmp_nil] at this
-      rw [Ordering.then_swap, this, cmp,  Ordering.then_swap_self]
-    | bit_nil b bs bd =>
-      rw [cmp, Bits.nil_cmp, ih _ _ bd, cmp,
-        swap_compare' (a := a), Ordering.then_swap_self]
-    | nil_bit b bs bd =>
-      have := ih _ _ bd
-      rw [cmp_nil] at this
-      rw [cmp_nil, Bits.nil_cmp]
-      rw [Ordering.then_swap, this, nil_cmp, Bits.nil_cmp,
-        swap_compare' (a := b), Ordering.swap_swap]
-    | bit_bit b bs ds bd =>
-      rw [cmp, Bits.nil_cmp, ih _ _ bd, nil_cmp]
-  | nil_bit a as ac ih =>
-    cases bd with
-    | nil_nil b =>
-      have := ih (nil b) _ (by rfl)
-      rw [cmp, cmp_nil] at this
-      rw [cmp, cmp_nil, Bits.nil_cmp, Ordering.then_swap,
-        ←this, Ordering.then_swap_self]
-    | bit_nil b bs bd =>
-      have := ih _ _ bd
-      rw [nil_cmp, cmp_nil] at this
-      rw [nil_cmp, cmp_nil]
-      unfold Bits.nil_cmp
-      rw [this, Ordering.then_swap, ←swap_compare']
-    | nil_bit b bs bd =>
-      have := ih _ _ bd
-      rw [cmp_nil] at this
-      rw [cmp_nil, Bits.nil_cmp, cmp,
-        ←this, Bits.nil_cmp, Ordering.swap_self_then]
-    | bit_bit b bs ds bd =>
-      rw [nil_cmp, cmp, Bits.nil_cmp, ←ih _ _ bd, nil_cmp]
-  | bit_bit a as cs ac ih =>
-    cases bd with
-    | nil_nil b =>
-      rw [cmp_nil, cmp_nil]
-      congr 1
-      sorry
-    | bit_nil b bs bd => sorry
-    | nil_bit b bs bd => sorry
-    | bit_bit b bs ds bd => sorry
-
-def BitInt.cmp : BitInt -> BitInt -> Ordering := by
-  apply lift₂ compare
-  apply BitInt.Bits.cmp.spec
