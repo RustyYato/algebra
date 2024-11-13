@@ -1871,6 +1871,107 @@ def BitInt.Bits.add.spec_right (k a b: Bits) :
   apply add_with_carry.spec
   rfl
 
+def BitInt.Bits.nil_add_not (a: Bits) : Bool -> Bool -> Bits
+| false, false => a.not
+| false, true => a.neg
+| true, false => a.succ.not
+| true, true => a.not
+
+def BitInt.Bits.add_with_carry_not_fast : Bits -> Bits -> Bool -> Bits
+| nil a, b, carry => b.nil_add_not a carry
+| a, nil b, carry => a.nil_add (!b) carry
+| bit a as, bit b bs, c =>
+  have (carry, sum) := bit_add_carry a (!b) c
+  bit sum (add_with_carry_not_fast as bs carry)
+
+def BitInt.Bits.sub_fast : Bits -> Bits -> Bits
+| .nil a, .nil b =>
+  match a, b with
+  | false, false | true, true => 0
+  | false, true => 1
+  | true, false => -1
+| .nil a, .bit b bs =>
+  match b with
+  | false => (bit false bs.neg_naive).nil_add a false
+  | true => (bit true bs.not).nil_add a false
+| .bit a as, .nil b =>
+  match b with
+  | false => bit a as
+  | true => (bit a as).succ
+| .bit a as, .bit b bs =>
+  match a, b with
+  | false, false => bit false (as.sub_fast bs)
+  | true, false => bit true (as.sub_fast bs)
+  | false, true => bit true (as.add_with_carry_not_fast bs false)
+  | true, true => bit false (as.add_with_carry_not_fast bs true)
+
+def BitInt.Bits.add_with_carry_not_fast_eq_add_with_carry_not (a b: BitInt.Bits) (c: Bool) :
+  a.add_with_carry_not_fast b c ≈ a.add_with_carry b.not c := by
+  induction a generalizing b c with
+  | nil a =>
+    induction b generalizing c with
+    | nil b => revert a b c; decide
+    | bit b bs ih =>
+      cases a <;> cases b <;> cases c
+      any_goals rfl
+      apply bit_bit
+      rw [←not]
+      apply neg_eq_not_succ
+      apply trans
+      apply neg_eq_neg_naive
+      apply bit_bit
+      rfl
+      apply bit_bit
+      rw [←not]
+      apply flip trans
+      symm; apply pred_eq_neg_not
+      apply not.spec.mp
+      apply succ_eq_not_neg
+  | bit a as ih =>
+    cases b with
+    | nil b => rfl
+    | bit b bs =>
+      cases a <;> cases b <;> cases c
+      all_goals
+        apply bit_bit
+        apply ih
+
+def BitInt.Bits.sub_fast_eq_add_neg (a b: BitInt.Bits) :
+ a + -b ≈ a.sub_fast b := by
+ apply Bits.trans
+ apply Bits.add.spec
+ rfl
+ apply neg_eq_neg_naive
+ show a.add b.neg_naive ≈ a.sub_fast b
+ induction a generalizing b with
+ | nil a =>
+  induction b with
+  | nil b => revert a b; decide
+  | bit b bs _ => cases b <;> rfl
+ | bit a as ih =>
+  cases b with
+  | nil b =>
+    cases a <;> cases b
+    any_goals rfl
+    apply bit_bit
+    rw [add_with_carry.nil_right]
+    rfl
+    apply bit_bit
+    rw [add_with_carry.nil_right]
+    rfl
+  | bit b bs =>
+    cases a <;> cases b
+    any_goals
+      apply flip trans
+      symm
+      apply bit_bit
+      apply add_with_carry_not_fast_eq_add_with_carry_not
+      rfl
+    apply bit_bit
+    apply ih
+    apply bit_bit
+    apply ih
+
 def BitInt.Bits.add_zero_iff {a b: Bits} : b ≈ 0 ↔ a + b ≈ a := by
   rw [add.def]
   induction a generalizing b with
@@ -2249,9 +2350,24 @@ def BitInt.add : BitInt -> BitInt -> BitInt := by
   assumption
 
 instance : Add BitInt := ⟨.add⟩
-instance : Sub BitInt where
-  sub a b := a + -b
+def BitInt.sub : BitInt -> BitInt -> BitInt := fun a b => a + -b
+instance : Sub BitInt := ⟨.sub⟩
 def BitInt.sub.def (a b: BitInt) : a - b = a + -b := rfl
+
+def BitInt.sub_fast : BitInt -> BitInt -> BitInt := by
+  apply lift₂ (fun _ _ => mk _) _
+  exact Bits.sub_fast
+  intro a b c d ac bd
+  apply sound
+  apply Bits.trans
+  symm
+  apply Bits.sub_fast_eq_add_neg
+  apply flip Bits.trans
+  apply Bits.sub_fast_eq_add_neg
+  apply Bits.add.spec
+  assumption
+  apply Bits.neg.spec.mp
+  assumption
 
 def BitInt.mk_add (a b: Bits) : mk a + mk b = mk (a + b) := by
   unfold HAdd.hAdd instHAdd Add.add
@@ -2260,6 +2376,23 @@ def BitInt.mk_add (a b: Bits) : mk a + mk b = mk (a + b) := by
 def BitInt.mk_sub (a b: Bits) : mk a - mk b = mk (a - b) := by
   rw [sub.def, mk_neg, mk_add]
   rfl
+
+@[csimp]
+def BitInt.sub_eq_subfast :
+  BitInt.sub = BitInt.sub_fast := by
+  funext a b
+  show a - b = _
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  rw [mk_sub]
+  show _ = mk (BitInt.Bits.sub_fast _ _)
+  apply sound
+  apply flip BitInt.Bits.trans
+  apply BitInt.Bits.sub_fast_eq_add_neg
+  apply BitInt.Bits.add.spec
+  exact Bits.symm (bits.spec a)
+  apply Bits.neg.spec.mp
+  exact Bits.symm (bits.spec b)
 
 def BitInt.add.add_zero_iff (a b: BitInt) : b = 0 ↔ a + b = a := by
   induction a using ind with | mk a =>
