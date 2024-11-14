@@ -3063,6 +3063,21 @@ def BitInt.Bits.le_pred_iff_lt {a b: Bits} : a ≤ b.pred ↔ a < b := by
   rw [←mk_pred]
   exact BitInt.le_pred_iff_lt
 
+def BitInt.le_iff_succ_le_succ {a b: BitInt} : a ≤ b ↔ a.succ ≤ b.succ := by
+  apply Iff.trans
+  apply le_iff_lt_succ
+  apply flip Iff.trans
+  apply le_iff_lt_succ.symm
+  apply lt_iff_succ_lt_succ
+
+def BitInt.le_iff_pred_le_pred {a b: BitInt} : a ≤ b ↔ a.pred ≤ b.pred := by
+  apply Iff.trans
+  apply le_iff_lt_succ
+  apply flip Iff.trans
+  apply le_iff_lt_succ.symm
+  rw [pred_succ]
+  exact lt_succ_iff_pred_lt
+
 def BitInt.Bits.lt_iff_succ_lt_succ {a b: Bits} : a < b ↔ a.succ < b.succ := by
   apply Iff.trans BitInt.mk_lt.symm
   apply Iff.trans _ BitInt.mk_lt
@@ -3484,6 +3499,90 @@ def BitInt.Bits.add.bit_add_false_bit : bit a as + bit false bs = bit a (as + bs
 
 def BitInt.add.mk_self (a: Bits) : mk a + mk a = mk (.bit false a) := by
   rw [mk_add, sound (Bits.add.self a)]
+
+def BitInt.add.lt_left {a b k: BitInt} : a < b -> k + a < k + b := by
+  intro ab
+  induction k using strongInduction generalizing a b with
+  | zero =>
+    rw [zero_add, zero_add]
+    assumption
+  | succ k ih =>
+    iterate 2 rw [succ_add, ←add_succ]
+    apply ih
+    apply lt_iff_succ_lt_succ.mp
+    assumption
+  | pred k ih =>
+    iterate 2 rw [pred_add, ←add_pred]
+    apply ih
+    apply lt_iff_pred_lt_pred.mp
+    assumption
+
+def BitInt.add.lt_right {a b k: BitInt} : a < b -> a + k < b + k := by
+  rw [add.comm _ k, add.comm _ k]
+  apply add.lt_left
+
+def BitInt.add.le_left {a b k: BitInt} : a ≤ b -> k + a ≤ k + b := by
+  intro ab
+  induction k using strongInduction generalizing a b with
+  | zero =>
+    rw [zero_add, zero_add]
+    assumption
+  | succ k ih =>
+    iterate 2 rw [succ_add, ←add_succ]
+    apply ih
+    apply le_iff_succ_le_succ.mp
+    assumption
+  | pred k ih =>
+    iterate 2 rw [pred_add, ←add_pred]
+    apply ih
+    apply le_iff_pred_le_pred.mp
+    assumption
+
+def BitInt.add.le_right {a b k: BitInt} : a ≤ b -> a + k ≤ b + k := by
+  rw [add.comm _ k, add.comm _ k]
+  apply add.le_left
+
+def BitInt.add.lt {a b c d: BitInt} : a < c -> b < d -> a + b < c + d := by
+  intro ac bd
+  apply lt_trans
+  apply add.lt_left
+  assumption
+  apply add.lt_right
+  assumption
+
+def BitInt.add.le {a b c d: BitInt} : a ≤ c -> b ≤ d -> a + b ≤ c + d := by
+  intro ac bd
+  apply le_trans
+  apply add.le_left
+  assumption
+  apply add.le_right
+  assumption
+
+def BitInt.add_lt_of_lt_of_le {a b c d: BitInt} : a < c -> b ≤ d -> a + b < c + d := by
+  intro ac bd
+  apply lt_of_le_of_lt
+  apply add.le_left
+  assumption
+  apply add.lt_right
+  assumption
+
+def BitInt.add_lt_of_le_of_lt {a b c d: BitInt} : a ≤ c -> b < d -> a + b < c + d := by
+  intro ac bd
+  apply lt_of_le_of_lt
+  apply add.le_right
+  assumption
+  apply add.lt_left
+  assumption
+
+def BitInt.add.zero_lt {a b: BitInt} : 0 < a -> 0 < b -> 0 < a + b := by
+  intro ha hb
+  rw [←add_zero 0]
+  apply add.lt <;> assumption
+
+def BitInt.add.zero_le {a b: BitInt} : 0 ≤ a -> 0 ≤ b -> 0 ≤ a + b := by
+  intro ha hb
+  rw [←add_zero 0]
+  apply add.le <;> assumption
 
 def BitInt.Bits.nil_mul : Bool -> Bits -> Bits
 | false, _ => 0
@@ -4139,6 +4238,139 @@ def BitInt.mul.mul_one (a: BitInt) : a * 1 = a := by
 
 def BitInt.mul.mul_two (a: BitInt) : a * 2 = a + a := by
   rw [comm, two_mul]
+
+def BitInt.mul.eq_zero_iff {a b: BitInt} : a * b = 0 ↔ a = 0 ∨ b = 0 := by
+  apply flip Iff.intro
+  intro h
+  cases h <;> (rename_i h; subst h)
+  rw [zero_mul]
+  rw [mul_zero]
+  induction a using ind with | mk a =>
+  induction b using ind with | mk b =>
+  rw [mk_mul, mk_zero]
+  intro h
+  replace h := exact h
+  suffices a ≈ 0 ∨ b ≈ 0 by
+    cases this
+    apply Or.inl
+    apply sound
+    assumption
+    apply Or.inr
+    apply sound
+    assumption
+  induction a generalizing b with
+  | nil a =>
+    induction b with
+    | nil b => revert a b; decide
+    | bit b bs ih =>
+      cases a
+      left
+      rfl
+      rw [Bits.mul.nil_mul] at h
+      unfold Bits.nil_mul at h
+      dsimp at h
+      replace h := Bits.trans (Bits.symm (Bits.neg_eq_neg_naive _)) h
+      cases b <;> unfold Bits.neg_naive at h
+      right
+      apply Bits.bit_nil
+      cases ih (by
+        rw [Bits.mul.nil_mul]
+        apply Bits.trans (Bits.neg_eq_neg_naive _)
+        cases h
+        assumption)
+      contradiction
+      assumption
+      contradiction
+  | bit a as ih =>
+    induction b with
+    | nil b =>
+      cases b
+      right
+      rfl
+      rw [Bits.mul.mul_nil] at h
+      unfold Bits.nil_mul at h
+      dsimp at h
+      replace h := Bits.trans (Bits.symm (Bits.neg_eq_neg_naive _)) h
+      cases a <;> unfold Bits.neg_naive at h
+      left
+      apply Bits.bit_nil
+      cases ih (Bits.nil true) (by
+        rw [Bits.mul.mul_nil]
+        apply Bits.trans (Bits.neg_eq_neg_naive _)
+        cases h
+        assumption)
+      assumption
+      contradiction
+      contradiction
+    | bit b bs ihb =>
+      rw [Bits.mul.bit_mul_bit] at h
+      generalize cdef:(a && b) = c
+      rw [cdef] at h
+      cases h
+      rename_i h
+      replace h := sound h
+      repeat rw [←mk_add] at h
+      cases (Bool.and_eq_false_iff _ _).mp cdef <;> (rename_i g; subst g; clear cdef)
+      · rw [Bits.bit_mul.false, ←mk_zero, add.add_zero, mk_add] at h
+        replace h : mk (Bits.bit_mul b as + Bits.bit false (bs * as)) = 0 := by
+          rw [mk_zero]
+          apply sound
+          apply Bits.trans
+          apply Bits.add.spec
+          rfl
+          apply Bits.bit_bit
+          apply Bits.mul.comm
+          apply exact
+          exact h
+        replace h : mk (Bits.bit_mul b as + Bits.bit false bs * as) = 0 := by
+          rw [mk_zero, ←mk_add, ←mk_mul, ←sound (Bits.mul.two_mul _),
+            ←mk_mul, mul.assoc, mk_mul, mk_mul, sound (Bits.mul.two_mul _),
+            mk_add]
+          assumption
+        rw [sound (@Bits.bit_mul_add_mul b as bs), ←mk_mul, mul.comm, mk_mul, mk_zero] at h
+        replace h := exact h
+        cases ih _ h
+        left
+        apply Bits.bit_nil; assumption
+        right
+        assumption
+      · rw [Bits.bit_mul.false, ←mk_zero, add.zero_add, mk_add] at h
+        replace h : mk (Bits.bit_mul a bs + Bits.bit false as * bs) = 0 := by
+          rw [mk_zero, ←mk_add, ←mk_mul, ←sound (Bits.mul.two_mul _),
+            ←mk_mul, mul.assoc, mk_mul, mk_mul, sound (Bits.mul.two_mul _),
+            mk_add]
+          assumption
+        rw [sound (@Bits.bit_mul_add_mul _ _ _), mk_zero] at h
+        replace h := exact h
+        cases ihb h
+        left
+        assumption
+        right
+        apply Bits.bit_nil; assumption
+
+def BitInt.mul.pos_of_pos_of_pos' {a b: BitInt} : 0 ≤ a -> 0 ≤ b -> 0 ≤ a * b := by
+  intro ha hb
+  induction a using strongInduction₂ with
+  | zero => rw [zero_mul]
+  | succ a anonneg ih =>
+    rw [succ_mul]
+    apply add.zero_le
+    apply ih
+    assumption
+    assumption
+  | pred a anonpos _ =>
+    have := lt_irrefl <| lt_of_le_of_lt (le_trans anonpos ha) pred_self_lt
+    contradiction
+
+def BitInt.mul.pos_of_pos_of_pos {a b: BitInt} : 0 < a -> 0 < b -> 0 < a * b := by
+  intro ha hb
+  cases lt_or_eq_of_le <| mul.pos_of_pos_of_pos' (le_of_lt ha) (le_of_lt hb) <;> rename_i h
+  assumption
+  cases mul.eq_zero_iff.mp h.symm
+  all_goals
+    rename_i g
+    subst g
+    contradiction
 
 def BitInt.shl.succ (a: BitInt) (n: nat) : a.shl (n.succ) = (2 * a).shl n := by
   induction a using ind with | mk a =>
