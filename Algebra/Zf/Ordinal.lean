@@ -367,7 +367,7 @@ instance Zf.IsOrdinal.sUnion (ordx: ∀x₀ ∈ x, Zf.IsOrdinal x₀) : Zf.IsOrd
     have ordb := ordd.mem b_in_d
     apply Zf.IsOrdinal.mem_total <;> assumption
 
-def Zf.IsOrdinal.sInter (ordx: ∀x₀ ∈ x, Zf.IsOrdinal x₀) (h: x.Nonempty) : Zf.IsOrdinal (⋂₀ x) where
+def Zf.IsOrdinal.sInter {x: Zf} (ordx: ∀x₀ ∈ x, Zf.IsOrdinal x₀) (h: x.Nonempty) : Zf.IsOrdinal (⋂₀ x) where
   mem_is_sub := by
     intro a a_in_sunionx b b_in_a
     have mem := (mem_sInter h).mp a_in_sunionx
@@ -411,21 +411,15 @@ instance Zf.IsLimitOrdinal.ω₀ : Zf.IsLimitOrdinal ω₀ where
     have ⟨n,prf⟩ := mem_ω₀.mp a_in_omega
     have ⟨m,prf⟩ := mem_ω₀.mp b_in_omega
     subst a; subst b;
-    cases h:compare n m
-    apply Or.inl
+    rcases compare_linear n m with n_lt_m | n_eq_m | m_lt_n
+    left
     apply mem_of_nat.mpr
     exists n
-    apply Or.inr
-    apply Or.inl
-    rw [eq_of_compare_eq h]
-    apply Or.inr
-    apply Or.inr
+    right; left
+    rw [n_eq_m]
+    right; right
     apply mem_of_nat.mpr
     exists m
-    apply And.intro
-    apply gt_of_compare
-    assumption
-    rfl
   not_succ := by
     intro x h
     have := (@mem_ω₀ x).mp
@@ -487,20 +481,25 @@ def Zf.IsLimitOrdinal.sUnion [ordx: Zf.IsLimitOrdinal x] : ⋃₀ x = x := by
   assumption
   exact mem_succ.mpr (.inl rfl)
 
+def Zf.IsOrdinal.empty_mem [ordx: Zf.IsOrdinal x] (h: x.Nonempty) : ∅ ∈ x := by
+  obtain ⟨x₀, mem⟩ := h
+  apply ClassicLogic.byCases x₀.Nonempty
+  intro h
+  have ordx₀ := ordx.mem mem
+  exact ordx.mem_is_sub _ mem _ (empty_mem h)
+  intro h
+  cases Zf.not_nonempty _ h
+  assumption
+termination_by x
+
 def Zf.IsOrdinal.sInter_eq_empty [ordx: Zf.IsOrdinal x] : ⋂₀ x = ∅ := by
   apply ext_empty
   intro a h
-  apply (Zf.sUnion_least_upper_bound _ _).mpr
-  intro a a_in_xsucc
-  cases mem_succ.mp a_in_xsucc
-  subst x
-  rfl
-  apply ordx.mem_is_sub
-  assumption
-  intro a a_in_x
-  apply mem_sUnion.mpr
-  exists a.succ
-  apply And.intro
-  apply succ_mem_succ
-  assumption
-  exact mem_succ.mpr (.inl rfl)
+  apply ClassicLogic.byCases x.Nonempty
+  intro xnonempty
+  have := Zf.not_mem_empty _ <| (Zf.mem_sInter xnonempty).mp h ∅ (empty_mem xnonempty)
+  contradiction
+  intro notnonempty
+  cases Zf.not_nonempty _ notnonempty
+  rw [Zf.sInter_empty] at h
+  exact Zf.not_mem_empty _ h

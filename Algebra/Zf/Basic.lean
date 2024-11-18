@@ -31,7 +31,7 @@ def Zf.Pre.Equiv.right' : ∀{a b}, Pre.Equiv a b -> (∀b₀, ∃a₀, Zf.Pre.E
 inductive Zf.Pre.Mem.{u,v} (a: Zf.Pre.{u}) : Zf.Pre.{v} -> Prop where
 | intro (b₀: β) : Equiv a (bmem b₀) -> Mem a (.intro β bmem)
 
-instance Zf.Pre.MembershipInst : Membership Zf.Pre Zf.Pre := ⟨Zf.Pre.Mem⟩
+instance Zf.Pre.MembershipInst : Membership Zf.Pre Zf.Pre := ⟨flip Zf.Pre.Mem⟩
 
 def Zf.Pre.mem_iff { a b: Zf.Pre } : (b ∈ a) ↔ ∃a₀: a.ty, b.Equiv (a.mem a₀) :=by
   cases a; cases b
@@ -143,7 +143,7 @@ def Zf.Mem.{u,v} : Zf.{u} -> Zf.{v} -> Prop := by
   apply Zf.Pre.Mem.intro d₀
   exact (a_eq_c.symm.trans eqv).trans prf
 
-instance Zf.MembershipInst.{u} : Membership Zf.{u} Zf.{u} := ⟨Zf.Mem⟩
+instance Zf.MembershipInst.{u} : Membership Zf.{u} Zf.{u} := ⟨flip Zf.Mem⟩
 
 def Zf.mem.def (a b: Zf) : (a ∈ b) = Zf.Mem a b := rfl
 def Zf.mk_mem {a b: Zf.Pre} : (mk a ∈ mk b) ↔ (a ∈ b) := by
@@ -232,6 +232,10 @@ def Zf.mem_wf : @WellFounded Zf (· ∈ ·) := by
   apply ih
   apply mk_mem.mp
   assumption
+
+instance : WellFoundedRelation Zf where
+  rel a b := a ∈ b
+  wf := Zf.mem_wf
 
 instance Zf.Pre.Subset : HasSubset Zf.Pre.{u} where
   Subset a b := ∀x: Zf.Pre.{u}, x ∈ a -> x ∈ b
@@ -391,7 +395,7 @@ def Class.Mem (a b: Class) := by
   apply (x_eq_y _).mp
   assumption
 
-instance : Membership Class Class := ⟨Class.Mem⟩
+instance : Membership Class Class := ⟨flip Class.Mem⟩
 
 def Class.mem.def (a b: Class) : (a ∈ b) = Class.Mem a b := rfl
 def Class.mk_mem {a: Class} {b: Zf -> Prop} :
@@ -958,4 +962,8 @@ def Zf.sInter_lower_bound (a: Zf) (h: a.Nonempty) : ∀a₀ ∈ a, ⋂₀a ⊆ a
 -- ⋂₀∅ should be the collection of all sets, but that's not a set
 -- and making ⋂₀ return a Class would be messy
 def Zf.sInter_empty : ⋂₀ (∅: Zf) = ∅ := by
-  sorry
+  apply ext_empty
+  intro a a_mem_sinter
+  have ⟨a_sunion,_⟩ := mem_sep.mp a_mem_sinter
+  have ⟨z,z_in_empty,_⟩ := mem_sUnion.mp a_sunion
+  exact not_mem_empty _ z_in_empty

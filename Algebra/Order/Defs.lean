@@ -113,6 +113,15 @@ def lt_or_le (a b: α) : a < b ∨ b ≤ a := by
   exact .inl ab
   exact .inr (le_of_eq ab.symm)
 
+def compare_linear (a b: α) : a < b ∨ a = b ∨ b < a := by
+  cases lt_or_le a b
+  left; assumption
+  right
+  rename_i h
+  cases lt_or_eq_of_le h
+  right; assumption
+  left; symm; assumption
+
 class IsLinearOrder (α: Type _) [LT α] [LE α] [Min α] [Max α] extends IsLinearOrder' α: Prop where
   min_iff_le_left: ∀{a b: α}, a ≤ b ↔ min a b = a := by
     intro a b
