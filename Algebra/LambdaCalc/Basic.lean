@@ -734,6 +734,19 @@ def Term.Chain.AppArg  :
     apply Reduce.AppArg
     repeat assumption
 
+def Term.substAt_weakenN (arg v: Term) :
+  n ≤ m -> arg.substAt n (v.weakenN m.succ) = v.weakenN m := by
+   intro h
+   induction m with
+   | zero =>
+    cases Nat.le_zero.mp h
+    rw [weakenN, weakenN, ←subst, weaken_subst]
+    rfl
+   | succ m ih =>
+    cases n with
+    | zero => sorry
+    | succ n => sorry
+
 def Term.substAt_subst' (n: Nat) (v body: Term) {arg_val: Term} :
   Term.substAt (arg_val.weakenN n) n (Term.substAt (v.weakenN n.succ) n.succ body) =
   Term.substAt (v.weakenN n) n (Term.substAt (arg_val.weakenN n.succ) n body) := by
@@ -755,7 +768,9 @@ def Term.substAt_subst' (n: Nat) (v body: Term) {arg_val: Term} :
     subst id
     rw [if_neg (Nat.succ_ne_self _), if_neg (Nat.not_lt_of_le (Nat.le_succ _))]
     dsimp
-    sorry
+    · rw [substAt, if_pos rfl]
+
+      sorry
     split
     split; subst id
     sorry
