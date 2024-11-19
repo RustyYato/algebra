@@ -847,6 +847,9 @@ def Zf.sub.trans {a b c: Zf} : a ⊆ b -> b ⊆ c -> a ⊆ c := fun ab bc x mem 
 def Zf.inter_sub_left (a b: Zf) : a ∩ b ⊆ a := fun _ mem => (mem_inter.mp mem).left
 def Zf.inter_sub_right (a b: Zf) : a ∩ b ⊆ b := fun _ mem => (mem_inter.mp mem).right
 
+def Zf.sub_union_left (a b: Zf) : a ⊆ a ∪ b := fun _ mem => (mem_union.mpr (.inl mem))
+def Zf.sub_union_right (a b: Zf) : b ⊆ a ∪ b := fun _ mem => (mem_union.mpr (.inr mem))
+
 def Zf.sdiff (a b: Zf) : Zf := a.sep (· ∉ b)
 
 instance : SDiff Zf := ⟨.sdiff⟩
@@ -967,3 +970,38 @@ def Zf.sInter_empty : ⋂₀ (∅: Zf) = ∅ := by
   have ⟨a_sunion,_⟩ := mem_sep.mp a_mem_sinter
   have ⟨z,z_in_empty,_⟩ := mem_sUnion.mp a_sunion
   exact not_mem_empty _ z_in_empty
+
+def Zf.mem_inductionOn (X: Zf)
+  (motive: Zf -> Prop) :
+  (mem: ∀x ∈ X, (∀y ∈ X, y ∈ x -> motive y) -> (motive x)) ->
+  ∀x ∈ X, motive x := by
+  intro mem x x_in_X
+  induction x using mem_wf.induction with
+  | h x ih =>
+  apply mem
+  assumption
+  intro y y_in_X y_in_x
+  apply ih
+  assumption
+  assumption
+
+def Zf.exists_min_element (Y: Zf):
+  Nonempty Y ->
+  ∃x ∈ Y, ∀y ∈ Y, y ∉ x :=by
+  intro nonempty_Y
+  apply ClassicLogic.byContradiction
+  intro h
+  have := Zf.mem_inductionOn Y (fun x => x ∉ Y) (by
+    intro x _ ih x_in_Y
+    dsimp at ih
+    have := not_and.mp <| not_exists.mp h x
+    have ⟨ w, h ⟩ := ClassicLogic.not_forall.mp (this x_in_Y)
+    have ⟨ w_in_Y, w_in_x ⟩ := ClassicLogic.not_imp.mp h
+    have := ClassicLogic.not_not.mp w_in_x
+    have := ih w w_in_Y this
+    contradiction)
+  clear h
+  dsimp at this
+  have ⟨y₀,y₀_in_Y⟩ := nonempty_Y
+  have := this y₀ y₀_in_Y
+  contradiction

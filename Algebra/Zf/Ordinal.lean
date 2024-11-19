@@ -222,41 +222,6 @@ instance Zf.IsOrdinal.inter
     have ⟨b_in_x,_⟩ := mem_inter.mp b_in_xy
     apply ordx.mem_is_tri <;> assumption
 
-def Zf.mem_inductionOn (X: Zf)
-  (motive: Zf -> Prop) :
-  (mem: ∀x ∈ X, (∀y ∈ X, y ∈ x -> motive y) -> (motive x)) ->
-  ∀x ∈ X, motive x := by
-  intro mem x x_in_X
-  induction x using mem_wf.induction with
-  | h x ih =>
-  apply mem
-  assumption
-  intro y y_in_X y_in_x
-  apply ih
-  assumption
-  assumption
-
-def Zf.exists_min_element (Y: Zf):
-  Nonempty Y ->
-  ∃x ∈ Y, ∀y ∈ Y, y ∉ x :=by
-  intro nonempty_Y
-  apply ClassicLogic.byContradiction
-  intro h
-  have := Zf.mem_inductionOn Y (fun x => x ∉ Y) (by
-    intro x _ ih x_in_Y
-    dsimp at ih
-    have := not_and.mp <| not_exists.mp h x
-    have ⟨ w, h ⟩ := ClassicLogic.not_forall.mp (this x_in_Y)
-    have ⟨ w_in_Y, w_in_x ⟩ := ClassicLogic.not_imp.mp h
-    have := ClassicLogic.not_not.mp w_in_x
-    have := ih w w_in_Y this
-    contradiction)
-  clear h
-  dsimp at this
-  have ⟨y₀,y₀_in_Y⟩ := nonempty_Y
-  have := this y₀ y₀_in_Y
-  contradiction
-
 def Zf.IsOrdinal.mem_or_eq_of_sub
   [ordx: Zf.IsOrdinal x]
   [ordy: Zf.IsOrdinal y] :
@@ -503,3 +468,161 @@ def Zf.IsOrdinal.sInter_eq_empty [ordx: Zf.IsOrdinal x] : ⋂₀ x = ∅ := by
   cases Zf.not_nonempty _ notnonempty
   rw [Zf.sInter_empty] at h
   exact Zf.not_mem_empty _ h
+
+def Ordinal := { x: Zf // x.IsOrdinal }
+def Ordinal.mk (x: Zf) [h: x.IsOrdinal] : Ordinal := ⟨x, h⟩
+
+instance (o: Ordinal) : Zf.IsOrdinal o.val := o.property
+
+instance : LE Ordinal := ⟨(·.val ⊆ ·.val)⟩
+instance : LT Ordinal := ⟨(·.val ∈ ·.val)⟩
+
+def Ordinal.le_of_lt {a b: Ordinal} : a < b -> a ≤ b := (b.property.toIsTransitive.mem_is_sub _ ·)
+def Ordinal.le_of_eq {a b: Ordinal} : a = b -> a ≤ b
+| .refl _ => (Zf.sub.refl _)
+
+def Ordinal.val.inj {a b: Ordinal} : a.val = b.val -> a = b := by
+  intro h
+  cases a; cases b
+  congr
+
+def Ordinal.lt_or_eq_of_le' {a b: Ordinal} : a ≤ b -> a < b ∨ a = b := by
+  intro h
+  rcases Zf.IsOrdinal.mem_or_eq_of_sub h with a_lt_b | a_eq_b
+  left; assumption
+  right; apply val.inj; assumption
+
+def Ordinal.succ (a: Ordinal) : Ordinal where
+  val := a.val.succ
+  property := inferInstance
+
+def Ordinal.le_of_lt_succ {a b: Ordinal} : a < b.succ -> a ≤ b := by
+  intro h
+  cases Zf.mem_succ.mp h
+  apply le_of_eq
+  apply val.inj
+  assumption
+  apply le_of_lt
+  assumption
+
+def Ordinal.min (a b: Ordinal) : Ordinal where
+  val := a.val ∩ b.val
+  property := inferInstance
+
+def Ordinal.max (a b: Ordinal) : Ordinal where
+  val := a.val ∪ b.val
+  property := inferInstance
+
+instance : Min Ordinal where
+  min := Ordinal.min
+instance : Max Ordinal where
+  max := Ordinal.max
+
+instance : IsLinearOrder Ordinal where
+  le_antisymm := by
+    intro a b ab ba
+    apply Ordinal.val.inj
+    apply Zf.ext_sub <;> assumption
+  le_total := by
+    intro a b
+    rcases Zf.IsOrdinal.mem_total a.property b.property with a_lt_b | a_eq_b | b_lt_a
+    left
+    apply Ordinal.le_of_lt; assumption
+    left
+    apply Ordinal.le_of_eq; apply Ordinal.val.inj; assumption
+    right
+    apply Ordinal.le_of_lt; assumption
+  le_complete := by
+    intro a b
+    rcases Zf.IsOrdinal.mem_total a.property b.property with a_lt_b | a_eq_b | b_lt_a
+    left
+    apply Ordinal.le_of_lt; assumption
+    left
+    apply Ordinal.le_of_eq; apply Ordinal.val.inj; assumption
+    right
+    intro a_le_b
+    exact Zf.mem_wf.irrefl (a_le_b _ b_lt_a)
+  le_trans := by
+    intro a b c
+    apply Zf.sub.trans
+  lt_iff_le_and_not_le := by
+    intro a b
+    apply Iff.intro
+    intro a_lt_b
+    apply And.intro
+    apply Ordinal.le_of_lt
+    assumption
+    intro g
+    exact Zf.mem_wf.irrefl (g _ a_lt_b)
+    intro ⟨h, g⟩
+    cases Ordinal.lt_or_eq_of_le' h
+    assumption
+    subst b
+    have := g (Zf.sub.refl _)
+    contradiction
+  min_iff_le_left := by
+    intro a b
+    apply Iff.intro
+    intro h
+    apply Ordinal.val.inj
+    show a.val ∩ b.val = a.val
+    apply Zf.ext_sub
+    apply Zf.inter_sub_left
+    intro x mem
+    apply Zf.mem_inter.mpr
+    apply And.intro
+    assumption
+    apply h
+    assumption
+    intro h
+    rw [←h]
+    apply Zf.inter_sub_right
+  min_iff_le_right := by
+    intro a b
+    apply Iff.intro
+    intro h
+    apply Ordinal.val.inj
+    show a.val ∩ b.val = b.val
+    apply Zf.ext_sub
+    apply Zf.inter_sub_right
+    intro x mem
+    apply Zf.mem_inter.mpr
+    apply And.intro
+    apply h
+    assumption
+    assumption
+    intro h
+    rw [←h]
+    apply Zf.inter_sub_left
+  max_iff_le_left := by
+    intro a b
+    apply Iff.intro
+    intro h
+    apply Ordinal.val.inj
+    show a.val ∪ b.val = b.val
+    apply Zf.ext_sub
+    intro x mem
+    cases Zf.mem_union.mp mem
+    apply h
+    assumption
+    assumption
+    apply Zf.sub_union_right
+    intro h
+    rw [←h]
+    apply Zf.sub_union_left
+  max_iff_le_right := by
+    intro a b
+    apply Iff.intro
+    intro h
+    apply Ordinal.val.inj
+    show a.val ∪ b.val = a.val
+    apply Zf.ext_sub
+    intro x mem
+    cases Zf.mem_union.mp mem
+    assumption
+    apply h
+    assumption
+    apply Zf.sub_union_left
+    intro h
+    rw [←h]
+    apply Zf.sub_union_right
