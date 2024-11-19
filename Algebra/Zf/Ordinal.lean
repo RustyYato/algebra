@@ -626,3 +626,16 @@ instance : IsLinearOrder Ordinal where
     intro h
     rw [←h]
     apply Zf.sub_union_right
+
+def Ordinal.inf (a: Zf) (mem: ∀x ∈ a, x.IsOrdinal) : Ordinal where
+  val := ⋂₀ a
+  property := by
+    if h:a.Nonempty then
+      exact Zf.IsOrdinal.sInter mem h
+    else
+      rw [Zf.not_nonempty _ h, Zf.sInter_empty]
+      exact Zf.IsOrdinal.zero
+
+def Ordinal.sup (a: Zf) (mem: ∀x ∈ a, x.IsOrdinal) : Ordinal where
+  val := ⋃₀ a
+  property := Zf.IsOrdinal.sUnion mem
