@@ -5,12 +5,9 @@ import Algebra.AxiomBlame
 notation "ℕ" => Nat
 notation "ℤ" => Int
 
-class Zero (α) where
-  zero: α
 class One (α) where
   one: α
 
-instance Zero.ofNat [Zero α] : OfNat α 0 := ⟨ Zero.zero ⟩
 instance One.ofNat [One α] : OfNat α 1 := ⟨ One.one ⟩
 
 variable {a b c k: a₀}
@@ -522,7 +519,7 @@ def intCast_pred [IsRing R₀] (a: ℤ) : (IntCast.intCast (a - 1): R₀) = IntC
 
 def intCast_add [IsRing R₀] (a b: ℤ) : (IntCast.intCast (a + b): R₀) = IntCast.intCast a + IntCast.intCast b := by
   induction b using Int.induction with
-  | zero => rw [intCast_zero, add_zero, Int.add_zero]
+  | zero => rw [intCast_zero, Int.add_zero, add_zero]
   | succ b ih => rw [←Int.add_assoc, intCast_succ, intCast_succ, ih, add_assoc]
   | pred b ih => rw [←Int.add_sub_assoc, intCast_pred, intCast_pred, ih, sub_eq_add_neg, add_assoc, sub_eq_add_neg]
 

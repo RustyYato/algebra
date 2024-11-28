@@ -1,4 +1,3 @@
-import Algebra.Fintype.Basic
 import Algebra.Fintype.Fin
 
 def Fin.equiv_fin: Ty.EmbedIso (fin (.ofNat n)) (Fin n) where
@@ -23,5 +22,5 @@ def Fin.equiv_fin: Ty.EmbedIso (fin (.ofNat n)) (Fin n) where
 instance Fin.FintypeInst : Fintype (Fin n) :=
   Fintype.of_equiv (Fin.equiv_fin)
 
-def Fin.card (f: Fintype (Fin n)) : f.card = .ofNat n := by
-  rw [←Fintype.card_of_equiv inferInstance f Fin.equiv_fin, fin.card]
+def Fin.card (f: Fintype (Fin n)) : f.card = n := by
+  rw [←Fintype.card_of_equiv inferInstance f Fin.equiv_fin, fin.card, nat.ofNat_toNat]
