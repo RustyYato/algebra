@@ -1,7 +1,7 @@
 import Algebra.Function.Basic
 import Algebra.ClassicLogic
 
-class IsLinearOrder' (α: Type _) [LT α] [LE α] [Min α] [Max α]: Prop where
+class IsLinearOrder' (α: Type _) [LT α] [LE α]: Prop where
   lt_iff_le_and_not_le: ∀{a b: α}, a < b ↔ a ≤ b ∧ ¬b ≤ a
   le_antisymm: ∀{a b: α}, a ≤ b -> b ≤ a -> a = b
   le_total: ∀a b: α, a ≤ b ∨ b ≤ a
