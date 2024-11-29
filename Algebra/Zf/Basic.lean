@@ -106,6 +106,8 @@ def HasEquiv.Equiv.trans [s: Setoid α] {a b c: α} : a ≈ b -> b ≈ c -> a �
 def Zf := Equiv Zf.Pre.setoid
 instance : QuotientLike Zf.Pre.setoid Zf := instQuotientLikeEquiv
 
+local notation "⟦" a "⟧" => (QuotLike.mk (a: Zf.Pre): Zf)
+
 def Zf.Mem.{u,v} : Zf.{u} -> Zf.{v} -> Prop := by
   apply quot.liftProp₂ Zf.Pre.Mem
   intro a b c d a_eq_c b_eq_d mem
@@ -121,7 +123,7 @@ def Zf.Mem.{u,v} : Zf.{u} -> Zf.{v} -> Prop := by
 instance Zf.MembershipInst.{u} : Membership Zf.{u} Zf.{u} := ⟨flip Zf.Mem⟩
 
 def Zf.mem.def (a b: Zf) : (a ∈ b) = Zf.Mem a b := rfl
-def Zf.mk_mem {a b: Zf.Pre} : (⟦a⟧ ∈ (⟦b⟧: Zf)) ↔ (a ∈ b) := by
+def Zf.mk_mem {a b: Zf.Pre} : ⟦a⟧ ∈ ⟦b⟧ ↔ a ∈ b := by
   rw [mem.def]
   unfold Mem
   apply quot.liftProp₂_mk
@@ -218,7 +220,7 @@ instance Zf.Pre.Subset : HasSubset Zf.Pre.{u} where
 instance Zf.Subset : HasSubset Zf.{u} where
   Subset a b := ∀x: Zf.{u}, x ∈ a -> x ∈ b
 
-def Zf.mk_subset (a b: Zf.Pre) : ⟦a⟧ ⊆ (⟦b⟧: Zf) ↔ a ⊆ b := by
+def Zf.mk_subset (a b: Zf.Pre) : ⟦a⟧ ⊆ ⟦b⟧ ↔ a ⊆ b := by
   apply Iff.intro
   · intro sub x x_in_a
     apply mk_mem.mp
@@ -323,7 +325,7 @@ def Zf.not_empty_nonempty : ¬Zf.Nonempty ∅ := by
   have := not_mem_empty _ mem
   contradiction
 
-def Zf.mk_nonempty (a: Zf.Pre) : (⟦a⟧: Zf).Nonempty ↔ a.Nonempty := by
+def Zf.mk_nonempty (a: Zf.Pre) : ⟦a⟧.Nonempty ↔ a.Nonempty := by
   apply Iff.intro
   · intro ⟨b,mem⟩
     induction b using quot.ind with | mk b =>
@@ -429,7 +431,7 @@ def Zf.Pre.union : Zf.Pre.{u} -> Zf.Pre.{u} -> Zf.Pre.{u}
   | .inr x => bmem x
 
 def Zf.union : Zf.{u} -> Zf.{u} -> Zf.{u} := by
-  apply quot.lift₂ (fun a b => (⟦Zf.Pre.union a b⟧: Zf))
+  apply quot.lift₂ (fun a b => ⟦Zf.Pre.union a b⟧)
   intro a b c d ac bd
   apply quot.sound
   cases a with | intro a amem =>
@@ -455,7 +457,7 @@ instance : Union Zf.{u} := ⟨Zf.union.{u}⟩
 
 def Zf.Pre.union.def (a b: Zf.Pre) : a ∪ b = Zf.Pre.union a b := rfl
 def Zf.union.def (a b: Zf) : a ∪ b = Zf.union a b := rfl
-def Zf.mk_union (a b: Zf.Pre) : (⟦a⟧: Zf) ∪ ⟦b⟧ = ⟦a ∪ b⟧ := by
+def Zf.mk_union (a b: Zf.Pre) : ⟦a⟧ ∪ ⟦b⟧ = ⟦a ∪ b⟧ := by
   rw [union.def, union, quot.lift₂_mk]
   rfl
 
@@ -496,7 +498,7 @@ def Zf.Pre.sep (pred: (Zf.Pre.{u} -> Prop)) : Zf.Pre.{u} -> Zf.Pre.{u}
 | .intro a amem => .intro { x: a // pred (amem x) } (amem ∘ Subtype.val)
 
 def Zf.sep (pred: (Zf.{u} -> Prop)) : Zf.{u} -> Zf.{u} := by
-  apply quot.lift (fun _ => (⟦_⟧: Zf)) _
+  apply quot.lift (fun _ => ⟦_⟧) _
   apply Zf.Pre.sep
   exact (pred ⟦·⟧)
   intro a b a_eq_b
@@ -584,7 +586,7 @@ def Zf.Pre.mem_powerset {a: Zf.Pre} : ∀{x}, x ∈ a.powerset ↔ x ⊆ a := by
     exists x₀
 
 def Zf.powerset : Zf -> Zf := by
-  apply quot.lift (fun _ => (⟦_⟧: Zf)) _
+  apply quot.lift (fun _ => ⟦_⟧) _
   exact Zf.Pre.powerset
   intro a b a_eq_b
   dsimp
@@ -606,7 +608,7 @@ def Zf.powerset : Zf -> Zf := by
   apply Zf.sub_congr a_eq_b.symm
   exact Zf.Pre.mem_powerset.mp mem
 
-def Zf.mk_powerset (a: Zf.Pre) : (⟦a⟧: Zf).powerset = ⟦a.powerset⟧ := by
+def Zf.mk_powerset (a: Zf.Pre) : ⟦a⟧.powerset = ⟦a.powerset⟧ := by
   rw [powerset, quot.lift_mk]
 
 def Zf.mem_powerset {a: Zf} : ∀{x}, x ∈ a.powerset ↔ x ⊆ a := by
@@ -624,7 +626,7 @@ def Zf.Pre.sUnion : Zf.Pre -> Zf.Pre
 | .intro a amem => .intro ((x: a) × (amem x).ty) fun ⟨a₀,b₀⟩ => (amem a₀).mem b₀
 
 def Zf.sUnion : Zf -> Zf := by
-  apply quot.lift (fun _ => (⟦_⟧: Zf)) _
+  apply quot.lift (fun _ => ⟦_⟧) _
   exact Zf.Pre.sUnion
   dsimp
   intro a b a_eq_b
@@ -648,7 +650,7 @@ instance : SUnion Zf := ⟨.sUnion⟩
 
 def Zf.sUnion.def (a: Zf) : ⋃₀ a = a.sUnion := rfl
 
-def Zf.mk_sUnion (a: Zf.Pre) : ⋃₀ (⟦a⟧: Zf) = ⟦⋃₀ a⟧ := by
+def Zf.mk_sUnion (a: Zf.Pre) : ⋃₀ ⟦a⟧ = ⟦⋃₀ a⟧ := by
   rw [Zf.sUnion.def, sUnion, quot.lift_mk]
   rfl
 
@@ -707,7 +709,7 @@ def Zf.mem_sInter.{u} {a: Zf.{u}} (h: a.Nonempty) : ∀{x: Zf.{u}}, x ∈ ⋂₀
 
 def Zf.Pre.singleton (a: Zf.Pre) : Zf.Pre := .intro Unit <| fun _ => a
 def Zf.singleton : Zf -> Zf := by
-  apply quot.lift (fun _ => (⟦_⟧: Zf)) _
+  apply quot.lift (fun _ => ⟦_⟧) _
   exact .singleton
   intro a b a_eq_b
   apply quot.sound
@@ -860,7 +862,7 @@ def Zf.Pre.map (f: Zf.Pre -> Zf.Pre) : Zf.Pre -> Zf.Pre
 
 def Zf.map : (Zf -> Zf) -> Zf -> Zf := by
   intro f
-  apply quot.lift (fun _ => (⟦_⟧: Zf)) _
+  apply quot.lift (fun _ => ⟦_⟧) _
   exact Zf.Pre.map (unwrapQuot ∘ f ∘ (⟦·⟧))
   dsimp
   intro a b a_eq_b
@@ -881,7 +883,7 @@ def Zf.map : (Zf -> Zf) -> Zf -> Zf := by
     dsimp
     rw [quot.sound prf]
 
-def Zf.mk_map (f: Zf -> Zf) (a: Zf.Pre) : (⟦a⟧: Zf).map f = ⟦(a.map (unwrapQuot ∘ f ∘ (⟦·⟧)))⟧ := by
+def Zf.mk_map (f: Zf -> Zf) (a: Zf.Pre) : ⟦a⟧.map f = ⟦(a.map (unwrapQuot ∘ f ∘ (⟦·⟧)))⟧ := by
   rw [map, quot.lift_mk]
 
 def Zf.mem_map {f: Zf -> Zf} {a: Zf} : ∀{x}, x ∈ a.map f ↔ ∃a₀ ∈ a, f a₀ = x := by

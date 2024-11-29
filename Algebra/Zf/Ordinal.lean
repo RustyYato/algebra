@@ -4,6 +4,8 @@ import Algebra.ClassicLogic
 import Algebra.WellFounded
 import Algebra.AxiomBlame
 
+local notation "⟦" a "⟧" => (QuotLike.mk (a: Zf.Pre): Zf)
+
 -- a transitive set is one where every member is a subset
 class Zf.IsTransitive (a: Zf) : Prop where
   mem_is_sub: ∀x ∈ a, x ⊆ a
@@ -16,7 +18,7 @@ def Zf.succ (a: Zf) := Insert.insert a a
 
 def Zf.mem_succ {a: Zf} : ∀{x}, x ∈ a.succ ↔ x = a ∨ x ∈ a := Zf.mem_insert
 
-def Zf.mk_succ (a: Zf.Pre) : (⟦a⟧: Zf).succ = ⟦a.succ⟧ := by
+def Zf.mk_succ (a: Zf.Pre) : ⟦a⟧.succ = ⟦a.succ⟧ := by
   cases a with | intro a amem =>
   apply ext
   intro x

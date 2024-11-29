@@ -390,6 +390,8 @@ instance : QuotientLike Fract.setoid ℚ where
   sound := Rat.sound
   exact := Rat.exact
 
+local notation "⟦" a "⟧" => (QuotLike.mk (a: Fract): Rat)
+
 def Fract.add (a b: Fract) : Fract := .mk (a.num * int.of_nat b.den + b.num * int.of_nat a.den) (a.den * b.den) (nat.mul.lt _ _ _ _ a.den_pos b.den_pos)
 
 instance : Add Fract := ⟨.add⟩
@@ -919,11 +921,15 @@ def Rat.lt' (a b: ℚ) := a.num * int.of_nat b.den < b.num * int.of_nat a.den
 
 def Rat.le : ℚ -> ℚ -> Prop := by
   apply quot.liftProp₂ Fract.le
-  apply Fract.le.spec
+  intro a b c d ac bd h
+  apply (Fract.le.spec a b c d ac bd).mp
+  assumption
 
 def Rat.lt : ℚ -> ℚ -> Prop := by
   apply quot.liftProp₂ Fract.lt
-  apply Fract.lt.spec
+  intro a b c d ac bd h
+  apply (Fract.lt.spec a b c d ac bd).mp
+  assumption
 
 instance : LE ℚ := ⟨Rat.le⟩
 instance : LT ℚ := ⟨Rat.lt⟩

@@ -22,7 +22,7 @@ class QuotLike {α: outParam (Sort u)} (r: outParam (α -> α -> Prop)) (Q: Sort
   ind: ∀{motive: Q -> Prop}, (mk: ∀x, motive (mk x)) -> ∀q, motive q := by exact Quot.ind
   sound: ∀x y, r x y -> mk x = mk y := by intros; apply Quot.sound; assumption
 
-notation "⟦" a "⟧" => QuotLike.mk a
+local notation "⟦" a "⟧" => QuotLike.mk a
 def unwrapQuot [@QuotLike α r Q] : Q -> α := QuotLike.unwrapQuot
 def mk_unwrapQuot [@QuotLike α r Q] (q: Q) : ⟦unwrapQuot q⟧ = q := QuotLike.mk_unwrapQuot q
 def quot.ind [@QuotLike α r Q] : {motive: Q -> Prop} -> (mk: ∀x, motive (⟦x⟧)) -> ∀q, motive q := QuotLike.ind
