@@ -1,6 +1,7 @@
 import Algebra.Equiv
 import Algebra.ClassicLogic
 import Algebra.WellFounded
+import Algebra.QuotLike.Basic
 
 class SUnion (α: Type _) where
   sUnion : α -> α
@@ -103,36 +104,38 @@ def HasEquiv.Equiv.symm [s: Setoid α] {a b: α} : a ≈ b -> b ≈ a := s.iseqv
 def HasEquiv.Equiv.trans [s: Setoid α] {a b c: α} : a ≈ b -> b ≈ c -> a ≈ c := s.iseqv.trans
 
 def Zf := Equiv Zf.Pre.setoid
-def Zf.mk : Zf.Pre -> Zf := Equiv.mk Zf.Pre.setoid
-def Zf.get : Zf -> Zf.Pre := Equiv.get
-def Zf.mk_get : ∀z, mk z.get = z := Equiv.mk_get
-def Zf.ind { motive: Zf -> Prop } : (mk: ∀x, motive (mk x)) -> ∀o, motive o := Equiv.ind
-def Zf.lift : (f: Zf.Pre -> α) -> (all_eq: ∀x y, x ≈ y -> f x = f y) -> Zf -> α := Equiv.lift
-def Zf.lift₂ : (f: Zf.Pre -> Zf.Pre -> α) -> (all_eq: ∀a b c d, a ≈ c -> b ≈ d -> f a b = f c d) -> Zf -> Zf -> α := Equiv.lift₂
-def Zf.liftProp : (f: Zf.Pre -> Prop) -> (all_eq: ∀x y, x ≈ y -> (f x -> f y)) -> Zf -> Prop := by
-  intro f alleq
-  apply Equiv.liftProp f
-  intro a b ab
-  apply Iff.intro
-  apply alleq _ _ ab
-  apply alleq _ _ ab.symm
-def Zf.liftProp₂ : (f: Zf.Pre -> Zf.Pre -> Prop) -> (all_eq: ∀a b c d, a ≈ c -> b ≈ d -> (f a b -> f c d)) -> Zf -> Zf -> Prop := by
-  intro f alleq
-  apply Equiv.liftProp₂ f
-  intro a b c d ac bd
-  apply Iff.intro
-  apply alleq _ _ _ _ ac bd
-  apply alleq _ _ _ _ ac.symm bd.symm
-def Zf.lift_mk : lift f all_eq (mk a) = f a := Equiv.lift_mk _ _ _
-def Zf.lift₂_mk : lift₂ f all_eq (mk a) (mk b) = f a b := Equiv.lift₂_mk _ _ _ _
-def Zf.liftProp_mk : liftProp f all_eq (mk a) ↔ f a := Equiv.liftProp_mk _ _ _
-def Zf.liftProp₂_mk : liftProp₂ f all_eq (mk a) (mk b) ↔ f a b := Equiv.liftProp₂_mk _ _ _ _
-def Zf.exact : mk a = mk b -> a ≈ b := Equiv.exact _ _
-def Zf.sound : a ≈ b -> mk a = mk b := Equiv.sound _ _
-def Zf.exists_rep : ∀o, ∃p, mk p = o := Equiv.exists_rep
+instance : QuotientLike Zf.Pre.setoid Zf := instQuotientLikeEquiv
+
+-- def Zf.mk : Zf.Pre -> Zf := Equiv.mk Zf.Pre.setoid
+-- def Zf.get : Zf -> Zf.Pre := Equiv.get
+-- def Zf.mk_get : ∀z, mk z.get = z := Equiv.mk_get
+-- def Zf.ind { motive: Zf -> Prop } : (mk: ∀x, motive (mk x)) -> ∀o, motive o := Equiv.ind
+-- def Zf.lift : (f: Zf.Pre -> α) -> (all_eq: ∀x y, x ≈ y -> f x = f y) -> Zf -> α := Equiv.lift
+-- def Zf.lift₂ : (f: Zf.Pre -> Zf.Pre -> α) -> (all_eq: ∀a b c d, a ≈ c -> b ≈ d -> f a b = f c d) -> Zf -> Zf -> α := Equiv.lift₂
+-- def Zf.liftProp : (f: Zf.Pre -> Prop) -> (all_eq: ∀x y, x ≈ y -> (f x -> f y)) -> Zf -> Prop := by
+--   intro f alleq
+--   apply Equiv.liftProp f
+--   intro a b ab
+--   apply Iff.intro
+--   apply alleq _ _ ab
+--   apply alleq _ _ ab.symm
+-- def Zf.liftProp₂ : (f: Zf.Pre -> Zf.Pre -> Prop) -> (all_eq: ∀a b c d, a ≈ c -> b ≈ d -> (f a b -> f c d)) -> Zf -> Zf -> Prop := by
+--   intro f alleq
+--   apply Equiv.liftProp₂ f
+--   intro a b c d ac bd
+--   apply Iff.intro
+--   apply alleq _ _ _ _ ac bd
+--   apply alleq _ _ _ _ ac.symm bd.symm
+-- def Zf.lift_mk : lift f all_eq (mk a) = f a := Equiv.lift_mk _ _ _
+-- def Zf.lift₂_mk : lift₂ f all_eq (mk a) (mk b) = f a b := Equiv.lift₂_mk _ _ _ _
+-- def Zf.liftProp_mk : liftProp f all_eq (mk a) ↔ f a := Equiv.liftProp_mk _ _ _
+-- def Zf.liftProp₂_mk : liftProp₂ f all_eq (mk a) (mk b) ↔ f a b := Equiv.liftProp₂_mk _ _ _ _
+-- def Zf.exact : mk a = mk b -> a ≈ b := Equiv.exact _ _
+-- def Zf.sound : a ≈ b -> mk a = mk b := Equiv.sound _ _
+-- def Zf.exists_rep : ∀o, ∃p, mk p = o := Equiv.exists_rep
 
 def Zf.Mem.{u,v} : Zf.{u} -> Zf.{v} -> Prop := by
-  apply liftProp₂ Zf.Pre.Mem
+  apply quot.liftProp₂ Zf.Pre.Mem
   intro a b c d a_eq_c b_eq_d mem
   replace a_eq_c : Zf.Pre.Equiv a c := a_eq_c
   cases mem
@@ -146,10 +149,10 @@ def Zf.Mem.{u,v} : Zf.{u} -> Zf.{v} -> Prop := by
 instance Zf.MembershipInst.{u} : Membership Zf.{u} Zf.{u} := ⟨flip Zf.Mem⟩
 
 def Zf.mem.def (a b: Zf) : (a ∈ b) = Zf.Mem a b := rfl
-def Zf.mk_mem {a b: Zf.Pre} : (mk a ∈ mk b) ↔ (a ∈ b) := by
+def Zf.mk_mem {a b: Zf.Pre} : (⟦a⟧ ∈ (⟦b⟧: Zf)) ↔ (a ∈ b) := by
   rw [mem.def]
   unfold Mem
-  apply liftProp₂_mk
+  apply quot.liftProp₂_mk
 
 def Zf.Pre.ulift.{u,v} : Zf.Pre.{u} -> Zf.Pre.{max u v}
 | .intro a amem => Zf.Pre.intro (ULift.{v,u} a) (fun x => (amem x.down).ulift)
@@ -182,15 +185,15 @@ def Zf.Pre.ext (a: Zf.Pre.{u}) (b: Zf.Pre.{v}) : (∀x: Zf.Pre.{max u v}, x ∈ 
     exact ((Zf.Pre.ulift_equiv _).symm.trans prf).symm
 
 def Zf.ext (a b: Zf.{u}) : (∀x: Zf.{u}, x ∈ a ↔ x ∈ b) -> a = b := by
-  induction a using ind with | mk a =>
-  induction b using ind with | mk b =>
+  induction a using quot.ind with | mk a =>
+  induction b using quot.ind with | mk b =>
   intro ext
-  apply sound
+  apply quot.sound
   apply Zf.Pre.ext
   intro x
   apply Iff.intro
-  exact (mk_mem.mp <| (ext (mk x)).mp <| mk_mem.mpr ·)
-  exact (mk_mem.mp <| (ext (mk x)).mpr <| mk_mem.mpr ·)
+  exact (mk_mem.mp <| (ext ⟦x⟧).mp <| mk_mem.mpr ·)
+  exact (mk_mem.mp <| (ext ⟦x⟧).mpr <| mk_mem.mpr ·)
 
 def Zf.Pre.acc_equiv : @Acc Pre (· ∈ ·) a -> Zf.Pre.Equiv a b -> @Acc Zf.Pre (· ∈ ·) b := by
   intro acc ab
@@ -223,12 +226,12 @@ def Zf.Pre.mem_wf : @WellFounded Zf.Pre (· ∈ ·) := by
 def Zf.mem_wf : @WellFounded Zf (· ∈ ·) := by
   apply WellFounded.intro
   intro a
-  induction a using ind with | mk a =>
+  induction a using quot.ind with | mk a =>
   induction a using Zf.Pre.mem_wf.induction with
   | h a ih =>
   apply Acc.intro
   intro b b_in_a
-  induction b using ind with | mk b =>
+  induction b using quot.ind with | mk b =>
   apply ih
   apply mk_mem.mp
   assumption
@@ -243,7 +246,7 @@ instance Zf.Pre.Subset : HasSubset Zf.Pre.{u} where
 instance Zf.Subset : HasSubset Zf.{u} where
   Subset a b := ∀x: Zf.{u}, x ∈ a -> x ∈ b
 
-def Zf.mk_subset (a b: Zf.Pre) : mk a ⊆ mk b ↔ a ⊆ b := by
+def Zf.mk_subset (a b: Zf.Pre) : ⟦a⟧ ⊆ (⟦b⟧: Zf) ↔ a ⊆ b := by
   apply Iff.intro
   · intro sub x x_in_a
     apply mk_mem.mp
@@ -251,7 +254,7 @@ def Zf.mk_subset (a b: Zf.Pre) : mk a ⊆ mk b ↔ a ⊆ b := by
     apply mk_mem.mpr
     assumption
   · intro sub x x_in_a
-    induction x using ind with | mk x =>
+    induction x using quot.ind with | mk x =>
     apply mk_mem.mpr
     apply sub
     apply mk_mem.mp
@@ -294,10 +297,10 @@ def Zf.congr_sub {a b k: Zf.Pre} : Zf.Pre.Equiv a b -> a ⊆ k -> b ⊆ k := by
   exact mem_congr a_eq_b.symm x_mem_b
 
 def Zf.ulift.{u,v} (a: Zf.{u}) : Zf.{max u v} := by
-  apply Zf.lift (mk ∘ Pre.ulift) _ a
+  apply quot.lift (⟦·.ulift⟧) _ a
   dsimp
   intro a b ab
-  apply sound
+  apply quot.sound
   apply Zf.Pre.Equiv.trans
   apply Zf.Pre.ulift_equiv
   apply flip Zf.Pre.Equiv.trans
@@ -306,21 +309,21 @@ def Zf.ulift.{u,v} (a: Zf.{u}) : Zf.{max u v} := by
   assumption
 
 def Zf.Pre.empty : Pre := ⟨ Empty, Empty.elim ⟩
-def Zf.empty : Zf := Zf.mk .empty
+def Zf.empty : Zf := ⟦.empty⟧
 
 instance : EmptyCollection Zf.Pre := ⟨.ulift .empty⟩
 instance : EmptyCollection Zf := ⟨.ulift .empty⟩
 
 def Zf.empty.def : ∅ = Zf.ulift .empty := rfl
 
-def Zf.mk_empty : ∅ = mk ∅ := by
-  rw [empty.def, ulift, empty, lift_mk]
-  apply sound
+def Zf.mk_empty : (∅: Zf) = ⟦∅⟧ := by
+  rw [empty.def, ulift, empty, quot.lift_mk]
+  apply quot.sound
   rfl
 
 def Zf.not_mem_empty (x: Zf) : x ∉ (∅: Zf) := by
   intro mem
-  induction x using ind with | mk x =>
+  induction x using quot.ind with | mk x =>
   rw [mk_empty] at mem
   replace mem := mk_mem.mp mem
   have ⟨⟨_⟩,_⟩ := mem
@@ -348,14 +351,14 @@ def Zf.not_empty_nonempty : ¬Zf.Nonempty ∅ := by
   have := not_mem_empty _ mem
   contradiction
 
-def Zf.mk_nonempty (a: Zf.Pre) : (mk a).Nonempty ↔ a.Nonempty := by
+def Zf.mk_nonempty (a: Zf.Pre) : (⟦a⟧: Zf).Nonempty ↔ a.Nonempty := by
   apply Iff.intro
   · intro ⟨b,mem⟩
-    induction b using ind with | mk b =>
+    induction b using quot.ind with | mk b =>
     exists b
     exact mk_mem.mp mem
   · intro ⟨b,mem⟩
-    exists mk b
+    exists ⟦b⟧
     exact mk_mem.mpr mem
 
 def Class.setoid : Setoid (Zf -> Prop) where
@@ -454,9 +457,9 @@ def Zf.Pre.union : Zf.Pre.{u} -> Zf.Pre.{u} -> Zf.Pre.{u}
   | .inr x => bmem x
 
 def Zf.union : Zf.{u} -> Zf.{u} -> Zf.{u} := by
-  apply lift₂ (fun a b => mk (Zf.Pre.union a b))
+  apply quot.lift₂ (fun a b => (⟦Zf.Pre.union a b⟧: Zf))
   intro a b c d ac bd
-  apply sound
+  apply quot.sound
   cases a with | intro a amem =>
   cases b with | intro b bmem =>
   cases c with | intro c cmem =>
@@ -480,15 +483,15 @@ instance : Union Zf.{u} := ⟨Zf.union.{u}⟩
 
 def Zf.Pre.union.def (a b: Zf.Pre) : a ∪ b = Zf.Pre.union a b := rfl
 def Zf.union.def (a b: Zf) : a ∪ b = Zf.union a b := rfl
-def Zf.mk_union (a b: Zf.Pre) : mk a ∪ mk b = mk (a ∪ b) := by
-  rw [union.def, union, lift₂_mk]
+def Zf.mk_union (a b: Zf.Pre) : (⟦a⟧: Zf) ∪ ⟦b⟧ = ⟦a ∪ b⟧ := by
+  rw [union.def, union, quot.lift₂_mk]
   rfl
 
 def Zf.mem_union {a b: Zf} : ∀{x: Zf}, x ∈ a ∪ b ↔ x ∈ a ∨ x ∈ b := by
   intro x
-  induction a using ind with | mk a =>
-  induction b using ind with | mk b =>
-  induction x using ind with | mk x =>
+  induction a using quot.ind with | mk a =>
+  induction b using quot.ind with | mk b =>
+  induction x using quot.ind with | mk x =>
   rw [mk_union]
   apply Iff.trans
   apply mk_mem
@@ -521,12 +524,12 @@ def Zf.Pre.sep (pred: (Zf.Pre.{u} -> Prop)) : Zf.Pre.{u} -> Zf.Pre.{u}
 | .intro a amem => .intro { x: a // pred (amem x) } (amem ∘ Subtype.val)
 
 def Zf.sep (pred: (Zf.{u} -> Prop)) : Zf.{u} -> Zf.{u} := by
-  apply lift (fun _ => mk _) _
+  apply quot.lift (fun _ => (⟦_⟧: Zf)) _
   apply Zf.Pre.sep
-  exact pred ∘ mk
+  exact (pred ⟦·⟧)
   intro a b a_eq_b
   dsimp
-  apply sound
+  apply quot.sound
   cases a with | intro a amem =>
   cases b with | intro b bmem =>
   apply And.intro
@@ -534,22 +537,22 @@ def Zf.sep (pred: (Zf.{u} -> Prop)) : Zf.{u} -> Zf.{u} := by
     intro ⟨a₀,a₀_prop⟩
     dsimp
     have ⟨b₀,prf⟩ := a_eq_b.left a₀
-    rw [sound prf] at a₀_prop
+    rw [quot.sound prf] at a₀_prop
     exists ⟨_,a₀_prop⟩
   · dsimp
     intro ⟨b₀,b₀_prop⟩
     dsimp
     have ⟨a₀,prf⟩ := a_eq_b.right b₀
-    rw [←sound prf] at b₀_prop
+    rw [←quot.sound prf] at b₀_prop
     exists ⟨_,b₀_prop⟩
 
-def Zf.mk_sep (pred: (Zf.{u} -> Prop)) (a: Zf.Pre) : Zf.sep pred (mk a) = mk (Zf.Pre.sep (pred ∘ mk) a) := by
-  rw [sep, lift_mk]
+def Zf.mk_sep (pred: (Zf.{u} -> Prop)) (a: Zf.Pre) : Zf.sep pred ⟦a⟧ = ⟦Zf.Pre.sep (pred ⟦·⟧) a⟧ := by
+  rw [sep, quot.lift_mk]
 
 def Zf.mem_sep { prop: Zf -> Prop } { a: Zf } : ∀{x}, x ∈ a.sep prop ↔ x ∈ a ∧ prop x := by
   intro x
-  induction a using ind with | mk a =>
-  induction x using ind with | mk x =>
+  induction a using quot.ind with | mk a =>
+  induction x using quot.ind with | mk x =>
   cases a with | intro a amem =>
   -- cases x with | intro x xmem =>
   apply Iff.intro
@@ -561,7 +564,7 @@ def Zf.mem_sep { prop: Zf -> Prop } { a: Zf } : ∀{x}, x ∈ a.sep prop ↔ x �
     exists x₀.val
     have := x₀.property
     dsimp at this
-    rw [sound]
+    rw [quot.sound]
     exact this
     exact prf
   · intro mem
@@ -569,7 +572,7 @@ def Zf.mem_sep { prop: Zf -> Prop } { a: Zf } : ∀{x}, x ∈ a.sep prop ↔ x �
     apply mk_mem.mpr
     have ⟨mem,prop_of_mem⟩ := mem
     have ⟨a₀,prf⟩ := mk_mem.mp mem
-    rw [sound prf] at prop_of_mem
+    rw [quot.sound prf] at prop_of_mem
     exists ⟨a₀,prop_of_mem⟩
 
 def Zf.inter (a b: Zf.{u}) : Zf := a.sep (· ∈ b)
@@ -609,13 +612,13 @@ def Zf.Pre.mem_powerset {a: Zf.Pre} : ∀{x}, x ∈ a.powerset ↔ x ⊆ a := by
     exists x₀
 
 def Zf.powerset : Zf -> Zf := by
-  apply lift (fun _ => mk _) _
+  apply quot.lift (fun _ => (⟦_⟧: Zf)) _
   exact Zf.Pre.powerset
   intro a b a_eq_b
   dsimp
   apply ext
   intro x
-  induction x using ind with | mk x =>
+  induction x using quot.ind with | mk x =>
   apply Iff.trans
   apply mk_mem
   apply flip Iff.trans
@@ -631,13 +634,13 @@ def Zf.powerset : Zf -> Zf := by
   apply Zf.sub_congr a_eq_b.symm
   exact Zf.Pre.mem_powerset.mp mem
 
-def Zf.mk_powerset (a: Zf.Pre) : (mk a).powerset = mk a.powerset := by
-  rw [powerset, lift_mk]
+def Zf.mk_powerset (a: Zf.Pre) : (⟦a⟧: Zf).powerset = ⟦a.powerset⟧ := by
+  rw [powerset, quot.lift_mk]
 
 def Zf.mem_powerset {a: Zf} : ∀{x}, x ∈ a.powerset ↔ x ⊆ a := by
   intro x
-  induction a using ind with | mk a =>
-  induction x using ind with | mk x =>
+  induction a using quot.ind with | mk a =>
+  induction x using quot.ind with | mk x =>
   rw [mk_powerset]
   apply Iff.trans
   apply mk_mem
@@ -649,11 +652,11 @@ def Zf.Pre.sUnion : Zf.Pre -> Zf.Pre
 | .intro a amem => .intro ((x: a) × (amem x).ty) fun ⟨a₀,b₀⟩ => (amem a₀).mem b₀
 
 def Zf.sUnion : Zf -> Zf := by
-  apply lift (fun _ => mk _) _
+  apply quot.lift (fun _ => (⟦_⟧: Zf)) _
   exact Zf.Pre.sUnion
   dsimp
   intro a b a_eq_b
-  apply sound
+  apply quot.sound
   cases a with | intro a amem =>
   cases b with | intro b bmem =>
   unfold Zf.Pre.sUnion
@@ -673,14 +676,14 @@ instance : SUnion Zf := ⟨.sUnion⟩
 
 def Zf.sUnion.def (a: Zf) : ⋃₀ a = a.sUnion := rfl
 
-def Zf.mk_sUnion (a: Zf.Pre) : ⋃₀ mk a = mk (⋃₀ a) := by
-  rw [Zf.sUnion.def, sUnion, lift_mk]
+def Zf.mk_sUnion (a: Zf.Pre) : ⋃₀ (⟦a⟧: Zf) = ⟦⋃₀ a⟧ := by
+  rw [Zf.sUnion.def, sUnion, quot.lift_mk]
   rfl
 
 def Zf.mem_sUnion {a: Zf.{u}} : ∀{x}, x ∈ ⋃₀a ↔ ∃a₀: Zf.{u}, a₀ ∈ a ∧ x ∈ a₀ := by
   intro x
-  induction a using ind with | mk a =>
-  induction x using ind with | mk x =>
+  induction a using quot.ind with | mk a =>
+  induction x using quot.ind with | mk x =>
   cases a with | intro a amem =>
   cases x with | intro x xmem =>
   rw [mk_sUnion]
@@ -688,7 +691,7 @@ def Zf.mem_sUnion {a: Zf.{u}} : ∀{x}, x ∈ ⋃₀a ↔ ∃a₀: Zf.{u}, a₀ 
   apply mk_mem
   apply Iff.intro
   · intro ⟨⟨a₀,a₁⟩,prf⟩
-    exists mk (amem a₀)
+    exists ⟦amem a₀⟧
     apply And.intro
     apply mk_mem.mpr
     exists a₀
@@ -696,7 +699,7 @@ def Zf.mem_sUnion {a: Zf.{u}} : ∀{x}, x ∈ ⋃₀a ↔ ∃a₀: Zf.{u}, a₀ 
     apply Zf.Pre.mem_iff.mpr
     exists a₁
   · intro ⟨b,b_in_a,x_in_b⟩
-    induction b using ind with | mk b =>
+    induction b using quot.ind with | mk b =>
     cases b with | intro b bmem =>
     replace b_in_a := mk_mem.mp b_in_a
     replace x_in_b := mk_mem.mp x_in_b
@@ -732,10 +735,10 @@ def Zf.mem_sInter.{u} {a: Zf.{u}} (h: a.Nonempty) : ∀{x: Zf.{u}}, x ∈ ⋂₀
 
 def Zf.Pre.singleton (a: Zf.Pre) : Zf.Pre := .intro Unit <| fun _ => a
 def Zf.singleton : Zf -> Zf := by
-  apply lift (fun _ => mk _) _
+  apply quot.lift (fun _ => (⟦_⟧: Zf)) _
   exact .singleton
   intro a b a_eq_b
-  apply sound
+  apply quot.sound
   unfold Zf.Pre.singleton
   apply And.intro <;> (intro; exists ⟨⟩)
 
@@ -743,23 +746,23 @@ instance : Singleton Zf.Pre Zf.Pre := ⟨.singleton⟩
 instance : Singleton Zf Zf := ⟨.singleton⟩
 
 def Zf.singleton.def (a: Zf) : { a } = a.singleton := rfl
-def Zf.mk_singleton (a: Zf.Pre) : { mk a } = mk { a } := by
-  rw [singleton.def, singleton, lift_mk]
+def Zf.mk_singleton (a: Zf.Pre) : ({ ⟦a⟧ }: Zf) = ⟦{ a }⟧ := by
+  rw [singleton.def, singleton, quot.lift_mk]
   rfl
 
 def Zf.mem_singleton {a: Zf} : ∀{x: Zf}, x ∈ ({ a }: Zf) ↔ x = a := by
   intro x
-  induction a using ind with | mk a =>
-  induction x using ind with | mk x =>
+  induction a using quot.ind with | mk a =>
+  induction x using quot.ind with | mk x =>
   rw [mk_singleton]
   apply Iff.trans
   apply mk_mem
   apply Iff.intro
   intro ⟨_,_⟩
-  apply sound; assumption
+  apply quot.sound; assumption
   intro
   exists ⟨⟩
-  apply exact
+  apply quot.exact (Q := Zf)
   assumption
 
 def Zf.Pre.insert (a b: Zf.Pre) : Zf.Pre := {a} ∪ b
@@ -856,7 +859,10 @@ instance : SDiff Zf := ⟨.sdiff⟩
 
 def Zf.sdiff.def (a b: Zf) : a \ b = a.sdiff b := rfl
 
-def Zf.mem_sdiff {a b: Zf} : ∀{x}, x ∈ a \ b ↔ x ∈ a ∧ x ∉ b := mem_sep
+def Zf.mem_sdiff {a b: Zf} : ∀{x}, x ∈ a \ b ↔ x ∈ a ∧ x ∉ b := by
+  intro x
+  show x ∈ Zf.sdiff _ _ ↔ _
+  exact mem_sep
 
 def Zf.sdiff_eq_empty_iff_sub {a b: Zf} : a \ b = ∅ ↔ a ⊆ b := by
   apply Iff.intro
@@ -882,11 +888,11 @@ def Zf.Pre.map (f: Zf.Pre -> Zf.Pre) : Zf.Pre -> Zf.Pre
 
 def Zf.map : (Zf -> Zf) -> Zf -> Zf := by
   intro f
-  apply lift (fun _ => mk _) _
-  exact Zf.Pre.map (get ∘ f ∘ mk)
+  apply quot.lift (fun _ => (⟦_⟧: Zf)) _
+  exact Zf.Pre.map (unwrapQuot ∘ f ∘ (⟦·⟧))
   dsimp
   intro a b a_eq_b
-  apply sound
+  apply quot.sound
   cases a with | intro a amem =>
   cases b with | intro b bmem =>
   unfold Pre.map
@@ -896,20 +902,20 @@ def Zf.map : (Zf -> Zf) -> Zf -> Zf := by
     have ⟨b₀,prf⟩  := a_eq_b.left a₀
     exists b₀
     dsimp
-    rw [sound prf]
+    rw [quot.sound prf]
   · intro b₀
     have ⟨a₀,prf⟩  := a_eq_b.right b₀
     exists a₀
     dsimp
-    rw [sound prf]
+    rw [quot.sound prf]
 
-def Zf.mk_map (f: Zf -> Zf) (a: Zf.Pre) : (mk a).map f = mk (a.map (get ∘ f ∘ mk)) := by
-  rw [map, lift_mk]
+def Zf.mk_map (f: Zf -> Zf) (a: Zf.Pre) : (⟦a⟧: Zf).map f = ⟦(a.map (unwrapQuot ∘ f ∘ (⟦·⟧)))⟧ := by
+  rw [map, quot.lift_mk]
 
 def Zf.mem_map {f: Zf -> Zf} {a: Zf} : ∀{x}, x ∈ a.map f ↔ ∃a₀ ∈ a, f a₀ = x := by
   intro x
-  induction a using ind with | mk a =>
-  induction x using ind with | mk x =>
+  induction a using quot.ind with | mk a =>
+  induction x using quot.ind with | mk x =>
   cases a with | intro a amem =>
   cases x with | intro x xmem =>
   rw [mk_map]
@@ -917,23 +923,22 @@ def Zf.mem_map {f: Zf -> Zf} {a: Zf} : ∀{x}, x ∈ a.map f ↔ ∃a₀ ∈ a, 
   intro h
   replace ⟨a₀,prf⟩ :=  mk_mem.mp h
   dsimp at prf
-  exists mk (amem a₀)
+  exists ⟦amem a₀⟧
   apply And.intro
   apply mk_mem.mpr
   exists a₀
-  rw [←mk_get (f _)]
-  apply sound
+  rw [←mk_unwrapQuot (f _)]
+  apply quot.sound
   exact prf.symm
   intro ⟨a₀,a₀_in_a, fa_eq_x⟩
-  induction a₀ using ind with | mk a₀ =>
-  -- cases a₀ with | intro a₀ a₀mem =>
+  induction a₀ using quot.ind with | mk a₀ =>
   rw [←fa_eq_x]
-  rw [←mk_get (f _)]
+  rw [←mk_unwrapQuot (f _)]
   apply mk_mem.mpr
   have ⟨a₁,prf⟩ := mk_mem.mp a₀_in_a
   exists a₁
   dsimp
-  rw [sound prf]
+  rw [quot.sound prf]
 
 def Zf.sUnion_least_upper_bound (a: Zf) :
   ∀x, ⋃₀a ⊆ x ↔ ∀a₀ ∈ a, a₀ ⊆ x := by
@@ -965,6 +970,7 @@ def Zf.sInter_lower_bound (a: Zf) (h: a.Nonempty) : ∀a₀ ∈ a, ⋂₀a ⊆ a
 -- ⋂₀∅ should be the collection of all sets, but that's not a set
 -- and making ⋂₀ return a Class would be messy
 def Zf.sInter_empty : ⋂₀ (∅: Zf) = ∅ := by
+  show Zf.sInter _ = _
   apply ext_empty
   intro a a_mem_sinter
   have ⟨a_sunion,_⟩ := mem_sep.mp a_mem_sinter

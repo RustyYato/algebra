@@ -16,11 +16,11 @@ def Zf.succ (a: Zf) := Insert.insert a a
 
 def Zf.mem_succ {a: Zf} : ∀{x}, x ∈ a.succ ↔ x = a ∨ x ∈ a := Zf.mem_insert
 
-def Zf.mk_succ (a: Zf.Pre) : (mk a).succ = mk a.succ := by
+def Zf.mk_succ (a: Zf.Pre) : (⟦a⟧: Zf).succ = ⟦a.succ⟧ := by
   cases a with | intro a amem =>
   apply ext
   intro x
-  induction x using ind with | mk x =>
+  induction x using quot.ind with | mk x =>
   cases x with | intro x xmem =>
   apply Iff.intro
   · intro h
@@ -39,7 +39,7 @@ def Zf.mk_succ (a: Zf.Pre) : (mk a).succ = mk a.succ := by
     dsimp at prf
     apply Or.inl
     apply mem_singleton.mpr
-    apply sound
+    apply quot.sound
     assumption
     apply Or.inr
     apply mk_mem.mpr
@@ -71,13 +71,13 @@ def Zf.ofNat_eq_of_nat : Zf.ofNat n = Zf.of_nat (nat.ofNat n) := by
   | succ n ih =>
     unfold of_nat nat.ofNat ofNat
     erw [ih]
-def Zf.mk_of_nat (n: nat) : .of_nat n = mk (.of_nat n) := by
+def Zf.mk_of_nat (n: nat) : Zf.of_nat n = ⟦.of_nat n⟧ := by
   induction n with
   | zero =>
     symm
     apply ext_empty
     intro x h
-    induction x using ind with | mk x =>
+    induction x using quot.ind with | mk x =>
     have := mk_mem.mp h
     have ⟨⟨_⟩,_⟩ := (mk_mem.mp h)
     contradiction
@@ -141,25 +141,25 @@ def Zf.mem_of_nat {n:nat} : ∀{x}, x ∈ Zf.of_nat n ↔ ∃m < n, x = Zf.of_na
   rw [of_nat_eq_ofNat]
 
 def Zf.Pre.omega : Zf.Pre := .intro nat Zf.Pre.of_nat
-def Zf.omega : Zf := mk .omega
+def Zf.omega : Zf := ⟦.omega⟧
 
 notation "ω₀" => Zf.omega
 
 def Zf.mem_ω₀ : ∀{x}, x ∈ ω₀ ↔ ∃m, x = Zf.of_nat m := by
   intro x
-  induction x using ind with | mk x =>
+  induction x using quot.ind with | mk x =>
   rw [omega]
   apply Iff.trans
   apply mk_mem
   apply Iff.intro
   intro ⟨n,mem⟩
   exists n
-  rw [sound mem]
+  rw [quot.sound mem]
   rw [Zf.mk_of_nat]
   intro ⟨w,h⟩
   exists w
   rw [mk_of_nat] at h
-  exact exact h
+  exact quot.exact h
 
 instance Zf.IsTransitive.zero : Zf.IsTransitive 0 where
   mem_is_sub := fun _ mem => (not_mem_empty _ mem).elim

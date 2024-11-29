@@ -26,12 +26,13 @@ notation "⟦" a "⟧" => QuotLike.mk a
 def unwrapQuot [@QuotLike α r Q] : Q -> α := QuotLike.unwrapQuot
 def mk_unwrapQuot [@QuotLike α r Q] (q: Q) : ⟦unwrapQuot q⟧ = q := QuotLike.mk_unwrapQuot q
 def quot.ind [@QuotLike α r Q] : {motive: Q -> Prop} -> (mk: ∀x, motive (⟦x⟧)) -> ∀q, motive q := QuotLike.ind
-def quot.sound [@QuotLike α r Q] : r a b -> (⟦a⟧: Q) = ⟦b⟧ := QuotLike.sound _ _
+def quot.sound' [@QuotLike α r Q] : r a b -> (⟦a⟧: Q) = ⟦b⟧ := QuotLike.sound _ _
 
 class QuotientLike {α: outParam (Sort u)} (s: outParam (Setoid α)) (Q: Sort u) extends QuotLike s.r Q where
   mkQuotientLike ::
   exact : ∀{a b: α}, (⟦a⟧: Q) = ⟦b⟧ -> a ≈ b := by exact Quotient.exact
 
+def quot.sound {s: Setoid α} [QuotientLike s Q] : a ≈ b -> (⟦a⟧: Q) = ⟦b⟧ := QuotLike.sound _ _
 def quot.exact {s: Setoid α} [QuotientLike s Q] :(⟦a⟧: Q) = ⟦b⟧ -> a ≈ b := QuotientLike.exact
 def quot.exact' {s: Setoid α} [QuotientLike s Q] : unwrapQuot (⟦a⟧: Q) ≈ a := by
   apply quot.exact (Q := Q)
@@ -69,22 +70,34 @@ def quot.lift₃_mk [QuotientLike s₁ Q₁] [QuotientLike s₂ Q₂] [QuotientL
 instance : QuotLike r (Quot r) where
 instance : QuotLike (fun _ _: α => True) (Squash α) where
 
-def quot.liftProp [@QuotLike α r Q] : (f: α -> Prop) -> (∀a b, r a b -> (f a ↔ f b)) -> Q -> Prop := fun f _ x => f (unwrapQuot x)
+def quot.liftProp [@QuotLike α r Q] : (f: α -> Prop) -> (∀a b, r a b -> (f a -> f b)) -> Q -> Prop := fun f _ x => f (unwrapQuot x)
 def quot.liftProp_mk [@QuotientLike α r Q] : liftProp f h (⟦a⟧: Q) ↔ f a := by
+  apply Iff.intro
   apply h <;> apply quot.exact'
+  apply h <;> (
+    apply Setoid.iseqv.symm
+    apply quot.exact')
 
 def quot.liftProp₂
   [@QuotLike α₁ r₁ Q₁] [@QuotLike α₂ r₂ Q₂]
-  : (f: α₁ -> α₂ -> Prop) -> (∀a b c d, r₁ a c -> r₂ b d -> (f a b ↔ f c d)) -> Q₁ -> Q₂ -> Prop := fun f _ x y => f (unwrapQuot x) (unwrapQuot y)
+  : (f: α₁ -> α₂ -> Prop) -> (∀a b c d, r₁ a c -> r₂ b d -> (f a b -> f c d)) -> Q₁ -> Q₂ -> Prop := fun f _ x y => f (unwrapQuot x) (unwrapQuot y)
 def quot.liftProp₂_mk [QuotientLike s₁ Q₁] [QuotientLike s₂ Q₂] : liftProp₂ f h (⟦a⟧: Q₁) (⟦b⟧: Q₂)  ↔ f a b := by
+  apply Iff.intro
   apply h <;> apply quot.exact'
+  apply h <;> (
+    apply Setoid.iseqv.symm
+    apply quot.exact')
 
 def quot.liftProp₃
   [@QuotLike α₁ r₁ Q₁] [@QuotLike α₂ r₂ Q₂] [@QuotLike α₃ r₃ Q₃]
-  : (F: α₁ -> α₂ -> α₃ -> Prop) -> (∀a b c d e f, r₁ a d -> r₂ b e -> r₃ c f -> (F a b c ↔ F d e f)) -> Q₁ -> Q₂ -> Q₃ -> Prop := fun f _ x y z => f (unwrapQuot x) (unwrapQuot y) (unwrapQuot z)
+  : (F: α₁ -> α₂ -> α₃ -> Prop) -> (∀a b c d e f, r₁ a d -> r₂ b e -> r₃ c f -> (F a b c -> F d e f)) -> Q₁ -> Q₂ -> Q₃ -> Prop := fun f _ x y z => f (unwrapQuot x) (unwrapQuot y) (unwrapQuot z)
 def quot.liftProp₃_mk [QuotientLike s₁ Q₁] [QuotientLike s₂ Q₂] [QuotientLike s₃ Q₃] :
   liftProp₃ f h (⟦a⟧: Q₁) (⟦b⟧: Q₂) (⟦c⟧: Q₃)  ↔ f a b c := by
+  apply Iff.intro
   apply h <;> apply quot.exact'
+  apply h <;> (
+    apply Setoid.iseqv.symm
+    apply quot.exact')
 
 def quot.liftWith [QuotLike r Q] :
   {P: Q -> Prop} ->
