@@ -253,29 +253,19 @@ def int.inc_add { a b: int } : a.inc + b = (a + b).inc := by
   cases b with
   | zero => rfl
   | neg_succ b =>
-    rw [add.def, add]
-    simp only
-    rw [sub_nat.dec, add.def, add]
-    simp only
+    rw [add.def, add, sub_nat.dec, add.def, add]
     rw [sub_nat.inc, sub_nat.dec, int.inc_dec_swap]
   | pos_succ b =>
-    rw [add.def, add]
-    simp only
-    rw [add_nat.inc, add.def, add]
+    rw [add.def, add, add_nat.inc, add.def, add]
 
 def int.dec_add { a b: int } : a.dec + b = (a + b).dec := by
   cases b with
   | zero => rfl
   | pos_succ b =>
-    rw [add.def, add]
-    simp only
-    rw [add_nat.inc, add.def, add]
-    simp only
+    rw [add.def, add, add_nat.inc, add.def, add]
     rw [add_nat.dec, add_nat.inc, int.inc_dec_swap]
   | neg_succ b =>
-    rw [add.def, add]
-    simp only
-    rw [sub_nat.dec, add.def, add]
+    rw [add.def, add, sub_nat.dec, add.def, add]
 
 def int.add.inc_add_dec { a b: int } : a + b.inc = (a + b).inc ∧ a + b.dec = (a + b).dec := by
   induction a using strong_induction generalizing b with

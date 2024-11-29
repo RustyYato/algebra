@@ -395,18 +395,14 @@ def int.abs.tri (a b: int) : ‖a + b‖ ≤ ‖a‖ + ‖b‖ := by
   have : ∀a b: nat, ‖int.pos_succ a + int.neg_succ b‖ ≤ a.succ + b.succ := by
     clear a b
     intro a b
-    rw [int.add.def, add]
-    dsimp
-    rw [int.sub_nat.dec]
+    rw [int.add.def, add, int.sub_nat.dec]
     induction b generalizing a with
     | zero =>
       rw [int.sub_nat, nat.one_eq, nat.add_one]
       cases a
       decide
       rename_i a
-      rw [int.dec]
-      dsimp
-      rw [int.abs.pos_succ]
+      rw [int.dec, int.abs.pos_succ]
       apply le_trans
       apply le_of_lt
       apply nat.lt_succ_self
@@ -431,31 +427,24 @@ def int.abs.tri (a b: int) : ‖a + b‖ ≤ ‖a‖ + ‖b‖ := by
   any_goals repeat rw [int.abs.pos_succ]
   any_goals repeat rw [int.abs.neg_succ]
   · rw [int.add.def, add]
-    dsimp
     unfold inc
-    dsimp
     rw [int.add_nat.pos_succ, int.abs.pos_succ, nat.add_succ]
   · apply this
   · rw [int.add.comm, nat.add.comm]
     apply this
   · rw [←int.abs.neg, int.add.neg, int.neg.neg_succ, int.neg.neg_succ]
     rw [int.add.def, add]
-    dsimp
     unfold inc
-    dsimp
     rw [int.add_nat.pos_succ, int.abs.pos_succ, nat.add_succ]
 
 def int.abs.tri_lt' (a b: nat) : ‖int.pos_succ a + int.neg_succ b‖ < ‖int.pos_succ a‖ + ‖int.neg_succ b‖ := by
-rw [int.add.def, int.add]
-dsimp
-rw [int.sub_nat.dec]
+rw [int.add.def, int.add, int.sub_nat.dec]
 induction b with
 | zero =>
   rw [int.sub_nat]
   cases a
   trivial
   rw [int.dec]
-  dsimp
   rename_i a
   rw [int.abs.pos_succ, int.abs.pos_succ, int.abs.neg_succ]
   rw [nat.one_eq, nat.add_one]

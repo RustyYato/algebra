@@ -3,6 +3,7 @@ import Algebra.Nat.Dvd
 def nat.square : nat -> nat := fun x => x * x
 postfix:max "²" => nat.square
 
+@[reducible]
 def nat.sqrt (n: nat) : nat :=
   if h:n ≤ 1 then n else
   let small := 2 * sqrt (n / 4)

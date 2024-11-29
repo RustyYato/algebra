@@ -5,6 +5,7 @@ import Algebra.Order.Defs
 import Algebra.Operators.CheckedDiv
 import Algebra.Operators.AbsVal
 import Algebra.AxiomBlame
+import Algebra.QuotLike.Basic
 
 instance [Mul α] [Invert α P] : CheckedDiv α P where
   checked_div a b _ := a * b⁻¹
@@ -110,6 +111,8 @@ def Fract.refl (a: Fract) : a ≈ a := Fract.instEquiv.refl _
 def Fract.symm {a: Fract} : a ≈ b -> b ≈ a := Fract.instEquiv.symm
 def Fract.trans {a b c: Fract} : a ≈ b -> b ≈ c -> a ≈ c := Fract.instEquiv.trans
 
+def Fract.setoid : Setoid Fract := ⟨(· ≈ ·), Fract.refl, Fract.symm, Fract.trans⟩
+
 def Fract.reduce (r: Fract) : Fract := ⟨
     (r.num.sign * (‖r.num‖ / (‖r.num‖.gcd r.den))),
     (r.den / (‖r.num‖.gcd r.den)), by
@@ -158,7 +161,7 @@ def Rat.mk (a: Fract) := Rat.ofFract a.reduce (Fract.reduce.spec a)
 def Fract.Equiv.reduce (r: Fract) : r ≈ r.reduce := by
   cases r with | mk n d dpos =>
   rw [Fract.Equiv.def]
-  unfold reduce
+  unfold Fract.reduce
   dsimp
   unfold int.sign
   cases n with
@@ -368,30 +371,6 @@ def Fract.reduce.of_is_reduced (f: Fract) :
       try rw [int.abs.neg_succ]
       rw [red, nat.div.one]
 
-def Rat.lift : (f: Fract -> α) -> (∀a b, a ≈ b -> f a = f b) -> ℚ -> α := fun f _ r => f r.toFract
-def Rat.lift_mk : lift f all_eq (mk a) = f a := by
-  apply all_eq
-  symm
-  apply Fract.Equiv.reduce
-def Rat.lift₂ : (f: Fract -> Fract -> α) -> (∀a b c d, a ≈ c -> b ≈ d -> f a b = f c d) -> ℚ -> ℚ -> α := fun f _ r₀ r₁ => f r₀.toFract r₁.toFract
-def Rat.lift₂_mk : lift₂ f all_eq (mk a) (mk b) = f a b := by
-  apply all_eq
-  symm
-  apply Fract.Equiv.reduce
-  symm
-  apply Fract.Equiv.reduce
-def Rat.liftProp : (f: Fract -> Prop) -> (∀a b, a ≈ b -> (f a ↔ f b)) -> ℚ -> Prop := fun f _ r => f r.toFract
-def Rat.liftProp_mk : liftProp f all_eq (mk a) ↔ f a := by
-  apply all_eq
-  symm
-  apply Fract.Equiv.reduce
-def Rat.liftProp₂ : (f: Fract -> Fract -> Prop) -> (∀a b c d, a ≈ c -> b ≈ d -> (f a b ↔ f c d)) -> ℚ -> ℚ -> Prop := fun f _ r₀ r₁ => f r₀.toFract r₁.toFract
-def Rat.liftProp₂_mk : liftProp₂ f all_eq (mk a) (mk b) ↔ f a b := by
-  apply all_eq
-  symm
-  apply Fract.Equiv.reduce
-  symm
-  apply Fract.Equiv.reduce
 def Rat.eq_mk_toFract (r: ℚ) : r = mk r.toFract := by
   cases r with | ofFract f red =>
   unfold mk
@@ -402,26 +381,14 @@ def Rat.ind : {motive: ℚ -> Prop} -> (mk: ∀f, motive (mk f)) -> ∀r, motive
   intro motive ih r
   rw [r.eq_mk_toFract]
   apply ih
-def Rat.liftWith : {P: ℚ -> Prop} -> (f: ∀a, P (mk a) -> α) -> (∀a b, a ≈ b -> (h₀: P (mk a)) -> (h₁: P (mk b)) -> f a h₀ = f b h₁) -> ∀a, P a -> α :=
-  fun f _ r h => f r.toFract <| by
-    rw [←eq_mk_toFract]
-    exact h
-def Rat.liftWith_mk :
-  liftWith f all_eq (mk a) h = f a h := by
-  apply all_eq
-  symm
-  apply Fract.Equiv.reduce
-def Rat.liftWith₂ : {P: ℚ -> ℚ -> Prop} -> (f: ∀a b, P (mk a) (mk b) -> α) -> (∀a b c d, a ≈ c -> b ≈ d -> (h₀: P (mk a) (mk b)) -> (h₁: P (mk c) (mk d)) -> f a b h₀ = f c d h₁) -> ∀a b, P a b -> α :=
-  fun f _ r₀ r₁ h => f r₀.toFract r₁.toFract <| by
-    rw [←eq_mk_toFract, ←eq_mk_toFract]
-    exact h
-def Rat.liftWith₂_mk :
-  liftWith₂ f all_eq (mk a) (mk b) h = f a b h := by
-  apply all_eq
-  symm
-  apply Fract.Equiv.reduce
-  symm
-  apply Fract.Equiv.reduce
+
+instance : QuotientLike Fract.setoid ℚ where
+  mk := Rat.mk
+  unwrapQuot := Rat.toFract
+  mk_unwrapQuot q := (Rat.eq_mk_toFract q).symm
+  ind := Rat.ind
+  sound := Rat.sound
+  exact := Rat.exact
 
 def Fract.add (a b: Fract) : Fract := .mk (a.num * int.of_nat b.den + b.num * int.of_nat a.den) (a.den * b.den) (nat.mul.lt _ _ _ _ a.den_pos b.den_pos)
 
@@ -443,7 +410,7 @@ def Fract.add.spec (a b c d: Fract) :
   rw [ac, bd]
 
 def Rat.add : ℚ -> ℚ -> ℚ := by
-  apply lift₂ (fun _ _ => mk _) _
+  apply quot.lift₂ (fun _ _ => mk _) _
   exact Fract.add
   intro a b c d ac bd
   apply sound
@@ -453,7 +420,7 @@ instance : Add ℚ := ⟨.add⟩
 
 def Rat.mk_add (a b: Fract) : mk a + mk b = mk (a + b) := by
   unfold HAdd.hAdd instHAdd Add.add
-  apply lift₂_mk
+  apply quot.lift₂_mk
 
 def Fract.mul (a b: Fract) : Fract := .mk (a.num * b.num) (a.den * b.den) (nat.mul.lt _ _ _ _ a.den_pos b.den_pos)
 
@@ -474,7 +441,7 @@ def Fract.mul.spec (a b c d: Fract) :
   rw [ac, bd]
 
 def Rat.mul : ℚ -> ℚ -> ℚ := by
-  apply lift₂ (fun _ _ => mk _) _
+  apply quot.lift₂ (fun _ _ => mk _) _
   exact Fract.mul
   intro a b c d ac bd
   apply sound
@@ -484,7 +451,7 @@ instance : Mul ℚ := ⟨.mul⟩
 
 def Rat.mk_mul (a b: Fract) : mk a * mk b = mk (a * b) := by
   unfold HMul.hMul instHMul Mul.mul
-  apply lift₂_mk
+  apply quot.lift₂_mk
 
 def Fract.neg (a: Fract) : Fract := .mk (-a.num) a.den a.den_pos
 instance : Neg Fract := ⟨.neg⟩
@@ -497,7 +464,7 @@ def Fract.neg.spec (a b: Fract) : a ≈ b -> -a ≈ -b := by
   rw [int.neg_mul, int.neg_mul, ab]
 
 def Rat.neg : ℚ -> ℚ := by
-  apply lift (fun _ => mk _) _
+  apply quot.lift (fun _ => mk _) _
   exact Fract.neg
   intro a b ab
   apply sound
@@ -507,7 +474,7 @@ instance : Neg ℚ := ⟨.neg⟩
 
 def Rat.mk_neg (a: Fract) : -mk a = mk (-a) := by
   unfold Neg.neg
-  apply lift_mk
+  apply quot.lift_mk
 
 instance : Sub Fract where
   sub a b := a + -b
@@ -541,7 +508,7 @@ def Fract.abs.spec (a b: Fract) : a ≈ b -> ‖a‖ ≈ ‖b‖ := by
   rw [←int.neg_mul, ←int.neg_mul, int.neg.pos_succ, int.neg.pos_succ, ab]
 
 def Rat.abs : ℚ -> ℚ := by
-  apply lift (fun _ => mk _) _
+  apply quot.lift (fun _ => mk _) _
   exact Fract.abs
   intro a b ab
   apply sound
@@ -552,7 +519,7 @@ instance : AbsoluteValue ℚ ℚ := ⟨Rat.abs⟩
 
 def Rat.mk_abs (a: Fract) : ‖mk a‖ = mk ‖a‖ := by
   unfold AbsoluteValue.abs
-  exact lift_mk
+  exact quot.lift_mk
 
 instance : OfNat Fract n where
   ofNat := Fract.mk n 1 nat.zero_lt_succ
@@ -632,13 +599,13 @@ def Rat.toFract_non_zero_of_non_zero (a: ℚ) : a ≠ 0 -> ¬a.toFract ≈ 0 := 
 macro_rules | `(tactic|invert_tactic) => `(tactic|apply Rat.toFract_non_zero_of_non_zero; invert_tactic)
 
 instance : Invert ℚ (· ≠ 0) where
-  invert a h := Rat.liftWith (P := (· ≠ 0)) (fun x h => Rat.mk x⁻¹) (by
+  invert a h := quot.liftWith (P := (· ≠ 0)) (fun x h => Rat.mk x⁻¹) (by
     intro a b ab ha hb
     apply Rat.sound
     apply Fract.invert.spec
     assumption) a h
 
-def Rat.mk_invert (a: Fract) (h: ¬a ≈ 0) : (mk a)⁻¹ = mk a⁻¹ := liftWith_mk
+def Rat.mk_invert (a: Fract) (h: ¬a ≈ 0) : (mk a)⁻¹ = mk a⁻¹ := quot.liftWith_mk
 
 def Rat.mk_div (a b: Fract) (h: ¬b ≈ 0) : (mk a) /? mk b = mk (a /? b) := by
   unfold CheckedDiv.checked_div instCheckedDivOfMulOfInvert
@@ -951,11 +918,11 @@ def Rat.le' (a b: ℚ) := a.num * int.of_nat b.den ≤ b.num * int.of_nat a.den
 def Rat.lt' (a b: ℚ) := a.num * int.of_nat b.den < b.num * int.of_nat a.den
 
 def Rat.le : ℚ -> ℚ -> Prop := by
-  apply liftProp₂ Fract.le
+  apply quot.liftProp₂ Fract.le
   apply Fract.le.spec
 
 def Rat.lt : ℚ -> ℚ -> Prop := by
-  apply liftProp₂ Fract.lt
+  apply quot.liftProp₂ Fract.lt
   apply Fract.lt.spec
 
 instance : LE ℚ := ⟨Rat.le⟩
@@ -963,11 +930,11 @@ instance : LT ℚ := ⟨Rat.lt⟩
 
 def Rat.mk_le {a b: Fract} : (mk a) ≤ (mk b) ↔ a ≤ b := by
   unfold LE.le
-  exact liftProp₂_mk
+  exact quot.liftProp₂_mk
 
 def Rat.mk_lt {a b: Fract} : (mk a) < (mk b) ↔ a < b := by
   unfold LT.lt
-  exact liftProp₂_mk
+  exact quot.liftProp₂_mk
 
 def Rat.le.def {a b: ℚ} : a ≤ b ↔  a.toFract ≤ b.toFract := by
   induction a using ind with | mk a =>
@@ -1007,8 +974,8 @@ macro_rules
 | `(tactic|rw_rat_cmp) => `(tactic|apply And.intro <;> rw_rat_cmp)
 
 instance Rat.defLE (a b: ℚ) : Decidable (a ≤ b) := by
-  unfold LE.le instLERat le liftProp₂ Fract.le
-  dsimp
+  unfold LE.le
+  show Decidable (_ * _ ≤ _ * _)
   exact inferInstance
 
 instance : Min ℚ := minOfLe
@@ -1485,7 +1452,7 @@ def Rat.neg.zero : (-0: ℚ) = 0 := rfl
 def Rat.abs.eq_max (a: ℚ) : ‖a‖ = max a (-a) := by
   induction a using ind with | mk a =>
   cases a with | mk n d d_pos =>
-  rw [mk_abs, Fract.abs.def, Fract.abs, max_def, int.abs.def, int.abs, mk_neg]
+  rw [mk_abs, Fract.abs.def, Fract.abs, max_def, int.abs.def, int.abs.eq_def, mk_neg]
   cases n <;> dsimp
   rw [if_pos]
   apply sound
@@ -2113,16 +2080,18 @@ def Rat.neg_sub_neg (a b: ℚ) : -a - -b = b - a := by
   rfl
 
 def Rat.ofNat.zero_le (n: Nat) : 0 ≤ (OfNat.ofNat n: ℚ) := by
-  unfold LE.le instLERat le liftProp₂ Fract.le toFract Fract.num Fract.den
-  dsimp
+  unfold LE.le
+  show _ * _ ≤ _ * _
+  unfold Fract.num Fract.den
   erw [int.zero_mul, int.mul_one]
   cases n
   trivial
   exact int.LE.zero_pos
 
 def Rat.ofNat.of_lt_one (n: Nat) : (OfNat.ofNat n: ℚ) < 1 -> n = 0 := by
-  unfold LT.lt instLTRat lt liftProp₂ Fract.lt toFract Fract.num Fract.den
-  dsimp
+  unfold LT.lt
+  show _ * _ < _ * _ -> _
+  unfold Fract.num Fract.den
   conv => {
     lhs; lhs; lhs
     unfold OfNat.ofNat instOfNatRat OfNat.ofNat instOfNatFract
