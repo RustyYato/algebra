@@ -194,6 +194,11 @@ instance Zf.IsOrdinal.succ [ordx: Zf.IsOrdinal x] : Zf.IsOrdinal x.succ where
     assumption
     assumption
 
+instance Zf.IsOrdinal.ofNat : Zf.IsOrdinal (OfNat.ofNat n) := by
+  induction n with
+  | zero => apply Zf.IsOrdinal.zero
+  | succ => apply Zf.IsOrdinal.succ
+
 instance Zf.IsTransitive.inter
   [transx: Zf.IsTransitive x]
   [transy: Zf.IsTransitive y] : Zf.IsTransitive (x ∩ y) where
@@ -353,11 +358,11 @@ def Zf.IsOrdinal.sInter {x: Zf} (ordx: ∀x₀ ∈ x, Zf.IsOrdinal x₀) (h: x.N
     apply Zf.IsOrdinal.mem_total <;> assumption
 
 class Zf.IsLimitOrdinal (x: Zf) extends Zf.IsOrdinal x : Prop where
-  not_succ: ∀y, Zf.succ y ≠ x
+  not_succ: ∀y, Zf.IsOrdinal y -> Zf.succ y ≠ x
 
 instance Zf.IsLimitOrdinal.zero : Zf.IsLimitOrdinal 0 where
   not_succ := by
-    intro x h
+    intro x _ h
     have not_mem := not_mem_empty x
     have : (0: Zf) = ∅ := rfl
     erw [←this, ←h] at not_mem
@@ -388,7 +393,7 @@ instance Zf.IsLimitOrdinal.ω₀ : Zf.IsLimitOrdinal ω₀ where
     apply mem_of_nat.mpr
     exists m
   not_succ := by
-    intro x h
+    intro x _ h
     have := (@mem_ω₀ x).mp
     rw [←h] at this
     have ⟨m,prf⟩ := this (mem_succ.mpr (.inl rfl))
@@ -406,11 +411,12 @@ def Zf.IsOrdinal.succ_sub_of_mem [ordx: Zf.IsOrdinal x] : ∀y, y ∈ x -> y.suc
 
 def Zf.IsLimitOrdinal.succ_mem_of_mem [ordx: Zf.IsLimitOrdinal x] : ∀y ∈ x, y.succ ∈ x := by
   intro y y_in_x
-  have : Zf.IsOrdinal y := ordx.mem y_in_x
+  have yord : Zf.IsOrdinal y := ordx.mem y_in_x
   have := Zf.IsOrdinal.succ_sub_of_mem _ y_in_x
   cases IsOrdinal.mem_or_eq_of_sub this
   assumption
-  have := ordx.not_succ y
+  rename_i h
+  have := ordx.not_succ y yord h
   contradiction
 
 def Zf.IsOrdinal.succ_mem_succ [ordb: Zf.IsOrdinal b] : a ∈ b -> a.succ ∈ b.succ := by
@@ -474,6 +480,8 @@ def Zf.IsOrdinal.sInter_eq_empty [ordx: Zf.IsOrdinal x] : ⋂₀ x = ∅ := by
 def Ordinal := { x: Zf // x.IsOrdinal }
 def Ordinal.mk (x: Zf) [h: x.IsOrdinal] : Ordinal := ⟨x, h⟩
 
+instance : OfNat Ordinal n := ⟨OfNat.ofNat n, Zf.IsOrdinal.ofNat⟩
+
 instance (o: Ordinal) : Zf.IsOrdinal o.val := o.property
 
 instance : LE Ordinal := ⟨(·.val ⊆ ·.val)⟩
@@ -506,6 +514,26 @@ def Ordinal.le_of_lt_succ {a b: Ordinal} : a < b.succ -> a ≤ b := by
   assumption
   apply le_of_lt
   assumption
+
+def Ordinal.IsLimit (o: Ordinal) := ∀x: Ordinal, x.succ ≠ o
+
+def Ordinal.IsLimit.IsLimitOrdinal {o: Ordinal} :
+  o.IsLimit ↔ o.val.IsLimitOrdinal := by
+  apply Iff.intro
+  · intro h
+    apply Zf.IsLimitOrdinal.mk
+    intro x h₀ h₁
+    replace h := fun x => h x
+    cases o with | mk o ord =>
+    apply h ⟨x, h₀⟩
+    unfold succ
+    congr
+  · intro h
+    intro x h₀
+    apply h.not_succ x.val
+    exact x.property
+    subst o
+    rfl
 
 def Ordinal.min (a b: Ordinal) : Ordinal where
   val := a.val ∩ b.val
@@ -629,6 +657,86 @@ instance : IsLinearOrder Ordinal where
     rw [←h]
     apply Zf.sub_union_right
 
+def Ordinal.lt_succ_self {a: Ordinal}: a < a.succ := by
+  apply Zf.mem_succ.mpr
+  left; rfl
+
+def Ordinal.lt_of_succ_lt_succ {a b: Ordinal}: a.succ < b.succ -> a < b := by
+  show a.succ.val ∈ b.succ.val -> a.val ∈ b.val
+  intro h
+  cases Zf.mem_succ.mp h <;> rename_i h
+  rw [←h]
+  apply lt_succ_self
+  show a < b
+  apply lt_trans _ h
+  apply lt_succ_self
+
+def Ordinal.lt_of_succ_le {a b: Ordinal}: a.succ ≤ b -> a < b := by
+  intro h
+  cases lt_or_eq_of_le h
+  apply lt_trans
+  apply lt_succ_self
+  assumption
+  subst b
+  apply lt_succ_self
+
+def Ordinal.squeeze {a b: Ordinal} : a < b -> b < a.succ -> False := by
+  intro h g
+  cases Zf.mem_succ.mp g <;> rename_i g
+  have : a = b := by
+    cases a; cases b
+    congr
+    symm
+    assumption
+  cases this
+  exact lt_irrefl h
+  exact lt_asymm h g
+
+def Ordinal.succ_le_of_lt {a b: Ordinal}: a < b -> a.succ ≤ b := by
+  intro g
+  apply ClassicLogic.byCases (a.succ < b) <;> intro h
+  apply le_of_lt
+  assumption
+  apply le_of_eq
+  replace h := le_of_not_lt h
+  cases Or.symm (lt_or_eq_of_le h) <;> rename_i h
+  symm; assumption
+  have := squeeze g h
+  contradiction
+
+def Ordinal.lt_succ_of_le {a b: Ordinal} : a ≤ b -> a < b.succ := by
+  intro h
+  cases lt_or_eq_of_le h
+  apply lt_trans
+  assumption
+  apply lt_succ_self
+  subst a
+  apply lt_succ_self
+
+def Ordinal.succ_lt_succ {a b: Ordinal}: a < b -> a.succ < b.succ := by
+  intro h
+  apply lt_succ_of_le
+  apply succ_le_of_lt
+  assumption
+
+def Ordinal.succ_le_succ {a b: Ordinal}: a ≤ b -> a.succ ≤ b.succ := by
+  intro h
+  apply le_of_lt_succ
+  apply succ_lt_succ
+  apply lt_succ_of_le
+  assumption
+
+def Ordinal.le_succ_self {a: Ordinal}: a ≤ a.succ := by
+  apply le_of_lt
+  apply lt_succ_self
+
+def Ordinal.le_of_succ_le_succ {a b: Ordinal}: a.succ ≤ b.succ -> a ≤ b := by
+  intro h
+  apply le_of_lt_succ
+  apply lt_of_succ_lt_succ
+  apply lt_succ_of_le
+  assumption
+
 def Ordinal.inf (a: Zf) (mem: ∀x ∈ a, x.IsOrdinal) : Ordinal where
   val := ⋂₀ a
   property := by
@@ -641,3 +749,77 @@ def Ordinal.inf (a: Zf) (mem: ∀x ∈ a, x.IsOrdinal) : Ordinal where
 def Ordinal.sup (a: Zf) (mem: ∀x ∈ a, x.IsOrdinal) : Ordinal where
   val := ⋃₀ a
   property := Zf.IsOrdinal.sUnion mem
+
+def Ordinal.succ_sup (o: Ordinal) : Ordinal.sup o.succ.val (fun _ => (o.succ.property.mem ·)) = o := by
+  unfold sup succ
+  dsimp
+  cases o with | mk o ord =>
+  dsimp
+  congr
+  exact Zf.IsOrdinal.succ_sUnion
+
+def Ordinal.limit_sup (o: Ordinal) (h: o.IsLimit) : Ordinal.sup o.val (fun _ => (o.property.mem ·)) = o := by
+  unfold sup
+  cases o with | mk o ord =>
+  dsimp
+  congr
+  have := Ordinal.IsLimit.IsLimitOrdinal.mp h
+  refine Zf.IsLimitOrdinal.sUnion
+
+def Ordinal.ord_inf (o: Ordinal) : Ordinal.inf o.val (fun _ => (o.property.mem ·)) = 0 := by
+  unfold inf
+  cases o with | mk o ord =>
+  dsimp
+  congr
+  apply Zf.IsOrdinal.sInter_eq_empty
+
+instance : WellFoundedRelation Ordinal where
+  rel a b := a < b
+  wf := by
+    apply WellFounded.intro
+    intro ⟨a, aord⟩
+    induction a using Zf.mem_wf.induction with
+    | h a ih =>
+    apply Acc.intro
+    intro ⟨b, bord⟩ lt
+    replace lt : b ∈ a := lt
+    apply ih
+    assumption
+
+def Ordinal.rec
+  { motive: Ordinal -> Sort _ }
+  (mem: ∀x, (∀y < x, motive y) -> motive x)
+  (o: Ordinal) :=
+  mem o (fun y _ => Ordinal.rec mem y)
+termination_by o
+decreasing_by assumption
+
+open Classical in
+noncomputable def Ordinal.transfiniteRecursion
+  { motive: Ordinal -> Sort _ }
+  (zero: motive 0)
+  (limit: ∀x, 0 < x -> x.IsLimit -> (∀y < x, motive y) -> motive x)
+  (succ: ∀x, motive x -> motive x.succ)
+  (o: Ordinal) : motive o :=
+  if h:o = 0 then
+    h ▸ zero
+  else if g:∃o': Ordinal, o'.succ = o then
+    have := succ (Classical.choose g) (transfiniteRecursion zero limit succ _)
+    Classical.choose_spec g ▸ this
+  else
+    limit o (by
+      apply lt_of_not_le
+      intro h
+      cases lt_or_eq_of_le h <;> rename_i h
+      exact Zf.not_mem_empty _ h
+      contradiction) (by
+      apply not_exists.mp
+      assumption) (by
+      intro y h
+      apply transfiniteRecursion <;> assumption)
+termination_by o
+decreasing_by
+  apply Ordinal.lt_of_succ_lt_succ
+  rw [Classical.choose_spec g]
+  apply lt_succ_self
+  assumption

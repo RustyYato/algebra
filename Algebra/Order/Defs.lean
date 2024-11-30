@@ -34,6 +34,11 @@ def lt_or_eq_of_le: a ≤ b -> a < b ∨ a = b := by
   apply Or.inl
   apply lt_iff_le_and_not_le.mpr
   apply And.intro <;> assumption
+def le_of_lt_or_eq: a < b ∨ a = b -> a ≤ b := by
+  intro h
+  cases h
+  apply le_of_lt; assumption
+  apply le_of_eq; assumption
 def lt_of_le_of_ne: a ≤ b -> a ≠ b -> a < b := by
   intro h g
   cases lt_or_eq_of_le h
