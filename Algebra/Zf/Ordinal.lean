@@ -786,10 +786,8 @@ instance : WellFoundedRelation Ordinal where
     apply ih
     assumption
 
-def Ordinal.rec
-  { motive: Ordinal -> Sort _ }
-  (mem: ∀x, (∀y < x, motive y) -> motive x)
-  (o: Ordinal) :=
+def Ordinal.rec { motive: Ordinal -> Sort _ } (mem: ∀x, (∀y < x, motive y) -> motive x)
+  (o: Ordinal) : motive o :=
   mem o (fun y _ => Ordinal.rec mem y)
 termination_by o
 decreasing_by assumption
@@ -823,3 +821,114 @@ decreasing_by
   rw [Classical.choose_spec g]
   apply lt_succ_self
   assumption
+
+def Zf.IsOrdinal.add (a b: Zf) :
+  a.IsOrdinal ->
+  b.IsOrdinal -> Zf := by
+  intro orda ordb
+  refine a ∪ ⋃₀ (?_: Zf)
+  apply b.mapAttach
+  intro b' b'_in_b
+  apply Zf.succ
+  apply Zf.IsOrdinal.add a b'
+  assumption
+  apply Zf.IsOrdinal.mem _ b'_in_b
+  assumption
+termination_by b
+
+def Ordinal.map (o: Ordinal) : (Ordinal -> Zf) -> Zf :=
+  fun f => o.val.mapAttach <| fun o' mem => f ⟨o', o.property.mem mem⟩
+
+def Ordinal.sup_map (o: Ordinal) : (Ordinal -> Ordinal) -> Ordinal :=
+  fun f => Ordinal.sup (o.map (fun x => (f x).val)) (fun x mem => by
+    have ⟨x', x'_in_o, x_eq⟩  := Zf.mem_mapAttach.mp mem
+    subst x
+    dsimp
+    apply (f _).property)
+
+def Ordinal.add (a b: Ordinal) : Ordinal where
+  val :=  Zf.IsOrdinal.add a.val b.val a.property b.property
+  property := by
+    induction b using rec with | mem b ih =>
+    unfold Zf.IsOrdinal.add
+    apply Zf.IsOrdinal.union (ordx := _) (ordy := _)
+    exact a.property
+    apply Zf.IsOrdinal.sUnion
+    intro x₀ mem
+    have ⟨b', b'_in_b, prf⟩  := Zf.mem_mapAttach.mp mem
+    subst x₀
+    apply Zf.IsOrdinal.succ (ordx := _)
+    apply ih ⟨b', _⟩
+    assumption
+    apply b.property.mem
+    assumption
+
+instance : Add Ordinal := ⟨.add⟩
+
+def Ordinal.add.add_zero (o: Ordinal) : o + 0 = o := by
+  show o.add 0 = o
+  unfold add
+  unfold Zf.IsOrdinal.add
+  have : Subtype.val (0: Ordinal) = ∅ := rfl
+  cases o with | mk o ord =>
+  congr
+  rw [Zf.mapAttach_congr _ _ this, Zf.mapAttach_nil, Zf.sUnion_nil, Zf.union_nil]
+
+def Ordinal.add.zero_add (o: Ordinal) : 0 + o = o := by
+  show (0: Ordinal).add o = o
+  induction o using rec with | mem o ih =>
+  unfold add
+  unfold Zf.IsOrdinal.add
+  have : Subtype.val (0: Ordinal) = ∅ := rfl
+  cases o with | mk o ord =>
+  congr
+  show ∅ ∪ _ = _
+  rw [Zf.nil_union]
+  dsimp
+  ext x
+  apply Iff.intro
+  intro mem
+  have ⟨x₀, x₀_mem, x_in_x₀⟩  := Zf.mem_sUnion.mp mem
+  have ⟨x₁, x₁_in_o, x₀_eq⟩  := Zf.mem_mapAttach.mp x₀_mem
+  subst x₀
+  rw [Subtype.mk.inj (ih ⟨x₁, ord.mem x₁_in_o⟩ x₁_in_o)] at x_in_x₀
+  cases Zf.mem_succ.mp x_in_x₀ <;> rename_i h
+  subst x₁
+  assumption
+  apply ord.toIsTransitive.mem_is_sub
+  assumption
+  assumption
+  intro x_in_o
+  apply Zf.mem_sUnion.mpr
+  exists x.succ
+  apply flip And.intro
+  apply Zf.mem_succ.mpr
+  left; rfl
+  apply Zf.mem_mapAttach.mpr
+  exists x
+  exists x_in_o
+  congr
+  symm
+  apply Subtype.mk.inj <| ih ⟨x, ord.mem x_in_o⟩ x_in_o
+
+def Ordinal.add.add_one (o: Ordinal) : o + 1 = o.succ := by
+  show add _ _ = _
+  unfold add Zf.IsOrdinal.add
+  cases o with | mk o ord =>
+  congr 1
+  rw [
+    Zf.mapAttach_congr (Subtype.val (1: Ordinal)) {{}},
+    Zf.mapAttach_singleton, Zf.sUnion_singleton]
+  dsimp
+  have : (Zf.IsOrdinal.add o ∅ ord Zf.IsOrdinal.zero) = o := by
+    exact Subtype.mk.inj (add_zero ⟨o, ord⟩)
+  rw [this]
+  rw [Zf.sub_union]
+  intro x mme
+  apply Zf.mem_succ.mpr
+  right; assumption
+  show {{}} ∪ {} = {∅}
+  rw [Zf.union_nil]
+
+def Ordinal.add.add_limit (a b: Ordinal) (h: b.IsLimit) : a + b = (b.sup_map (fun b => a + b)) := by
+  sorry

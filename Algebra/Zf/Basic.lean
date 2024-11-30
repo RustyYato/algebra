@@ -158,6 +158,7 @@ def Zf.Pre.ext (a: Zf.Pre.{u}) (b: Zf.Pre.{v}) : (∀x: Zf.Pre.{max u v}, x ∈ 
     exists a₀
     exact ((Zf.Pre.ulift_equiv _).symm.trans prf).symm
 
+@[ext]
 def Zf.ext (a b: Zf.{u}) : (∀x: Zf.{u}, x ∈ a ↔ x ∈ b) -> a = b := by
   induction a using quot.ind with | mk a =>
   induction b using quot.ind with | mk b =>
@@ -302,6 +303,9 @@ def Zf.not_mem_empty (x: Zf) : x ∉ (∅: Zf) := by
   replace mem := mk_mem.mp mem
   have ⟨⟨_⟩,_⟩ := mem
   contradiction
+
+macro_rules
+| `(tactic|contradiction) => `(tactic|exfalso; apply Zf.not_mem_empty; assumption)
 
 def Zf.ext_empty (x: Zf.{u}) : (∀y: Zf.{u}, y ∉ x) -> x = ∅ := by
   intro h
@@ -883,6 +887,97 @@ def Zf.map : (Zf -> Zf) -> Zf -> Zf := by
     dsimp
     rw [quot.sound prf]
 
+def Zf.Pre.pmap
+  (P: Zf.Pre -> Prop)
+  (x: Zf.Pre)
+  (ph: ∀y ∈ x, P y)
+  (f: (∀y, P y -> Zf.Pre)): Zf.Pre :=
+  match x with
+  | .intro a amem => .intro a (fun x => f (amem x) (ph _ ⟨_, by rfl⟩))
+
+def Zf.pmap (P: Zf -> Prop) (x: Zf) (ph: ∀y ∈ x, P y) (f: (∀y, P y -> Zf)): Zf := by
+  apply quot.liftWith (P := (· = x)) _ _ x
+  rfl
+  intro x' h
+  apply ⟦x'.pmap _ _ _⟧
+  intro x'
+  apply P ⟦x'⟧
+  intro y y_in_x
+  apply ph
+  subst x
+  apply mk_mem.mpr
+  assumption
+  intro y py
+  apply unwrapQuot (Q := Zf)
+  apply f
+  assumption
+  intro a b r h₀ h₁
+  apply quot.sound
+  replace r : a ≈ b := r
+  cases a with | intro a amem =>
+  cases b with | intro b bmem =>
+  apply And.intro
+  · intro a₀
+    have ⟨b₀, prf⟩ := r.left a₀
+    exists b₀
+    dsimp
+    conv in QuotLike.mk (amem a₀) => {
+      rw [quot.sound prf]
+    }
+  · intro b₀
+    have ⟨a₀, prf⟩ := r.right b₀
+    exists a₀
+    dsimp
+    conv in QuotLike.mk (bmem b₀) => {
+      rw [←quot.sound prf]
+    }
+
+def Zf.mapAttach (x: Zf) (f: ∀y ∈ x, Zf): Zf := by
+  apply x.pmap (P := (· ∈ x))
+  intro
+  exact id
+  assumption
+
+def Zf.mem_mapAttach {a: Zf} {f: ∀b ∈ a, Zf} : ∀{x}, x ∈ a.mapAttach f ↔ ∃b, ∃h: b ∈ a, x = f b h := by
+  intro x
+  induction x using quot.ind with | mk x =>
+  induction a using quot.ind with | mk a =>
+  cases a with | intro a amem =>
+  unfold mapAttach pmap Zf.Pre.pmap
+  rw [quot.liftWith_mk]
+  apply Iff.trans mk_mem
+  dsimp
+  apply Iff.intro
+  intro ⟨x₀, h⟩
+  exists ⟦amem x₀⟧
+  refine ⟨?_, ?_⟩
+  apply mk_mem.mpr
+  exists x₀
+  apply Eq.trans
+  apply quot.sound
+  assumption
+  rw [mk_unwrapQuot]
+  intro ⟨b, h, prf⟩
+  induction b using quot.ind with | mk b =>
+  replace h := mk_mem.mp h
+  obtain ⟨a₀, b_eq⟩ := h
+  exists a₀
+  apply quot.exact (Q := Zf)
+  rw [mk_unwrapQuot, prf]
+  congr 1
+  apply quot.sound
+  assumption
+
+def Zf.mapAttach_nil {f: ∀b ∈ ∅, Zf} : Zf.mapAttach ∅ f = ∅ := by
+  apply ext_empty
+  intro x mem
+  have ⟨_,mem,_⟩  := mem_mapAttach.mp mem
+  exact not_mem_empty _ mem
+
+def Zf.mapAttach_congr (a b: Zf) (h: a = b) {f: ∀b ∈ a, Zf} : a.mapAttach f = b.mapAttach (fun x g => f x (h ▸ g)) := by
+  subst h
+  rfl
+
 def Zf.mk_map (f: Zf -> Zf) (a: Zf.Pre) : ⟦a⟧.map f = ⟦(a.map (unwrapQuot ∘ f ∘ (⟦·⟧)))⟧ := by
   rw [map, quot.lift_mk]
 
@@ -985,3 +1080,102 @@ def Zf.exists_min_element (Y: Zf):
   have ⟨y₀,y₀_in_Y⟩ := nonempty_Y
   have := this y₀ y₀_in_Y
   contradiction
+
+def Zf.sUnion_nil : ⋃₀ (∅: Zf) = ∅ := by
+  apply ext_empty
+  intro x mem
+  have ⟨y₀, mem, _⟩  := mem_sUnion.mp mem
+  exact not_mem_empty _ mem
+
+def Zf.union_nil (a: Zf) : a ∪ ∅ = a := by
+  ext x
+  apply Iff.intro
+  intro mem
+  cases mem_union.mp mem <;> trivial
+  intro mem
+  apply mem_union.mpr
+  left; assumption
+
+def Zf.nil_union (a: Zf) : ∅ ∪ a = a := by
+  ext x
+  apply Iff.intro
+  intro mem
+  cases mem_union.mp mem <;> trivial
+  intro mem
+  apply mem_union.mpr
+  right; assumption
+
+def Zf.mapAttach_singleton (a: Zf) {f} : Zf.mapAttach {a} f = {f a (Zf.mem_singleton.mpr rfl)} := by
+  ext x
+  apply Iff.trans _ Zf.mem_singleton.symm
+  apply Iff.trans Zf.mem_mapAttach
+  apply Iff.intro
+  intro ⟨a', h, eq⟩
+  cases Zf.mem_singleton.mp h
+  assumption
+  intro h
+  exists a
+  exists Zf.mem_singleton.mpr rfl
+
+def Zf.sUnion_singleton (a: Zf) : ⋃₀ {a} = a := by
+  ext x
+  apply Iff.trans Zf.mem_sUnion
+  apply Iff.intro
+  intro ⟨a', h, eq⟩
+  cases Zf.mem_singleton.mp h
+  assumption
+  intro h
+  exists a
+  exists Zf.mem_singleton.mpr rfl
+
+def Zf.sub_union (a b: Zf) : a ⊆ b -> a ∪ b = b := by
+  intro s
+  ext x
+  apply Iff.trans Zf.mem_union
+  apply Iff.intro
+  intro h
+  cases h
+  apply s
+  assumption
+  assumption
+  intro h
+  right; assumption
+
+def Zf.sub_inter (a b: Zf) : a ⊆ b -> a ∩ b = a := by
+  intro s
+  ext x
+  apply Iff.trans Zf.mem_inter
+  apply Iff.intro
+  intro ⟨_, _⟩
+  assumption
+  intro h
+  apply And.intro
+  assumption
+  apply s
+  assumption
+
+def Zf.union_sub (a b: Zf) : a ⊆ b -> b ∪ a = b := by
+  intro s
+  ext x
+  apply Iff.trans Zf.mem_union
+  apply Iff.intro
+  intro h
+  cases h
+  assumption
+  apply s
+  assumption
+  intro h
+  left; assumption
+
+def Zf.inter_sub (a b: Zf) : a ⊆ b -> b ∩ a = a := by
+  intro s
+  ext x
+  apply Iff.trans Zf.mem_inter
+  apply Iff.intro
+  intro ⟨_, _⟩
+  assumption
+  intro h
+  apply And.intro
+  apply s
+  assumption
+  assumption
