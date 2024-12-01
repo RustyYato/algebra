@@ -6,7 +6,7 @@ import Algebra.ClassicLogic
 namespace Relation
 
 variable (rel: α -> α -> Prop)
-variable {r: α -> α -> Prop} {s: β -> β -> Prop}
+variable {r: α -> α -> Prop} {s: β -> β -> Prop} {t: α₁ -> α₁ -> Prop}
 
 class IsWellFounded: Prop where
   wf: WellFounded rel
@@ -46,10 +46,31 @@ structure EmbedIso (r: α -> α -> Prop) (s: β -> β -> Prop) extends Ty.EmbedI
   rev_resp: ∀{x y}, s x y -> r (rev x) (rev y)
 
 @[symm]
+def EmbedIso.refl (r: α -> α -> Prop) : EmbedIso r r where
+  fwd := id
+  rev := id
+  fwd_rev _ := rfl
+  rev_fwd _ := rfl
+  fwd_resp := id
+  rev_resp := id
+
+@[symm]
 def EmbedIso.symm (e: EmbedIso r s) : EmbedIso s r := by
   apply EmbedIso.mk e.toEmbedIso.symm
   exact e.rev_resp
   exact e.fwd_resp
+
+@[symm]
+def EmbedIso.trans (h: EmbedIso r s) (g: EmbedIso s t) : EmbedIso r t := by
+  apply EmbedIso.mk (h.toEmbedIso.trans g.toEmbedIso) <;> (unfold Ty.EmbedIso.trans; dsimp)
+  intro x y xy
+  apply g.fwd_resp
+  apply h.fwd_resp
+  assumption
+  intro x y xy
+  apply h.rev_resp
+  apply g.rev_resp
+  assumption
 
 def EmbedIso.fwdEmbed (e: EmbedIso r s) : Embed r s where
   embed := e.fwd
