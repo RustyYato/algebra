@@ -15,6 +15,7 @@ def Bijective (f: α -> β) : Prop :=
 
 variable {f: α -> β}
 
+def Bijective.mk : Injective f -> Surjective f -> Bijective f := And.intro
 def Bijective.Injective : Bijective f -> Injective f := And.left
 def Bijective.Surjective : Bijective f -> Surjective f := And.right
 

@@ -46,12 +46,13 @@ def EmbedIso.refl (α: Sort*) : EmbedIso α α where
 
 instance : CoeFun (Embed α β) (fun _ => α -> β) := ⟨Embed.embed⟩
 
-def EmbedIso.ofBij {f: α -> β} (b: Function.Bijective f) : Nonempty (EmbedIso α β) := by
+def EmbedIso.ofBij {f: α -> β} (b: Function.Bijective f) : ∃x: EmbedIso α β, x.fwd = f := by
   have ⟨finv, finvdef⟩ := b.Surjective.exists_inv
-  apply Nonempty.intro
+  refine ⟨?_, ?_⟩
   apply EmbedIso.mk f finv _ finvdef
   intro x
   apply b.Injective
   rw [finvdef]
+  rfl
 
 end Ty

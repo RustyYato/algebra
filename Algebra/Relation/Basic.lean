@@ -130,11 +130,6 @@ namespace Sum
 
 variable (alt: α -> α -> Prop) (blt: β -> β -> Prop)
 
-inductive Lex (alt: α -> α -> Prop) (blt: β -> β -> Prop) : α ⊕ β -> α ⊕ β -> Prop where
-| inl : alt x y -> Lex alt blt (inl x) (inl y)
-| inl_inr: Lex alt blt (inl x) (inr y)
-| inr : blt x y -> Lex alt blt (inr x) (inr y)
-
 instance
   LexIsWellFounded
   [Relation.IsWellFounded alt]
@@ -158,8 +153,8 @@ instance
         apply Acc.intro
         intro y r
         cases r <;> rename_i y r
-        apply this
         exact ih _ r
+        apply this
 
 instance
   LexIsTrans
@@ -170,7 +165,7 @@ instance
     cases ab <;> cases bc
     any_goals apply Lex.inl
     any_goals apply Lex.inr
-    any_goals apply Lex.inl_inr
+    any_goals apply Lex.sep
     rename_i ab _ bc
     apply trans ab bc
     rename_i ab _ bc
@@ -183,8 +178,8 @@ instance
   tri := by
     intro a b
     cases a <;> cases b
-    any_goals apply Or.inl Lex.inl_inr
-    any_goals apply Or.inr (Or.inr Lex.inl_inr)
+    any_goals apply Or.inl (Lex.sep _ _)
+    any_goals apply Or.inr (Or.inr (Lex.sep _ _))
     all_goals rename_i x y
     cases Relation.trichotomous alt x y <;> rename_i h
     apply Or.inl; apply Lex.inl; assumption
@@ -216,24 +211,136 @@ def InitialSeg.leSum (r: α -> α -> Prop) (s: β -> β -> Prop) : InitialSeg r 
     rename_i x _
     exists x
 
+def IsWellOrder.ext_eq [rwo: IsWellOrder r] : (∀z, r z x ↔ r z y) -> x = y := by
+  intro eqv
+  induction x using rwo.wf.induction generalizing y with | h x ih =>
+  replace ih := fun x₀ => ih x₀
+  rcases rwo.tri x y with x_lt_y | x_eq_y | y_lt_x
+  have := irrefl ((eqv _).mpr x_lt_y)
+  contradiction
+  assumption
+  have := irrefl ((eqv _).mp y_lt_x)
+  contradiction
+
+def IsWellFounded.find_min
+  [rwo: IsWellFounded r]
+  (P: α -> Prop)
+  (h: ∃x, P x)
+  : ∃x, P x ∧ ∀y, r y x -> ¬P y := by
+  obtain ⟨x, Px⟩ := h
+  induction x using rwo.wf.induction with | h x ih =>
+  apply ClassicLogic.byCases (∃y, r y x ∧ P y)
+  intro ⟨y, y_lt_x, Py⟩
+  apply ih y <;> assumption
+  intro h
+  have := fun y => not_and.mp (not_exists.mp h y)
+  exists x
+
+def InitialSeg.Injective_aux
+  [IsWellOrder r] [IsWellOrder s] (f: InitialSeg r s) :
+  (∀x y, f.embed x = f.embed y -> ∀z, r z x -> r z y) := by
+  intro x y eq
+  intro z h
+  have := f.resp.mp h
+  rw [eq] at this
+  apply f.resp.mpr
+  assumption
+
+def InitialSeg.Injective
+  [rwo: IsWellOrder r] [swo: IsWellOrder s] (f: InitialSeg r s) :
+  Function.Injective f := by
+  intro x y eq
+  induction x using rwo.wf.induction generalizing y with | h x ih =>
+  apply IsWellOrder.ext_eq (r := r)
+  intro z
+  apply Iff.intro
+  apply f.Injective_aux
+  assumption
+  apply f.Injective_aux
+  symm; assumption
+
+def InitialSeg.surj_or_principal_aux
+  [IsWellOrder r] [swo: IsWellOrder s] (f: InitialSeg r s):
+  ¬Function.Surjective f -> ∃ b, ∀ x, (∃ y, f y = x) -> s x b := by
+  intro h
+  have ⟨b, b_not_in_range_of_f⟩  := ClassicLogic.not_forall.mp h
+  exists b
+  intro x ⟨y, prf⟩
+  subst x
+  rcases swo.tri (f y) b with syb | y_eq_b | sby
+  assumption
+  have := b_not_in_range_of_f ⟨_, y_eq_b⟩
+  contradiction
+  have := f.init b y sby
+  contradiction
+
 def InitialSeg.surj_or_principal
   [rwo: IsWellOrder r] [swo: IsWellOrder s] (f: InitialSeg r s):
   Function.Surjective f ∨ ∃ b, ∀ x, s x b ↔ ∃ y, f y = x := by
+  apply Or.symm
   apply ClassicLogic.or_iff_not_imp_right.mpr
   intro h
-  replace h := not_exists.mp h
-  replace h :
-    ∀ (x : β), ∃(z : β), ¬(s z x ↔ ∃ y, f.embed y = z)
-    := by
+  have ⟨b, prf⟩ := InitialSeg.surj_or_principal_aux f h
+  replace prf : ∀x, s (f x) b := by
     intro x
-    replace h := h x
-    rw [ClassicLogic.not_forall] at h
-    exact h
-  intro x
-  have ⟨z, prf⟩ := h x
-  rw [ClassicLogic.not_iff] at prf
+    exact prf (f x) ⟨_, rfl⟩
+  induction b using swo.wf.induction with | h b ih =>
+  apply ClassicLogic.byCases (∃b', s b' b ∧ ∀x, s (f x) b')
+  · intro ⟨b', b'_lt_b, b_max⟩
+    apply ih b' <;> assumption
+  · intro b_is_max
+    exists b
+    intro b'
+    apply Iff.intro
+    · intro b'_lt_b
+      have ⟨x, b'_lt_x⟩ := ClassicLogic.not_forall.mp <| not_and.mp (not_exists.mp b_is_max b') b'_lt_b
+      clear ih b_is_max h
+      have ⟨x', b'_lt_x', x'_min⟩ := IsWellFounded.find_min (r := r) (fun x => ¬s (f x) b') ⟨x, b'_lt_x⟩
+      replace x'_min := fun y h => ClassicLogic.not_not.mp (x'_min y h)
+      exists x'
+      apply IsWellOrder.ext_eq (r := s)
+      intro z
+      apply Iff.intro
+      intro szx
+      have ⟨z, h⟩  := f.init _ _ szx
+      subst h
+      apply x'_min
+      apply f.resp.mpr
+      assumption
+      intro szb'
+      rcases swo.tri z (f x') with z_lt | z_eq | lt_z
+      assumption
+      subst z
+      contradiction
+      have := swo.trans lt_z szb'
+      contradiction
+    intro ⟨y, eq⟩
+    subst eq
+    apply prf
 
-  -- apply PSum.inr
-  sorry
+def InitialSeg.princ_or_eq
+  [rwo: IsWellOrder r] [swo: IsWellOrder s] (f: Nonempty (InitialSeg r s)):
+  Nonempty (EmbedIso r s) ∨ Nonempty (PrincipalSeg r s) := by
+  obtain ⟨f⟩ := f
+  rcases f.surj_or_principal with surj | has_max
+  · have ⟨iso, iso_fwd_eq_f⟩ := Ty.EmbedIso.ofBij (Function.Bijective.mk f.Injective surj)
+    left; constructor
+    apply EmbedIso.mk iso
+    intro x y xy
+    rw [iso_fwd_eq_f]
+    dsimp
+    apply f.resp.mp
+    assumption
+    intro x y sxy
+    apply f.resp.mpr
+    have iso_fwd_eq_f : ∀x, iso.fwd x = f x := by
+      intro
+      rw [iso_fwd_eq_f]
+    rw [←iso_fwd_eq_f, ←iso_fwd_eq_f, iso.rev_fwd, iso.rev_fwd]
+    assumption
+  · obtain ⟨max, max_prf⟩ := has_max
+    right; constructor
+    apply PrincipalSeg.mk f.toEmbed_1 max
+    apply max_prf
 
 end Relation
