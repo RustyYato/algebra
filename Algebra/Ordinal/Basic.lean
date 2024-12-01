@@ -1,5 +1,6 @@
 import Algebra.Relation.Basic
 import Algebra.Equiv
+import Algebra.Order.Defs
 
 namespace Ordinal
 
@@ -34,5 +35,39 @@ def _root_.Ordinal := Equiv Pre.setoid
 instance : QuotientLike Pre.setoid Ordinal := instQuotientLikeEquiv
 
 local notation "⟦" a "⟧" => (QuotLike.mk (a: Pre): Ordinal)
+@[simp]
+instance : LT Pre where
+  lt | .intro r _, .intro s _ => Nonempty (Relation.PrincipalSeg r s)
+@[simp]
+instance : LE Pre where
+  le | .intro r _, .intro s _ => Nonempty (Relation.InitialSeg r s)
+
+def Pre.LT.spec (a b c d: Pre) : a ≈ c -> b ≈ d -> a < b -> c < d := by
+  cases a; cases b; cases c; cases d
+  intro ⟨ac⟩ ⟨bd⟩ ⟨ab⟩
+  constructor
+  apply Relation.PrincipalSeg.transfer <;> assumption
+
+def Pre.LE.spec (a b c d: Pre) : a ≈ c -> b ≈ d -> a ≤ b -> c ≤ d := by
+  cases a; cases b; cases c; cases d
+  intro ⟨ac⟩ ⟨bd⟩ ⟨ab⟩
+  constructor
+  apply Relation.InitialSeg.transfer <;> assumption
+
+instance : LT Ordinal where
+  lt := by
+    apply quot.liftProp₂ (· < ·)
+    apply Pre.LT.spec
+instance : LE Ordinal where
+  le := by
+    apply quot.liftProp₂ (· ≤ ·)
+    apply Pre.LE.spec
+
+instance : IsLinearOrder' Ordinal where
+  lt_iff_le_and_not_le := sorry
+  le_antisymm := sorry
+  le_total := sorry
+  le_complete := sorry
+  le_trans := sorry
 
 end Ordinal

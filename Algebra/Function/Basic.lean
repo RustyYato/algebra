@@ -24,4 +24,10 @@ attribute [irreducible] Bijective
 def Surjective.exists_inv : Surjective f -> ∃g: β -> α, ∀x, f (g x) = x :=
   Classical.axiomOfChoice
 
+def Injective.comp (f: α₀ -> α₁) (g: α₁ -> α₂) : Function.Injective f -> Function.Injective g -> Function.Injective (g ∘ f) := by
+  intro finj ginj x y eq
+  apply finj
+  apply ginj
+  assumption
+
 namespace Function

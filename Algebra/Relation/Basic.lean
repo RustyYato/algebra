@@ -72,6 +72,18 @@ def EmbedIso.trans (h: EmbedIso r s) (g: EmbedIso s t) : EmbedIso r t := by
   apply g.rev_resp
   assumption
 
+@[symm]
+def EmbedIso.rev_resp_iff (h: EmbedIso r s) : s x y ↔ r (h.rev x) (h.rev y) := by
+  apply Iff.intro
+  exact h.rev_resp
+  intro
+  rw [←h.rev_fwd x, ←h.rev_fwd y]
+  apply h.fwd_resp
+  assumption
+
+@[symm]
+def EmbedIso.fwd_resp_iff (h: EmbedIso r s) : r x y ↔ s (h.fwd x) (h.fwd y) := h.symm.rev_resp_iff
+
 def EmbedIso.fwdEmbed (e: EmbedIso r s) : Embed r s where
   embed := e.fwd
   embed_inj := e.fwd_inj
@@ -144,6 +156,178 @@ def InitialSeg.eq {r: α -> α -> Prop} [rwo: IsWellOrder r] [swo: IsWellOrder s
     rw [←this] at prf
     subst y
     exact a.resp.mp y₀_lt_x
+
+end Relation
+
+namespace Relation
+
+variable {r₀: α₀ -> α₀ -> Prop} {s₀: β₀ -> β₀ -> Prop}
+variable {r₁: α₁ -> α₁ -> Prop} {s₁: β₁ -> β₁ -> Prop}
+
+def IsWellFounded.transfer (h: EmbedIso r₀ s₀) :
+  IsWellFounded r₀ -> IsWellFounded s₀ := by
+  intro ⟨wf⟩
+  apply IsWellFounded.mk
+  apply WellFounded.intro
+  intro a
+  rw [←h.rev_fwd a]
+  generalize h.rev a = a'
+  induction a' using wf.induction with | h a ih =>
+  apply Acc.intro
+  intro b r
+  rw [←h.rev_fwd b]
+  apply ih
+  rw [←h.fwd_rev a]
+  apply h.rev_resp
+  assumption
+
+def IsWellFounded.transfer_iff (h: EmbedIso r₀ s₀) :
+  IsWellFounded r₀ ↔ IsWellFounded s₀ := by
+  apply Iff.intro
+  apply transfer
+  assumption
+  apply transfer
+  symm; assumption
+
+def IsTrans.transfer (h: EmbedIso r₀ s₀) :
+  IsTrans r₀ -> IsTrans s₀ := by
+  intro
+  apply IsTrans.mk
+  intro a b c ab bc
+  apply h.rev_resp_iff.mpr
+  have := h.rev_resp ab
+  have := h.rev_resp bc
+  apply Relation.trans <;> assumption
+
+def IsTrans.transfer_iff (h: EmbedIso r₀ s₀) :
+  IsTrans r₀ ↔ IsTrans s₀ := by
+  apply Iff.intro
+  apply transfer
+  assumption
+  apply transfer
+  symm; assumption
+
+def IsTrans.transferInit (h: InitialSeg r₀ s₀) :
+  IsTrans s₀ -> IsTrans r₀ := by
+  intro
+  apply IsTrans.mk
+  intro a b c ab bc
+  apply h.resp.mpr
+  have := h.resp.mp ab
+  have := h.resp.mp bc
+  apply Relation.trans <;> assumption
+
+def IsTrichotomous.transfer (h: EmbedIso r₀ s₀) :
+  IsTrichotomous r₀ -> IsTrichotomous s₀ := by
+  intro
+  apply IsTrichotomous.mk
+  intro a b
+  rcases trichotomous r₀ (h.rev a) (h.rev b) with ab | eq | ba
+  left
+  apply h.rev_resp_iff.mpr; assumption
+  right; left
+  apply h.rev_inj; assumption
+  right; right
+  apply h.rev_resp_iff.mpr; assumption
+
+def IsTrichotomous.transfer_iff (h: EmbedIso r₀ s₀) :
+  IsTrichotomous r₀ ↔ IsTrichotomous s₀ := by
+  apply Iff.intro
+  apply transfer
+  assumption
+  apply transfer
+  symm; assumption
+
+def IsIrrefl.transfer (h: EmbedIso r₀ s₀) :
+  IsIrrefl r₀ -> IsIrrefl s₀ := by
+  intro
+  apply IsIrrefl.mk
+  intro a
+  apply (not_iff_not h.rev_resp_iff).mpr
+  apply irrefl
+
+def IsIrrefl.transfer_iff (h: EmbedIso r₀ s₀) :
+  IsIrrefl r₀ ↔ IsIrrefl s₀ := by
+  apply Iff.intro
+  apply transfer
+  assumption
+  apply transfer
+  symm; assumption
+
+def IsWellOrder.transfer (h: EmbedIso r₀ s₀) :
+  IsWellOrder r₀ -> IsWellOrder s₀ := by
+  intro g
+  have := g.toIsWellFounded.transfer h
+  have := g.toIsTrichotomous.transfer h
+  have := g.toIsTrans.transfer h
+  apply IsWellOrder.mk
+
+def IsWellOrder.transfer_iff (h: EmbedIso r₀ s₀) :
+  IsWellOrder r₀ ↔ IsWellOrder s₀ := by
+  apply Iff.intro
+  apply transfer
+  assumption
+  apply transfer
+  symm; assumption
+
+def InitialSeg.transfer (h₁: EmbedIso r₀ r₁) (h₂: EmbedIso s₀ s₁) (seg: InitialSeg r₀ s₀) : InitialSeg r₁ s₁ where
+  embed := h₂.fwd ∘ seg.embed ∘ h₁.rev
+  embed_inj := by
+    apply Function.Injective.comp
+    apply Function.Injective.comp
+    exact h₁.rev_inj
+    exact seg.embed_inj
+    exact h₂.fwd_inj
+  init := by
+    intro b a r
+    dsimp at r
+    have := h₂.rev_resp r
+    rw [h₂.fwd_rev] at this
+    have ⟨x, prf⟩ := seg.init _ _ this
+    exists h₁.fwd x
+    dsimp
+    apply h₂.rev_inj
+    rw [←prf]
+    rw [h₂.fwd_rev, h₁.fwd_rev]
+  resp := by
+    intro x y
+    dsimp
+    apply Iff.trans _ h₂.fwd_resp_iff
+    apply Iff.trans _ seg.resp
+    apply Iff.trans _ h₁.rev_resp_iff
+    rfl
+
+def PrincipalSeg.transfer (h₁: EmbedIso r₀ r₁) (h₂: EmbedIso s₀ s₁) (seg: PrincipalSeg r₀ s₀) : PrincipalSeg r₁ s₁ where
+  embed := h₂.fwd ∘ seg.embed ∘ h₁.rev
+  embed_inj := by
+    apply Function.Injective.comp
+    apply Function.Injective.comp
+    exact h₁.rev_inj
+    exact seg.embed_inj
+    exact h₂.fwd_inj
+  resp := by
+    intro x y
+    dsimp
+    apply Iff.trans _ h₂.fwd_resp_iff
+    apply Iff.trans _ seg.resp
+    apply Iff.trans _ h₁.rev_resp_iff
+    rfl
+  top := h₂.fwd seg.top
+  lt_top := by
+    intro x
+    dsimp
+    apply Iff.trans h₂.rev_resp_iff
+    rw [h₂.fwd_rev]
+    apply Iff.trans seg.lt_top
+    apply Iff.intro
+    intro ⟨y, prf⟩
+    exists h₁.fwd y
+    apply h₂.rev_inj
+    rwa [h₁.fwd_rev, h₂.fwd_rev]
+    intro ⟨y, prf⟩
+    exists h₁.rev y
+    apply h₂.fwd_inj
+    rwa [h₂.rev_fwd]
 
 end Relation
 
@@ -220,7 +404,7 @@ end Sum
 namespace Relation
 
 variable (rel: α -> α -> Prop)
-variable {r: α -> α -> Prop} {s: β -> β -> Prop}
+variable {r: α -> α -> Prop} {s: β -> β -> Prop} {t: α₁ -> α₁ -> Prop}
 
 def InitialSeg.leSum (r: α -> α -> Prop) (s: β -> β -> Prop) : InitialSeg r (Sum.Lex r s) where
   embed := Sum.inl
@@ -363,5 +547,68 @@ def InitialSeg.princ_or_eq
     right; constructor
     apply PrincipalSeg.mk f.toEmbed_1 max
     apply max_prf
+
+def InitialSeg.trans (h: InitialSeg r t) (g: InitialSeg t s) : InitialSeg r s where
+  embed := g.embed ∘ h.embed
+  embed_inj := Function.Injective.comp _ _ h.embed_inj g.embed_inj
+  resp := by
+    intro x y
+    apply Iff.trans _ g.resp
+    apply Iff.trans _ h.resp
+    rfl
+  init := by
+    intro b a
+    dsimp
+    intro r₀
+    have ⟨x, prf⟩  := g.init _ _ r₀
+    subst prf
+    replace r₀ := g.resp.mpr r₀
+    have ⟨x, prf⟩  := h.init _ _ r₀
+    subst prf
+    exact ⟨_, rfl⟩
+
+def PrincipalSeg.transInit (h: PrincipalSeg r t) (g: InitialSeg t s) : PrincipalSeg r s where
+  embed := g.embed ∘ h.embed
+  embed_inj := Function.Injective.comp _ _ h.embed_inj g.embed_inj
+  resp := by
+    intro x y
+    apply Iff.trans _ g.resp
+    apply Iff.trans _ h.resp
+    rfl
+  top := g.embed h.top
+  lt_top := by
+    intro x
+    apply Iff.intro
+    intro s₀
+    have ⟨a, prf⟩  := g.init _ _ s₀
+    subst prf
+    replace s₀ := g.resp.mpr s₀
+    obtain ⟨a', prf⟩ := h.lt_top.mp s₀
+    subst prf
+    exists a'
+    dsimp
+    intro ⟨x, prf⟩
+    subst prf
+    apply g.resp.mp
+    apply h.lt_top.mpr
+    refine ⟨_, rfl⟩
+
+def PrincipalSeg.trans [strans: IsTrans s] (h: PrincipalSeg r t) (g: PrincipalSeg t s) : PrincipalSeg r s := transInit h g.toInitialSeg
+
+def InitialSeg.inv [IsWellOrder s] (h: InitialSeg r s) (g: InitialSeg s r) : ∀x, h.embed (g.embed x) = x := by
+  intro b
+  erw [InitialSeg.eq (g.trans h) (.refl _)]
+  rfl
+
+def InitialSeg.antiymm [swo: IsWellOrder s] (h: InitialSeg r s) (g: InitialSeg s r) : EmbedIso r s where
+  fwd := h.embed
+  rev := g.embed
+  fwd_resp := h.resp.mp
+  rev_resp := g.resp.mp
+  rev_fwd := InitialSeg.inv _ _
+  fwd_rev := by
+    intro x
+    apply h.embed_inj
+    apply InitialSeg.inv _ _
 
 end Relation
