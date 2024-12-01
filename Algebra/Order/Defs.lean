@@ -4,20 +4,32 @@ import Algebra.ClassicLogic
 class IsLinearOrder' (α: Type _) [LT α] [LE α]: Prop where
   lt_iff_le_and_not_le: ∀{a b: α}, a < b ↔ a ≤ b ∧ ¬b ≤ a
   le_antisymm: ∀{a b: α}, a ≤ b -> b ≤ a -> a = b
-  le_total: ∀a b: α, a ≤ b ∨ b ≤ a
-  le_complete: ∀a b: α, a ≤ b ∨ ¬(a ≤ b)
+  lt_or_le: ∀a b: α, a < b ∨ b ≤ a
+  -- le_total: ∀a b: α, a ≤ b ∨ b ≤ a
+  -- le_complete: ∀a b: α, a ≤ b ∨ ¬(a ≤ b)
   le_trans: ∀{a b c: α}, a ≤ b -> b ≤ c -> a ≤ c
 
 variable [LT α] [LE α] [Min α] [Max α] [IsLinearOrder' α] { a b c d k: α }
 
 def lt_iff_le_and_not_le: ∀{a b: α}, a < b ↔ a ≤ b ∧ ¬b ≤ a := IsLinearOrder'.lt_iff_le_and_not_le
 def le_antisymm: a ≤ b -> b ≤ a -> a = b := IsLinearOrder'.le_antisymm
-def le_total: ∀a b: α, a ≤ b ∨ b ≤ a := IsLinearOrder'.le_total
-def le_complete: ∀a b: α, a ≤ b ∨ ¬(a ≤ b) := IsLinearOrder'.le_complete
+def lt_or_le: ∀a b: α, a < b ∨ b ≤ a := IsLinearOrder'.lt_or_le
 def le_trans: a ≤ b -> b ≤ c -> a ≤ c := IsLinearOrder'.le_trans
 
 def le_of_lt: a < b -> a ≤ b := fun h => (lt_iff_le_and_not_le.mp h).left
 def lt_of_le_of_not_le : a ≤ b -> ¬(b ≤ a) -> a < b := (lt_iff_le_and_not_le.mpr ⟨·, ·⟩)
+
+def le_total: ∀a b: α, a ≤ b ∨ b ≤ a := by
+  intro a b
+  rcases lt_or_le a b with ab | ba
+  left; apply le_of_lt; assumption
+  right; assumption
+def le_complete: ∀a b: α, a ≤ b ∨ ¬(a ≤ b) := by
+  intro a b
+  rcases lt_or_le b a with ab | ba
+  right
+  exact (lt_iff_le_and_not_le.mp ab).right
+  left; assumption
 
 def le_of_eq: a = b -> a ≤ b := fun h => h ▸ match le_total a a with | .inl h | .inr h => h
 def not_le_of_lt (hab : a < b) : ¬ b ≤ a := (lt_iff_le_and_not_le.1 hab).2
@@ -110,13 +122,6 @@ def le_iff_of_lt_iff : (a < b ↔ c < d) -> (b ≤ a ↔ d ≤ c) := by
   apply Iff.trans _ le_iff_not_lt.symm
   apply not_iff_not
   assumption
-
-def lt_or_le (a b: α) : a < b ∨ b ≤ a := by
-  rcases le_total b a with ba | ab
-  exact .inr ba
-  rcases lt_or_eq_of_le ab with ab | ab
-  exact .inl ab
-  exact .inr (le_of_eq ab.symm)
 
 def compare_linear (a b: α) : a < b ∨ a = b ∨ b < a := by
   cases lt_or_le a b
@@ -232,16 +237,11 @@ def IsLinearOrder.transfer (α β)
     assumption
     apply le_iff.mp
     assumption
-  le_total := by
+  lt_or_le := by
     intro a b
-    cases le_total (f a) (f b)
-    apply Or.inl; apply le_iff.mpr; assumption
+    cases lt_or_le (f a) (f b)
+    apply Or.inl; apply lt_iff.mpr; assumption
     apply Or.inr; apply le_iff.mpr; assumption
-  le_complete := by
-    intro a b
-    cases le_complete (f a) (f b)
-    apply Or.inl; apply le_iff.mpr; assumption
-    apply Or.inr; intro g; have := le_iff.mp g; contradiction
   le_trans := by
     intro a b c ab bc
     apply le_iff.mpr
@@ -578,8 +578,7 @@ instance : IsDecidableLinearOrder Bool where
   decLE := by intros; exact inferInstance
   lt_iff_le_and_not_le := by decide
   le_antisymm := by decide
-  le_total := by decide
-  le_complete := by decide
+  lt_or_le := by decide
   le_trans := by decide
   min_def := by decide
   max_def := by decide

@@ -2,6 +2,7 @@ import Algebra.WellFounded
 import Algebra.Ty.Basic
 import Algebra.Function.Basic
 import Algebra.ClassicLogic
+import Algebra.AxiomBlame
 
 namespace Relation
 
@@ -610,5 +611,27 @@ def InitialSeg.antiymm [swo: IsWellOrder s] (h: InitialSeg r s) (g: InitialSeg s
     intro x
     apply h.embed_inj
     apply InitialSeg.inv _ _
+
+def PrincipalSeg.irrefl [IsWellOrder r] (seg: PrincipalSeg r r) : False := by
+  have eq_refl := (seg.toInitialSeg).eq (.refl _)
+  unfold InitialSeg.refl Embed.refl Ty.Embed.refl toInitialSeg at eq_refl
+  dsimp at eq_refl
+  have := seg.lt_top.mpr ⟨seg.top, rfl⟩
+  rw [eq_refl] at this
+  exact Relation.irrefl this
+
+def InitialSeg.ofIso (h: EmbedIso r s) : InitialSeg r s where
+  embed := h.fwd
+  embed_inj := h.fwd_inj
+  resp := h.fwd_resp_iff
+  init := by
+    intro a b s₀
+    dsimp at s₀
+    dsimp
+    exists h.rev a
+    rw [h.rev_fwd]
+
+def princ_or_init [rwo: IsWellOrder r] [swo: IsWellOrder s] : Nonempty (PrincipalSeg r s) ∨ Nonempty (InitialSeg s r) := by
+  sorry
 
 end Relation

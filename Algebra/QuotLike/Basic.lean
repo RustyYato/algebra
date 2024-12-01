@@ -28,6 +28,13 @@ def mk_unwrapQuot [@QuotLike α r Q] (q: Q) : ⟦unwrapQuot q⟧ = q := QuotLike
 def quot.ind [@QuotLike α r Q] : {motive: Q -> Prop} -> (mk: ∀x, motive (⟦x⟧)) -> ∀q, motive q := QuotLike.ind
 def quot.sound' [@QuotLike α r Q] : r a b -> (⟦a⟧: Q) = ⟦b⟧ := QuotLike.sound _ _
 
+syntax "quot_ind" ident : tactic
+syntax "quot_ind" "(" ident* ")" : tactic
+macro_rules
+| `(tactic|quot_ind $x) => `(tactic|induction $x using quot.ind with | mk $x => _)
+| `(tactic|quot_ind ()) => `(tactic|have () := ())
+| `(tactic|quot_ind ($a $x*)) => `(tactic|quot_ind $a; quot_ind ($x*))
+
 class QuotientLike {α: outParam (Sort u)} (s: outParam (Setoid α)) (Q: Sort u) extends QuotLike s.r Q where
   mkQuotientLike ::
   exact : ∀{a b: α}, (⟦a⟧: Q) = ⟦b⟧ -> a ≈ b := by exact Quotient.exact
