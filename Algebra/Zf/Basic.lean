@@ -978,6 +978,62 @@ def Zf.mapAttach_congr (a b: Zf) (h: a = b) {f: ∀b ∈ a, Zf} : a.mapAttach f 
   subst h
   rfl
 
+def Zf.mapAttach_insert {f} : (Zf.insert a b).mapAttach f = Zf.insert (f a (by
+  apply Zf.mem_insert.mpr (.inl rfl))) (b.mapAttach (by
+  intro y mem
+  apply f
+  apply Zf.mem_insert.mpr
+  right; assumption)) := by
+  ext x
+  apply Iff.intro
+  · intro h
+    replace ⟨x₀, h, prf⟩  := Zf.mem_mapAttach.mp h
+    subst x
+    cases Zf.mem_insert.mp h <;> rename_i h
+    subst x₀
+    apply Zf.mem_insert.mpr; left; rfl
+    apply Zf.mem_insert.mpr; right
+    apply Zf.mem_mapAttach.mpr
+    refine ⟨_, ?_, rfl⟩
+    assumption
+  · intro h
+    apply Zf.mem_mapAttach.mpr
+    cases Zf.mem_insert.mp h <;> rename_i h
+    subst x
+    refine ⟨_, ?_, rfl⟩
+    apply Zf.mem_insert.mpr; left; rfl
+    replace ⟨b', h, _⟩  := Zf.mem_mapAttach.mp h
+    subst x
+    refine ⟨_, ?_, rfl⟩
+    apply Zf.mem_insert.mpr
+    right; assumption
+
+def Zf.sUnion_insert : ⋃₀(Zf.insert a b) = a ∪ ⋃₀b := by
+  ext x
+  apply Iff.intro
+  · intro h
+    replace ⟨x₀, h, prf⟩  := Zf.mem_sUnion.mp h
+    apply Zf.mem_union.mpr
+    cases Zf.mem_insert.mp h
+    subst x₀; left; assumption
+    right
+    apply Zf.mem_sUnion.mpr
+    exists x₀
+  · intro h
+    apply Zf.mem_sUnion.mpr
+    cases Zf.mem_union.mp h
+    exists a
+    apply And.intro
+    apply Zf.mem_insert.mpr; left; rfl
+    assumption
+    rename_i h
+    replace ⟨x₀, h, prf⟩ := Zf.mem_sUnion.mp h
+    exists x₀
+    apply And.intro
+    apply Zf.mem_insert.mpr
+    right; assumption
+    assumption
+
 def Zf.mk_map (f: Zf -> Zf) (a: Zf.Pre) : ⟦a⟧.map f = ⟦(a.map (unwrapQuot ∘ f ∘ (⟦·⟧)))⟧ := by
   rw [map, quot.lift_mk]
 
